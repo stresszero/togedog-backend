@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from .admin_settings import SECRET_KEY, DATABASES, PASSWORD_HASHERS, PASSWORD_SALT, ALGORITHM
+from .admin_settings import SECRET_KEY, DATABASES, PASSWORD_HASHERS, PASSWORD_SALT, ALGORITHM, s3_client
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -12,6 +12,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = SECRET_KEY
 DATABASES = DATABASES
 
+s3_client = s3_client
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 

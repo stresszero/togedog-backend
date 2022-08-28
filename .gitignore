@@ -399,3 +399,4 @@ zsdoc/data
 
 admin_settings.py
 password.txt
+private/

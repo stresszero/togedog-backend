@@ -1,7 +1,10 @@
-Python
-Django web framework
-Django Ninja
-Postgresql
+Development
+- Python
+- Django web framework
+- Django Ninja
+- Postgresql
 
-Heroku
-AWS RDS
+Deployment
+
+- Heroku
+- AWS S3, RDS

@@ -1,6 +1,23 @@
 from pathlib import Path
 
-from .admin_settings import SECRET_KEY, DATABASES, PASSWORD_HASHERS, PASSWORD_SALT, ALGORITHM, s3_client
+from .admin_settings import (
+    SECRET_KEY, 
+    DATABASES, 
+    PASSWORD_HASHERS, 
+    PASSWORD_SALT, 
+    ALGORITHM,
+    AWS_ACCESS_KEY_ID,
+    AWS_SECRET_ACCESS_KEY,
+    AWS_S3_ENDPOINT_URL,
+    AWS_S3_REGION_NAME,
+    KAKAO_REDIRECT_URI,
+    KAKAO_REST_API_KEY,
+    GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET,
+    GOOGLE_REDIRECT_URI,
+    GOOGLE_RESPONSE_TYPE,
+    GOOGLE_SCOPE
+    )
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -12,7 +29,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = SECRET_KEY
 DATABASES = DATABASES
 
-s3_client = s3_client
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
@@ -142,3 +158,19 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# AWS S3
+AWS_ACCESS_KEY_ID     = AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY = AWS_SECRET_ACCESS_KEY
+AWS_S3_REGION_NAME    = AWS_S3_REGION_NAME
+AWS_S3_ENDPOINT_URL   = AWS_S3_ENDPOINT_URL
+
+# Social Login
+KAKAO_REDIRECT_URI = KAKAO_REDIRECT_URI
+KAKAO_REST_API_KEY = KAKAO_REST_API_KEY
+
+GOOGLE_CLIENT_ID     = GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET = GOOGLE_CLIENT_SECRET
+GOOGLE_REDIRECT_URI  = GOOGLE_REDIRECT_URI
+GOOGLE_RESPONSE_TYPE = GOOGLE_RESPONSE_TYPE
+GOOGLE_SCOPE         = GOOGLE_SCOPE

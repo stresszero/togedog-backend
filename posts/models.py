@@ -6,7 +6,7 @@ class Post(TimeStampedModel):
     user       = models.ForeignKey('users.user', related_name="posts", on_delete=models.CASCADE)
     subject    = models.CharField(max_length=100, blank=True)
     content    = models.TextField()
-    image_url  = models.CharField(max_length=500, default='default_post_image_url')
+    image_url  = models.CharField(max_length=500, null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
 
     class Meta:

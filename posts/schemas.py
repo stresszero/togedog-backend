@@ -7,3 +7,7 @@ class GetPostOut(ModelSchema):
         model = Post
         model_exclude = ["is_deleted"]
         
+# class GetPostListOut(ModelSchema):
+#     class Config:
+#         model = Post
+#         model_exclude = ["is_deleted"]

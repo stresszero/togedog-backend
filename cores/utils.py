@@ -10,7 +10,7 @@ def generate_jwt(payload, type):
         exp_days = 1
         exp = datetime.utcnow() + timedelta(days=exp_days)
 
-    if type == "refresh":
+    elif type == "refresh":
         exp_weeks = 2
         exp = datetime.utcnow() + timedelta(weeks=exp_weeks)
 

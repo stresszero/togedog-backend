@@ -51,12 +51,12 @@ def email_user_signup_with_form(request, payload: EmailUserSignupIn=Form(...)):
 def email_user_login_with_form(request, payload: EmailUserSigninIn=Form(...)):
     '''
     이메일 사용자 로그인(Form)
-    로그인 후 JWT 발급
+    로그인 후 JWT 발급, 리프레시 토큰을 httponly 쿠키로 저장
     '''
     payload_dict = payload.dict()
     try:
         user = User.objects.get(email=payload_dict["email"], account_type=UserAccountType.EMAIL)
-
+        
         if check_password(payload_dict["password"], user.password):
             payload  = {"user": user.id, "user_type": user.user_type}
             response = JsonResponse({'access_token': generate_jwt(payload, "access")}, status=200)
@@ -140,7 +140,7 @@ def kakao_login_get_code(request):
 @router.get("/login/kakao/redirect")
 def kakao_login_get_profile(request, code: str):
     '''
-    카카오 인가코드로 토큰 받고 사용자 프로필 조회하고 회원가입 또는 로그인하고 JWT 발급
+    카카오 인가코드로 토큰 받고 사용자 프로필 조회하고 회원가입 또는 로그인하고 JWT 발급, 리프레시 토큰을 httponly 쿠키로 저장
     '''
     try:
         kakao_api = KakaoLoginAPI(client_id=settings.KAKAO_REST_API_KEY)
@@ -157,8 +157,10 @@ def kakao_login_get_profile(request, code: str):
                 'account_type' : UserAccountType.KAKAO,
             }
         )
-        access_token = jwt.encode({"user": user.id, "user_type": str(user.user_type)}, settings.SECRET_KEY, settings.ALGORITHM)
-        return JsonResponse({'access_token': access_token}, status=200)
+        payload  = {"user": user.id, "user_type": user.user_type}
+        response = JsonResponse({'access_token': generate_jwt(payload, "access")}, status=200)
+        response.set_cookie('refresh_token', generate_jwt(payload, "refresh"), httponly=True, samesite="lax")
+        return response
 
     except KeyError:
         return JsonResponse({'message': 'key error'}, status=400)
@@ -179,7 +181,7 @@ def google_login_get_code(request):
 @router.get("/login/google/redirect")
 def google_login_get_profile(request, code: str):
     '''
-    구글 인가코드로 토큰 받고 사용자 프로필 조회하고 회원가입 또는 로그인하고 JWT 발급
+    구글 인가코드로 토큰 받고 사용자 프로필 조회하고 회원가입 또는 로그인하고 JWT 발급, 리프레시 토큰을 httponly 쿠키로 저장
     '''
     code = request.GET.get('code')
     google_token_api = "https://oauth2.googleapis.com/token"
@@ -205,5 +207,7 @@ def google_login_get_profile(request, code: str):
                 "account_type" : UserAccountType.GOOGLE,
             }
         )
-    access_token = jwt.encode({"user": user.id, "user_type": str(user.user_type)}, settings.SECRET_KEY, settings.ALGORITHM)
-    return JsonResponse({'access_token': access_token}, status=200)
+    payload  = {"user": user.id, "user_type": user.user_type}
+    response = JsonResponse({'access_token': generate_jwt(payload, "access")}, status=200)
+    response.set_cookie('refresh_token', generate_jwt(payload, "refresh"), httponly=True, samesite="lax")
+    return response

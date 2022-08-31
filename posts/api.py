@@ -21,7 +21,8 @@ def get_post(request, post_id: int):
     '''
     try:
         is_banned(request)
-        post = Post.objects.get(id=post_id, is_deleted=False, comments__is_deleted=False)
+        post = Post.objects.get(id=post_id, is_deleted=False)
+        # post_comments = post.comments.exclude(is_deleted=True).values()
         
     except Post.DoesNotExist:
         return 404, {"message": "post does not exist"}
@@ -83,8 +84,7 @@ def modify_post(request, post_id: int, body: CreatePostIn = Form(...), file: Upl
         if file.size > 50 * MB:
             return 400, {"message": "file size is too large"}
         s3_client.upload_fileobj(file, "post_images", upload_filename, ExtraArgs={"ACL": "public-read"})
-        # s3 파일 지우는 로직 필요함
-        # s3_client.delete_object(Bucket="post_images", Key=post.image_url.split("/")[-1])
+        s3_client.delete_object(Bucket="post_images", Key=post.image_url.split("/")[-1])
         post.image_url = upload_filename
     post.subject = body.subject
     post.content = body.content

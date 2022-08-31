@@ -231,7 +231,7 @@ class GetUserInfoTest(UserTest):
             ),
             HTTP_AUTHORIZATION=f'Bearer {self.user_jwt}',
         )
-        data = {
+        results = {
             "id"           : self.test_user_1.id,
             "name"         : self.test_user_1.name,
             "nickname"     : self.test_user_1.nickname,
@@ -245,7 +245,7 @@ class GetUserInfoTest(UserTest):
             "created_at"   : f"{self.test_user_1.created_at.isoformat()[:-9]}Z",
         }
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), data)
+        self.assertEqual(response.json(), results)
 
     def test_fail_403_get_user_info(self):
         response = self.client.get(
@@ -465,12 +465,32 @@ class DeleteUserAccountTest(UserTest):
 
 class GetBannedUserListTest(UserTest):
     def test_success_get_banned_user_list(self):
+        self.test_user_1.status = "banned"
+        self.test_user_1.save()
         response = self.client.get(
             reverse("api-1.0.0:get_banned_user_list"),
             HTTP_AUTHORIZATION=f'Bearer {self.admin_jwt}'
         )
+        results = {
+            "items": [
+                {
+                    "id": self.test_user_1.id,
+                    "created_at": f"{self.test_user_1.created_at.isoformat()[:-9]}Z",
+                    "name": self.test_user_1.name,
+                    "nickname": self.test_user_1.nickname,
+                    "email": self.test_user_1.email,
+                    "user_type": self.test_user_1.user_type,
+                    "status": self.test_user_1.status,
+                    "account_type": self.test_user_1.account_type,
+                    "thumbnail_url": self.test_user_1.thumbnail_url,
+                    "mbti": self.test_user_1.mbti,
+                    "reported_count": 0,
+                }
+            ],
+            "count": 1,
+        }
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), {"banned_users": []})
+        self.assertEqual(response.json(), results)
 
     def test_fail_401_get_banned_user_list(self):
         response = self.client.get(reverse("api-1.0.0:get_banned_user_list"))

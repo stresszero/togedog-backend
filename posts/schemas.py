@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from ninja import Schema, ModelSchema, Field
+from ninja import Schema, ModelSchema, Field, Form, File
 
 from posts.models import Post, PostLike, PostReport
 from comments.models import Comment
@@ -44,4 +44,8 @@ class CreatePostReportIn(ModelSchema):
     class Config:
         model = PostReport
         model_exclude = ["id", "reporter", "post", "created_at", "updated_at"]
+
+class ModifyPostIn(Schema):
+    subject: Optional[str]
+    content: Optional[str]
 

@@ -7,12 +7,27 @@ from ninja.files import UploadedFile
 from cores.schemas import NotFoundOut, SuccessOut, BadRequestOut
 from cores.utils import s3_client
 from posts.models import Post, PostReport, PostLike
-from posts.schemas import GetPostOut, CreatePostIn, CreatePostReportIn
+from posts.schemas import GetPostOut, CreatePostIn, CreatePostReportIn, ModifyPostIn
 from users.auth import AuthBearer, has_authority, is_banned, is_admin
 
 router = Router(tags=["게시글 관련 API"])
 
 MB = 1024 * 1024
+
+def process_request(self, request):
+    if request.method in ("PUT", "PATCH") and request.content_type != "application/json":
+        if hasattr(request, '_post'):
+            del request._post
+            del request._files
+        try:
+            initial_method = request.method
+            request.method = "POST"
+            request.META['REQUEST_METHOD'] = 'POST'
+            request._load_post_and_files() # <----- this is the trick !!!!!!!!!!!!!!!!!
+            request.META['REQUEST_METHOD'] = initial_method
+            request.method = initial_method
+        except Exception:
+            pass
 
 @router.get("/{post_id}", response={200: GetPostOut, 404: NotFoundOut}, auth=AuthBearer())
 def get_post(request, post_id: int):
@@ -66,14 +81,14 @@ def create_post(request, body: CreatePostIn = Form(...), file: UploadedFile = No
     Post.objects.create(user_id=request.auth.id, subject=body.subject, content=body.content, image_url=upload_url)
     return 200, {"message": "success"}
 
-@router.patch("/{post_id}", response={200: SuccessOut, 400: BadRequestOut}, auth=AuthBearer())
-def modify_post(request, post_id: int, body: CreatePostIn = Form(...), file: UploadedFile = None):
+@router.patch("/{post_id}/modify", response={200: SuccessOut, 400: BadRequestOut}, auth=AuthBearer())
+def modify_post(request, post_id: int, body: ModifyPostIn = Form(...), file: UploadedFile = None):
     '''
-    게시글 수정
+    게시글 수정, 업로드 사진파일은 용량 50MB 제한
     '''
     try:
         is_banned(request)
-        post = Post.objects.get(id=post_id, user_id=request.auth.id, is_deleted=False)
+        post = Post.objects.get(id=post_id, is_deleted=False)
         has_authority(request, post.user_id)
         
     except Post.DoesNotExist:
@@ -81,11 +96,16 @@ def modify_post(request, post_id: int, body: CreatePostIn = Form(...), file: Upl
 
     if file:
         upload_filename = f'{str(uuid.uuid4())}.{file.name.split(".")[-1]}'
+
         if file.size > 50 * MB:
             return 400, {"message": "file size is too large"}
+
+        if post.image_url:
+            s3_client.delete_object(Bucket="post_images", Key=post.image_url.split("/")[-1])
+
         s3_client.upload_fileobj(file, "post_images", upload_filename, ExtraArgs={"ACL": "public-read"})
-        s3_client.delete_object(Bucket="post_images", Key=post.image_url.split("/")[-1])
-        post.image_url = upload_filename
+        post.image_url = f'https://togedog.s3.ap-northeast-2.amazonaws.com/post_images/{upload_filename}'
+        
     post.subject = body.subject
     post.content = body.content
     post.save()

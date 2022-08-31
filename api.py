@@ -14,7 +14,7 @@ api = NinjaAPI()
 
 api.add_router("/users", users_router)
 api.add_router("/posts", posts_router)
-api.add_router("/comments", comments_router)
+api.add_router("/posts", comments_router)
 api.add_router("/cores", cores_router)
 # api.add_router("/chat", chat_router)
 

@@ -55,6 +55,7 @@ class ModifyUserIn(Schema):
     address: str
     mbti: str
     thumbnail_url: str
+    mbti: str
 
 # class ModifyUserIn(ModelSchema):
 #     class Config:

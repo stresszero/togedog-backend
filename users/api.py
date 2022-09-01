@@ -1,8 +1,9 @@
-import jwt, requests
-from pprint import pprint
+import requests
+import uuid
 
 from typing import List
 from ninja import Router, Form
+from ninja.files import UploadedFile
 
 from django.http import JsonResponse
 from django.shortcuts import redirect
@@ -11,10 +12,12 @@ from django.contrib.auth.hashers import make_password, check_password
 from users.schemas import EmailUserSignupIn, EmailUserSigninIn, ModifyUserIn, UserListOut, UserDetailOut
 from cores.schemas import SuccessOut, AlreadyExistsOut, NotFoundOut, InvalidUserOut
 from cores.models import UserAccountType, UserStatus
-from cores.utils import generate_jwt, KakaoLoginAPI
+from cores.utils import generate_jwt, KakaoLoginAPI, s3_client
 from users.models import User
 from users.auth import AuthBearer, is_admin, has_authority
 from django.conf import settings
+
+MB = 1024 * 1024
 
 router = Router(tags=["사용자 관련 API"])
 
@@ -59,8 +62,10 @@ def email_user_login_with_form(request, payload: EmailUserSigninIn=Form(...)):
         
         if check_password(payload_dict["password"], user.password):
             payload  = {"user": user.id, "user_type": user.user_type}
+            # response = JsonResponse({'message': 'success'}, status=200)
+            # response.set_cookie('access_token', generate_jwt(payload, "access"), httponly=True, samesite="lax")
             response = JsonResponse({'access_token': generate_jwt(payload, "access")}, status=200)
-            response.set_cookie('refresh_token', generate_jwt(payload, "refresh"), httponly=True, samesite="lax")
+            response.set_cookie('refresh_token', generate_jwt(payload, "refresh"), httponly=True, samesite=None)
             return response
         else: 
             return 404, {"message": "invalid user"}
@@ -91,14 +96,24 @@ def get_user_info(request, user_id: int):
     return 200, user
 
 @router.patch("/{user_id}", response={200: SuccessOut, 404: NotFoundOut}, auth=[AuthBearer()])
-def modify_user_info(request, user_id: int, payload: ModifyUserIn):
+def modify_user_info(request, user_id: int, body: ModifyUserIn = Form(...), file: UploadedFile = None):
     '''
     사용자 정보 수정, 로그인한 본인 계정 또는 관리자만 수정 가능
     '''
     has_authority(request, user_id)
     try:
         user = User.objects.get(id=user_id)
-        for attr, value in payload.dict().items():
+        if file:
+            if file.size > 50 * MB:
+                return 400, {"message": "file size is too large"}
+            if user.thumbnail_url:
+                s3_client.delete_object(Bucket="user_thumbnail", Key=user.thumbnail_url.split("/")[-1])
+
+        upload_filename = f'{str(uuid.uuid4())}.{file.name.split(".")[-1]}'
+        s3_client.upload_fileobj(file, "user_thumbnail", upload_filename, ExtraArgs={"ACL": "public-read"})
+        user.thumbnail_url = f'https://togedog.s3.ap-northeast-2.amazonaws.com/post_images/{upload_filename}'
+
+        for attr, value in body.dict().items():
             setattr(user, attr, value)
         user.save()
 
@@ -166,10 +181,10 @@ def kakao_login_get_profile(request, code: str):
                 'email'        : kakao_profile['kakao_account']['email'],
                 'nickname'     : kakao_profile['kakao_account']['profile']['nickname'],
                 'thumbnail_url': kakao_profile['kakao_account']['profile']['thumbnail_image_url'],
-                'account_type' : UserAccountType.KAKAO,
+                'account_type' : UserAccountType.KAKAO.value,
             }
         )
-        payload  = {"user": user.id, "user_type": user.user_type}
+        payload  = {"user": user.id, "user_type": user.user_type.value}
         response = JsonResponse({'access_token': generate_jwt(payload, "access")}, status=200)
         response.set_cookie('refresh_token', generate_jwt(payload, "refresh"), httponly=True, samesite="lax")
         return response
@@ -216,10 +231,27 @@ def google_login_get_profile(request, code: str):
                 "email"        : user_info["email"],
                 "nickname"     : user_info["name"],
                 "thumbnail_url": user_info["picture"],
-                "account_type" : UserAccountType.GOOGLE,
+                "account_type" : UserAccountType.GOOGLE.value,
             }
         )
-    payload  = {"user": user.id, "user_type": user.user_type}
+    payload  = {"user": user.id, "user_type": user.user_type.value}
     response = JsonResponse({'access_token': generate_jwt(payload, "access")}, status=200)
     response.set_cookie('refresh_token', generate_jwt(payload, "refresh"), httponly=True, samesite="lax")
     return response
+
+@router.get("/cookie")
+def make_cookie_response(request):
+    '''
+    쿠키 테스트용, httponly 쿠키 저장됐는지 확인
+    '''
+    response = JsonResponse({'message': 'success'}, status=200)
+    response.set_cookie('test', 'test', httponly=True, samesite="None")
+    return response
+
+@router.get("/all/banned", response={200: List[UserListOut]}, auth=AuthBearer())
+def get_banned_user_list(request):
+    '''
+    차단 계정 목록 조회
+    '''
+    is_admin(request)
+    return 200, User.objects.filter(status="banned")

@@ -3,39 +3,25 @@ import uuid
 from typing import List
 from ninja import Router, File, Form
 from ninja.files import UploadedFile
+from django.http import JsonResponse
 
 from cores.schemas import NotFoundOut, SuccessOut, BadRequestOut
 from cores.utils import s3_client
 from posts.models import Post, PostReport, PostLike
-from posts.schemas import GetPostOut, CreatePostIn, CreatePostReportIn, ModifyPostIn
+from posts.schemas import GetPostOut, CreatePostIn, CreatePostReportIn, ModifyPostIn, DeletedPostOut
 from users.auth import AuthBearer, has_authority, is_banned, is_admin
 
 router = Router(tags=["게시글 관련 API"])
 
 MB = 1024 * 1024
 
-def process_request(self, request):
-    if request.method in ("PUT", "PATCH") and request.content_type != "application/json":
-        if hasattr(request, '_post'):
-            del request._post
-            del request._files
-        try:
-            initial_method = request.method
-            request.method = "POST"
-            request.META['REQUEST_METHOD'] = 'POST'
-            request._load_post_and_files() # <----- this is the trick !!!!!!!!!!!!!!!!!
-            request.META['REQUEST_METHOD'] = initial_method
-            request.method = initial_method
-        except Exception:
-            pass
-
-@router.get("/{post_id}", response={200: GetPostOut, 404: NotFoundOut}, auth=AuthBearer())
+@router.get("/{post_id}", response={200: GetPostOut, 404: NotFoundOut}, auth=[AuthBearer()])
 def get_post(request, post_id: int):
     '''
     게시글 하나 조회, is_deleted=False인것만 나옴
     '''
     try:
-        is_banned(request)
+        # is_banned(request)
         post = Post.objects.get(id=post_id, is_deleted=False)
         # post_comments = post.comments.exclude(is_deleted=True).values()
         
@@ -45,7 +31,7 @@ def get_post(request, post_id: int):
     return 200, post
 
 @router.get("", response={200: List[GetPostOut]}, auth=AuthBearer())
-def get_post_list(request, offset: int = 0, limit: int = 9, sort: str = "-created_at"):
+def get_posts(request, offset: int = 0, limit: int = 9, sort: str = "-created_at"):
     '''
     게시글 목록 조회, 한 페이지에 9개씩, 정렬 기본값 최신순(-created_at), is_deleted=False인것만 나옴
     '''
@@ -81,7 +67,7 @@ def create_post(request, body: CreatePostIn = Form(...), file: UploadedFile = No
     Post.objects.create(user_id=request.auth.id, subject=body.subject, content=body.content, image_url=upload_url)
     return 200, {"message": "success"}
 
-@router.patch("/{post_id}/modify", response={200: SuccessOut, 400: BadRequestOut}, auth=AuthBearer())
+@router.patch("/{post_id}/modify", response={200: SuccessOut, 400: BadRequestOut, 404: NotFoundOut}, auth=AuthBearer())
 def modify_post(request, post_id: int, body: ModifyPostIn = Form(...), file: UploadedFile = None):
     '''
     게시글 수정, 업로드 사진파일은 용량 50MB 제한
@@ -95,14 +81,12 @@ def modify_post(request, post_id: int, body: ModifyPostIn = Form(...), file: Upl
         return 404, {"message": "post does not exist"}
 
     if file:
-        upload_filename = f'{str(uuid.uuid4())}.{file.name.split(".")[-1]}'
-
         if file.size > 50 * MB:
             return 400, {"message": "file size is too large"}
-
         if post.image_url:
             s3_client.delete_object(Bucket="post_images", Key=post.image_url.split("/")[-1])
 
+        upload_filename = f'{str(uuid.uuid4())}.{file.name.split(".")[-1]}'
         s3_client.upload_fileobj(file, "post_images", upload_filename, ExtraArgs={"ACL": "public-read"})
         post.image_url = f'https://togedog.s3.ap-northeast-2.amazonaws.com/post_images/{upload_filename}'
         
@@ -176,3 +160,11 @@ def like_post(request, post_id: int):
         return 404, {"message": "post does not exist"}
 
     return 200, {"message": "post like created"}
+
+@router.get("/all/deleted", response={200: List[DeletedPostOut]}, auth=AuthBearer())
+def get_deleted_posts(request):
+    '''
+    삭제된 게시글 목록 조회, 관리자만 가능
+    '''
+    is_admin(request)
+    return 200, Post.objects.filter(is_deleted=True)

@@ -9,6 +9,7 @@ from posts.api import router as posts_router
 from comments.api import router as comments_router
 from cores.api import router as cores_router
 # from chat.api import router as chat_router
+from ninja.security import APIKeyCookie
 
 api = NinjaAPI()
 
@@ -20,6 +21,7 @@ api.add_router("/cores", cores_router)
 
 @api.get("/hello")
 def hello(request):
+    # print(request.COOKIES.get('access_token')) 
     return {"hello": "world"}
 
 

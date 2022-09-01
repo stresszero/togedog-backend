@@ -12,7 +12,6 @@ class PostUser(Schema):
     created_at: datetime
 
 class GetCommentOut(ModelSchema):
-    
     class Config:
         model = Comment
         model_exclude = ["is_deleted"]
@@ -49,3 +48,7 @@ class ModifyPostIn(Schema):
     subject: Optional[str]
     content: Optional[str]
 
+class DeletedPostOut(ModelSchema):
+    class Config:
+        model = Post
+        model_fields = "__all__"

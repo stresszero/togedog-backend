@@ -73,8 +73,7 @@ def report_comment(request, post_id: int, comment_id: int, body: CreateCommentRe
     try:
         is_banned(request)
         Post.objects.get(id=post_id)
-        comment = Comment.objects.get(id=comment_id, is_deleted=False)
-        has_authority(request, comment.user_id)
+        Comment.objects.get(id=comment_id, is_deleted=False)
         CommentReport.objects.create(reporter_id=request.auth.id, comment_id=comment_id, content=body.content)
 
     except Post.DoesNotExist:
@@ -91,9 +90,9 @@ def delete_comment_from_db(request, post_id: int, comment_id: int):
     댓글을 DB에서 삭제, 관리자만 가능
     '''
     try:
+        is_admin(request)
         Post.objects.get(id=post_id)
         comment = Comment.objects.get(id=comment_id, is_deleted=False)
-        has_authority(request, comment.user_id)
         comment.delete()
 
     except Post.DoesNotExist:

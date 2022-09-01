@@ -50,12 +50,11 @@ class UserDetailOut(Schema):
     created_at: datetime
 
 class ModifyUserIn(Schema):
-    name: str
-    nickname: str
-    address: str
-    mbti: str
-    thumbnail_url: str
-    mbti: str
+    name: str = None
+    nickname: str = None
+    address: str = None
+    mbti: str = None
+    mbti: str = None
 
 # class ModifyUserIn(ModelSchema):
 #     class Config:

@@ -35,3 +35,8 @@ class AuthBearer(HttpBearer):
             raise HttpError(400, "invalid token")
 
         return user
+
+# class BannedUserCheck(HttpBearer):
+#     def authenticate(self, request, token):
+#         if request.auth.status == UserStatus.BANNED:
+#             raise HttpError(403, "forbidden")

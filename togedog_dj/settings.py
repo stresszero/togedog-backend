@@ -16,7 +16,9 @@ from .admin_settings import (
     GOOGLE_CLIENT_SECRET,
     GOOGLE_REDIRECT_URI,
     GOOGLE_RESPONSE_TYPE,
-    GOOGLE_SCOPE
+    GOOGLE_SCOPE,
+    POST_IMAGES_URL,
+    PROFILE_IMAGES_URL
     )
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.

@@ -7,7 +7,7 @@ from django.conf import settings
 
 def generate_jwt(payload, type):
     if type == "access":
-        exp_days = 1
+        exp_days = 30
         exp = datetime.utcnow() + timedelta(days=exp_days)
 
     elif type == "refresh":

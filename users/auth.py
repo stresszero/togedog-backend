@@ -11,12 +11,16 @@ def is_admin(request):
     if request.auth.user_type != "admin":
         raise HttpError(403, "forbidden")
 
-def has_authority(request, user_id):
-    if request.auth.user_type != "admin" and request.auth.id != user_id:
+def has_authority(request, user_id=None, user_check=False, banned_check=True):
+    if banned_check and request.auth.status == UserStatus.BANNED.value:
         raise HttpError(403, "forbidden")
 
+    if user_check and user_id:
+        if request.auth.user_type != "admin" and request.auth.id != user_id:
+            raise HttpError(403, "forbidden")
+
 def is_banned(request):
-    if request.auth.status == UserStatus.BANNED:
+    if request.auth.status == UserStatus.BANNED.value:
         raise HttpError(403, "forbidden")
 
 class AuthBearer(HttpBearer):

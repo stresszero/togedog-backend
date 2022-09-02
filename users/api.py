@@ -10,11 +10,11 @@ from django.shortcuts import redirect
 from django.contrib.auth.hashers import make_password, check_password
 
 from users.schemas import EmailUserSignupIn, EmailUserSigninIn, ModifyUserIn, UserListOut, UserDetailOut
+from users.auth import AuthBearer, is_admin, has_authority
 from cores.schemas import SuccessOut, AlreadyExistsOut, NotFoundOut, InvalidUserOut
 from cores.models import UserAccountType, UserStatus
 from cores.utils import generate_jwt, KakaoLoginAPI, s3_client
 from users.models import User
-from users.auth import AuthBearer, is_admin, has_authority
 from django.conf import settings
 
 MB = 1024 * 1024
@@ -26,7 +26,12 @@ def bearer(request):
     '''
     bearer 토큰 확인 테스트
     '''
-    return {"user_id": request.auth.id, "user_type": request.auth.user_type}
+    return {
+        "user_id": request.auth.id, 
+        "user_type": request.auth.user_type,
+        "user_status": request.auth.status,
+        "accout_type": request.auth.account_type
+        }
 
 # @router.post("/users/signup", response={201: SuccessOut})
 # def email_user_signup_with_json(request, payload: EmailUserSignupIn):
@@ -40,7 +45,7 @@ def bearer(request):
 @router.post("/signup", response={200: SuccessOut, 201: SuccessOut, 400: AlreadyExistsOut})
 def email_user_signup_with_form(request, payload: EmailUserSignupIn=Form(...)):
     '''
-    이메일 사용자 회원가입(Form)
+    이메일 사용자 회원가입(Form, application/x-www-form-urlencoded)
     '''
     payload_dict = payload.dict()
     if User.objects.filter(email=payload_dict["email"], account_type=UserAccountType.EMAIL).exists():
@@ -53,8 +58,8 @@ def email_user_signup_with_form(request, payload: EmailUserSignupIn=Form(...)):
 @router.post("/login", response={200: SuccessOut, 400: NotFoundOut, 404: InvalidUserOut})
 def email_user_login_with_form(request, payload: EmailUserSigninIn=Form(...)):
     '''
-    이메일 사용자 로그인(Form)
-    로그인 후 JWT 발급, 리프레시 토큰을 httponly 쿠키로 저장
+    이메일 사용자 로그인(Form, application/x-www-form-urlencoded)
+    로그인 후 JWT 액세스 토큰 또는 리프레시 토큰을 httponly 쿠키로 저장
     '''
     payload_dict = payload.dict()
     try:
@@ -74,19 +79,19 @@ def email_user_login_with_form(request, payload: EmailUserSigninIn=Form(...)):
         return 404, {"message": "user does not exist"}
 
 @router.get("", response=List[UserListOut], auth=[AuthBearer()])
-def get_user_list(request):
+def get_user_list(request, offset: int = 0, limit: int = 10):
     '''
-    사용자 목록 조회, 관리자 계정만 조회 가능
+    사용자 목록 조회, 관리자 계정만 조회 가능, offset/limit로 페이지네이션
     '''
     is_admin(request)
-    return User.objects.all()
+    return User.objects.all()[offset:offset+limit]
     
 @router.get("/{user_id}", response={200: UserDetailOut, 404: NotFoundOut}, auth=[AuthBearer()])    
 def get_user_info(request, user_id: int):
     '''
     사용자 정보 조회, 로그인한 본인 계정 또는 관리자만 조회 가능
     '''
-    has_authority(request, user_id)
+    has_authority(request, user_id, user_check=True, banned_check=False)
     try:
         user = User.objects.get(id=user_id)
 
@@ -100,7 +105,7 @@ def modify_user_info(request, user_id: int, body: ModifyUserIn = Form(...), file
     '''
     사용자 정보 수정, 로그인한 본인 계정 또는 관리자만 수정 가능
     '''
-    has_authority(request, user_id)
+    has_authority(request, user_id, user_check=True, banned_check=False)
     try:
         user = User.objects.get(id=user_id)
         if file:
@@ -111,7 +116,7 @@ def modify_user_info(request, user_id: int, body: ModifyUserIn = Form(...), file
 
         upload_filename = f'{str(uuid.uuid4())}.{file.name.split(".")[-1]}'
         s3_client.upload_fileobj(file, "user_thumbnail", upload_filename, ExtraArgs={"ACL": "public-read"})
-        user.thumbnail_url = f'https://togedog.s3.ap-northeast-2.amazonaws.com/post_images/{upload_filename}'
+        user.thumbnail_url = f'{settings.PROFILE_IMAGES_URL}{upload_filename}'
 
         for attr, value in body.dict().items():
             setattr(user, attr, value)
@@ -129,7 +134,7 @@ def delete_user(request, user_id: int):
     '''
     try:
         user = User.objects.get(id=user_id)
-        has_authority(request, user_id)
+        has_authority(request, user_id, user_check=True, banned_check=False)
         user.delete()
 
     except User.DoesNotExist:
@@ -249,9 +254,9 @@ def make_cookie_response(request):
     return response
 
 @router.get("/all/banned", response={200: List[UserListOut]}, auth=AuthBearer())
-def get_banned_user_list(request):
+def get_banned_user_list(request, offset: int = 0, limit: int = 10):
     '''
-    차단 계정 목록 조회
+    차단 계정 목록 조회, offset/limit으로 페이지네이션
     '''
     is_admin(request)
-    return 200, User.objects.filter(status="banned")
+    return 200, User.objects.filter(status="banned")[offset:offset+limit]

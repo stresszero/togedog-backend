@@ -52,3 +52,15 @@ class DeletedPostOut(ModelSchema):
     class Config:
         model = Post
         model_fields = "__all__"
+
+class GetPostOutTest(Schema):
+    id: int
+    user_id: int
+    subject: str
+    content: str
+    image_url: str
+    created_at: datetime
+    updated_at: datetime
+    post_likes_count: int
+    comments: List
+    

@@ -3,42 +3,67 @@ import uuid
 from typing import List
 from ninja import Router, File, Form
 from ninja.files import UploadedFile
-from django.http import JsonResponse
 
 from cores.schemas import NotFoundOut, SuccessOut, BadRequestOut
 from cores.utils import s3_client
 from posts.models import Post, PostReport, PostLike
-from posts.schemas import GetPostOut, CreatePostIn, CreatePostReportIn, ModifyPostIn, DeletedPostOut
-from users.auth import AuthBearer, has_authority, is_banned, is_admin
+from posts.schemas import GetPostOut, CreatePostIn, CreatePostReportIn, ModifyPostIn, DeletedPostOut, GetPostOutTest
+from users.auth import AuthBearer, has_authority, is_admin
+from django.conf import settings
 
-router = Router(tags=["게시글 관련 API"])
+router = Router(tags=["게시글 관련 API"], auth=AuthBearer())
 
 MB = 1024 * 1024
 
-@router.get("/{post_id}", response={200: GetPostOut, 404: NotFoundOut}, auth=[AuthBearer()])
+# @router.get("/{post_id}", response={200: GetPostOut, 404: NotFoundOut})
+# def get_post(request, post_id: int):
+#     '''
+#     게시글 하나 조회, is_deleted=False인것만 나옴
+#     '''
+#     try:
+#         has_authority(request)
+#         post = Post.objects.get(id=post_id, is_deleted=False)
+        
+#     except Post.DoesNotExist:
+#         return 404, {"message": "post does not exist"}
+
+#     return 200, post
+
+@router.get("/{post_id}")
 def get_post(request, post_id: int):
     '''
-    게시글 하나 조회, is_deleted=False인것만 나옴
+    게시글 하나 조회, 게시글/댓글 모두 is_deleted=False인것만 나옴
     '''
     try:
-        # is_banned(request)
+        has_authority(request)
         post = Post.objects.get(id=post_id, is_deleted=False)
-        # post_comments = post.comments.exclude(is_deleted=True).values()
         
+        data = {
+            "id": post.id,
+            "user_id": post.user_id,
+            "subject": post.subject,
+            "content": post.content,
+            "image_url": post.image_url,
+            "created_at": post.created_at,
+            "updated_at": post.updated_at,
+            "post_likes_count": post.likes.count(),
+            "comments": [comments for comments in post.comments.exclude(is_deleted=True).values()],
+        }
+
     except Post.DoesNotExist:
         return 404, {"message": "post does not exist"}
 
-    return 200, post
+    return data
 
-@router.get("", response={200: List[GetPostOut]}, auth=AuthBearer())
+@router.get("", response={200: List[GetPostOut]})
 def get_posts(request, offset: int = 0, limit: int = 9, sort: str = "-created_at"):
     '''
     게시글 목록 조회, 한 페이지에 9개씩, 정렬 기본값 최신순(-created_at), is_deleted=False인것만 나옴
     '''
-    is_banned(request)
+    has_authority(request)
     return 200, Post.objects.filter(is_deleted=False).order_by(sort)[offset:offset+limit]
 
-@router.post("/upload/", response={200: SuccessOut, 400: BadRequestOut}, auth=AuthBearer())
+@router.post("/upload/", response={200: SuccessOut, 400: BadRequestOut})
 def upload_file(request, file: UploadedFile = File(...)):
     '''
     파일 업로드 테스트, 용량 50MB 제한
@@ -49,33 +74,32 @@ def upload_file(request, file: UploadedFile = File(...)):
     s3_client.upload_fileobj(file, "post_images", upload_filename, ExtraArgs={"ACL": "public-read"})
     return 200, {"message": "success", "file_name": file.name}
 
-@router.post("/", response={200: SuccessOut, 400: BadRequestOut}, auth=AuthBearer())
+@router.post("/", response={200: SuccessOut, 400: BadRequestOut})
 def create_post(request, body: CreatePostIn = Form(...), file: UploadedFile = None):
     '''
     게시글 생성, 업로드 사진파일은 용량 50MB 제한
     '''
-    is_banned(request)
+    has_authority(request)
     if file:
         if file.size > 50 * MB:
             return 400, {"message": "file size is too large"}
         upload_filename = f'{str(uuid.uuid4())}.{file.name.split(".")[-1]}'
         s3_client.upload_fileobj(file, "post_images", upload_filename, ExtraArgs={"ACL": "public-read"})
-        upload_url = f'https://togedog.s3.ap-northeast-2.amazonaws.com/post_images/{upload_filename}'
+        upload_url = f'{settings.POST_IMAGES_URL}{upload_filename}'
     else:
-        upload_url = 'default_thumbnail_url'
+        upload_url = None
 
     Post.objects.create(user_id=request.auth.id, subject=body.subject, content=body.content, image_url=upload_url)
     return 200, {"message": "success"}
 
-@router.patch("/{post_id}/modify", response={200: SuccessOut, 400: BadRequestOut, 404: NotFoundOut}, auth=AuthBearer())
+@router.patch("/{post_id}/modify", response={200: SuccessOut, 400: BadRequestOut, 404: NotFoundOut})
 def modify_post(request, post_id: int, body: ModifyPostIn = Form(...), file: UploadedFile = None):
     '''
     게시글 수정, 업로드 사진파일은 용량 50MB 제한
     '''
     try:
-        is_banned(request)
         post = Post.objects.get(id=post_id, is_deleted=False)
-        has_authority(request, post.user_id)
+        has_authority(request, user_id=post.user_id, user_check=True)
         
     except Post.DoesNotExist:
         return 404, {"message": "post does not exist"}
@@ -88,14 +112,14 @@ def modify_post(request, post_id: int, body: ModifyPostIn = Form(...), file: Upl
 
         upload_filename = f'{str(uuid.uuid4())}.{file.name.split(".")[-1]}'
         s3_client.upload_fileobj(file, "post_images", upload_filename, ExtraArgs={"ACL": "public-read"})
-        post.image_url = f'https://togedog.s3.ap-northeast-2.amazonaws.com/post_images/{upload_filename}'
+        post.image_url = f'{settings.POST_IMAGES_URL}{upload_filename}'
         
     post.subject = body.subject
     post.content = body.content
     post.save()
     return 200, {"message": "success"}
 
-@router.delete("/{post_id}", response={200: SuccessOut, 404: NotFoundOut}, auth=AuthBearer())
+@router.delete("/{post_id}", response={200: SuccessOut, 404: NotFoundOut})
 def delete_post(request, post_id: int):
     '''
     게시글 삭제, DB삭제가 아니라 해당 게시글의 is_deleted 값만 True로 바꿈
@@ -106,19 +130,18 @@ def delete_post(request, post_id: int):
     except Post.DoesNotExist:
         return 404, {"message": "post does not exist"}
 
-    is_banned(request)
-    has_authority(request, post.user_id)
+    has_authority(request, user_id=post.user_id, user_check=True)
     post.is_deleted = True
     post.save()
     return 200, {"message": "success"}
 
-@router.post("/{post_id}/report", response={200: SuccessOut, 404: NotFoundOut}, auth=AuthBearer())
+@router.post("/{post_id}/report", response={200: SuccessOut, 404: NotFoundOut})
 def report_post(request, post_id: int, body: CreatePostReportIn = Form(...)):
     '''
     게시글 신고하기
     '''
     try:
-        is_banned(request)
+        has_authority(request)
         post = Post.objects.get(id=post_id, is_deleted=False)
         
     except Post.DoesNotExist:
@@ -127,7 +150,7 @@ def report_post(request, post_id: int, body: CreatePostReportIn = Form(...)):
     PostReport.objects.create(reporter_id=request.auth.id, post_id=post_id, content=body.content)    
     return 200, {"message": "success"}
 
-@router.delete("/{post_id}/delete", response={200: SuccessOut, 404: NotFoundOut}, auth=AuthBearer())
+@router.delete("/{post_id}/delete", response={200: SuccessOut, 404: NotFoundOut})
 def delete_post_from_db(request, post_id: int):
     '''
     게시글을 DB에서 삭제, 관리자만 가능
@@ -142,14 +165,13 @@ def delete_post_from_db(request, post_id: int):
 
     return 200, {"message": "success"}
 
-@router.post("/{post_id}/like", response={200: SuccessOut, 404: NotFoundOut}, auth=AuthBearer())
+@router.post("/{post_id}/like", response={200: SuccessOut, 404: NotFoundOut})
 def like_post(request, post_id: int):
     '''
     게시글 좋아요, 이미 좋아요한 상태면 좋아요 취소
     '''
     try:    
-        is_banned(request)
-        has_authority(request, request.auth.id)
+        has_authority(request)
         Post.objects.get(id=post_id, is_deleted=False)
         like, is_liked = PostLike.objects.get_or_create(post_id=post_id, like_user_id=request.auth.id)
         if not is_liked:
@@ -161,10 +183,10 @@ def like_post(request, post_id: int):
 
     return 200, {"message": "post like created"}
 
-@router.get("/all/deleted", response={200: List[DeletedPostOut]}, auth=AuthBearer())
-def get_deleted_posts(request):
+@router.get("/all/deleted", response={200: List[DeletedPostOut]})
+def get_deleted_posts(request, offset: int = 0, limit: int = 10):
     '''
-    삭제된 게시글 목록 조회, 관리자만 가능
+    삭제된 게시글 목록 조회, 관리자만 가능, offset/limit으로 페이지네이션
     '''
     is_admin(request)
-    return 200, Post.objects.filter(is_deleted=True)
+    return 200, Post.objects.filter(is_deleted=True)[offset:offset+limit]

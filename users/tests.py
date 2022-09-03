@@ -8,27 +8,9 @@ from django.contrib.auth.hashers import make_password
 from django.conf import settings
 from django.test import TestCase, Client
 from django.urls import reverse
-from ninja.testing import TestClient
 
 from users.models import User
-from users.schemas import UserDetailOut
 
-# to avoid ConfigError when using ninja TestClient
-os.environ["NINJA_SKIP_REGISTRY"] = "yes"
-
-# user = User.objects.get(id=1234)
-# json.loads(json.dumps(UserDetailOut.from_orm(user).dict(), cls=DjangoJSONEncoder))
-
-# list = (
-#         User.objects.annotate(
-#             reported_count=Count("post_reported", distinct=True)
-#             + Count("comment_reported", distinct=True)
-#         )
-#         .filter(id__lte=50)
-#         .order_by("-created_at")
-#     )
-# listout=[UserListOut.from_orm(i).dict() for i in list]
-# json.loads(json.dumps(listout, cls=DjangoJSONEncoder))
 
 class UserTest(TestCase):
     def setUp(self):
@@ -173,12 +155,6 @@ class EmailUserSignupTest(UserTest):
 
 class GetUserListTest(UserTest):
     def test_success_get_user_list(self):
-        admin_user_login_response = self.client.post(
-            reverse("api-1.0.0:email_user_login"),
-            json.dumps({"email": self.test_admin.email, "password": "test1234@@"}),
-            content_type="application/json"
-        ).json()
-
         response = self.client.get(
             reverse("api-1.0.0:get_user_list"), 
             HTTP_AUTHORIZATION=f'Bearer {self.admin_jwt}'

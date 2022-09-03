@@ -399,6 +399,7 @@ zsdoc/data
 
 admin_settings.py
 bad_words.py
+memo.py
 password.txt
 private/
 settings.json

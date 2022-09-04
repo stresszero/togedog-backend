@@ -48,19 +48,27 @@ class ModifyPostIn(Schema):
     subject: Optional[str]
     content: Optional[str]
 
+class DeletePostIn(Schema):
+    delete_reason: str = None
+
 class DeletedPostOut(ModelSchema):
     class Config:
         model = Post
         model_fields = "__all__"
 
-class GetPostOutTest(Schema):
+class AdminGetPostOut(Schema):
     id: int
-    user_id: int
     subject: str
     content: str
     image_url: str
-    created_at: datetime
-    updated_at: datetime
-    post_likes_count: int
-    comments: List
+    user_id: int
+    user_name: str = Field(..., alias="user.name")
+    user_nickname: str = Field(..., alias="user.nickname")
+    user_email: str = Field(... ,alias="user.email")
+    user_mbti: str = Field(..., alias='user.mbti')
+    user_created_at: Optional[datetime] = Field(..., alias='user.created_at')
+
+    class Config:
+        model = Post
+        model_exclude = ["is_deleted"]
     

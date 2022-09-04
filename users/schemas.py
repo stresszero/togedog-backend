@@ -56,7 +56,5 @@ class ModifyUserIn(Schema):
     mbti: str = None
     mbti: str = None
 
-# class ModifyUserIn(ModelSchema):
-#     class Config:
-#         model = User
-#         model_fields = ['name', 'nickname', 'address', 'mbti', 'thumbnail_url']
+class TestKakaoToken(Schema):
+    token: str

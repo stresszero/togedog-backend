@@ -188,3 +188,22 @@ GOOGLE_CLIENT_SECRET = GOOGLE_CLIENT_SECRET
 GOOGLE_REDIRECT_URI  = GOOGLE_REDIRECT_URI
 GOOGLE_RESPONSE_TYPE = GOOGLE_RESPONSE_TYPE
 GOOGLE_SCOPE         = GOOGLE_SCOPE
+
+# runserver logging
+LOGGING = {
+    'disable_existing_loggers': False,
+    'version': 1,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'level': 'DEBUG',
+        },
+    },
+    'loggers': {
+        'django.db.backends': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}

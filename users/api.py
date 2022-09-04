@@ -9,7 +9,7 @@ from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.contrib.auth.hashers import make_password, check_password
 
-from users.schemas import EmailUserSignupIn, EmailUserSigninIn, ModifyUserIn, UserListOut, UserDetailOut
+from users.schemas import EmailUserSignupIn, EmailUserSigninIn, ModifyUserIn, UserListOut, UserDetailOut, TestKakaoToken
 from users.auth import AuthBearer, is_admin, has_authority
 from cores.schemas import SuccessOut, AlreadyExistsOut, NotFoundOut, InvalidUserOut
 from cores.models import UserAccountType, UserStatus
@@ -21,63 +21,6 @@ MB = 1024 * 1024
 
 router = Router(tags=["사용자 관련 API"])
 
-@router.get("/bearer", auth=AuthBearer())
-def bearer(request):
-    '''
-    bearer 토큰 확인 테스트
-    '''
-    return {
-        "user_id": request.auth.id, 
-        "user_type": request.auth.user_type,
-        "user_status": request.auth.status,
-        "accout_type": request.auth.account_type
-        }
-
-# @router.post("/users/signup", response={201: SuccessOut})
-# def email_user_signup_with_json(request, payload: EmailUserSignupIn):
-#     '''
-#     일반 사용자 회원가입(application/json)
-#     '''
-#     payload["password"] = make_password(payload["password"], salt=settings.PASSWORD_SALT)
-#     User.objects.create(**payload.dict())
-#     return 201, {"message": "success"}
-
-@router.post("/signup", response={200: SuccessOut, 201: SuccessOut, 400: AlreadyExistsOut})
-def email_user_signup_with_form(request, payload: EmailUserSignupIn=Form(...)):
-    '''
-    이메일 사용자 회원가입(Form, application/x-www-form-urlencoded)
-    '''
-    payload_dict = payload.dict()
-    if User.objects.filter(email=payload_dict["email"], account_type=UserAccountType.EMAIL).exists():
-        return 400, {"message": "user already exists"}
-
-    payload_dict.update({"password": make_password(payload_dict["password"], salt=settings.PASSWORD_SALT)})
-    User.objects.create(**payload_dict)
-    return 201, {"message": "success"}
-
-@router.post("/login", response={200: SuccessOut, 400: NotFoundOut, 404: InvalidUserOut})
-def email_user_login_with_form(request, payload: EmailUserSigninIn=Form(...)):
-    '''
-    이메일 사용자 로그인(Form, application/x-www-form-urlencoded)
-    로그인 후 JWT 액세스 토큰 또는 리프레시 토큰을 httponly 쿠키로 저장
-    '''
-    payload_dict = payload.dict()
-    try:
-        user = User.objects.get(email=payload_dict["email"], account_type=UserAccountType.EMAIL)
-        
-        if check_password(payload_dict["password"], user.password):
-            payload  = {"user": user.id, "user_type": user.user_type}
-            # response = JsonResponse({'message': 'success'}, status=200)
-            # response.set_cookie('access_token', generate_jwt(payload, "access"), httponly=True, samesite="lax")
-            response = JsonResponse({'access_token': generate_jwt(payload, "access")}, status=200)
-            response.set_cookie('refresh_token', generate_jwt(payload, "refresh"), httponly=True, samesite=None)
-            return response
-        else: 
-            return 404, {"message": "invalid user"}
-    
-    except User.DoesNotExist:
-        return 404, {"message": "user does not exist"}
-
 @router.get("", response=List[UserListOut], auth=[AuthBearer()])
 def get_user_list(request, offset: int = 0, limit: int = 10):
     '''
@@ -85,7 +28,7 @@ def get_user_list(request, offset: int = 0, limit: int = 10):
     '''
     is_admin(request)
     return User.objects.all()[offset:offset+limit]
-    
+
 @router.get("/{user_id}", response={200: UserDetailOut, 404: NotFoundOut}, auth=[AuthBearer()])    
 def get_user_info(request, user_id: int):
     '''
@@ -157,6 +100,54 @@ def deactivate_user(request, user_id: int):
         return 404, {"message": "user does not exist"}
 
     return 200, {"message": "success"}
+
+@router.get("/bearer/", auth=AuthBearer())
+def bearer(request):
+    '''
+    bearer 토큰 확인 테스트
+    '''
+    return {
+        "user_id": request.auth.id, 
+        "user_type": request.auth.user_type,
+        "user_status": request.auth.status,
+        "accout_type": request.auth.account_type
+        }
+
+@router.post("/signup/", response={200: SuccessOut, 201: SuccessOut, 400: AlreadyExistsOut})
+def email_user_signup_with_form(request, payload: EmailUserSignupIn=Form(...)):
+    '''
+    이메일 사용자 회원가입(Form, application/x-www-form-urlencoded)
+    '''
+    payload_dict = payload.dict()
+    if User.objects.filter(email=payload_dict["email"], account_type=UserAccountType.EMAIL).exists():
+        return 400, {"message": "user already exists"}
+
+    payload_dict.update({"password": make_password(payload_dict["password"], salt=settings.PASSWORD_SALT)})
+    User.objects.create(**payload_dict)
+    return 201, {"message": "success"}
+
+@router.post("/login/", response={200: SuccessOut, 400: NotFoundOut, 404: InvalidUserOut})
+def email_user_login_with_form(request, payload: EmailUserSigninIn=Form(...)):
+    '''
+    이메일 사용자 로그인(Form, application/x-www-form-urlencoded)
+    로그인 후 JWT 액세스 토큰 또는 리프레시 토큰을 httponly 쿠키로 저장
+    '''
+    payload_dict = payload.dict()
+    try:
+        user = User.objects.get(email=payload_dict["email"], account_type=UserAccountType.EMAIL)
+        
+        if check_password(payload_dict["password"], user.password):
+            payload  = {"user": user.id, "user_type": user.user_type}
+            # response = JsonResponse({'message': 'success'}, status=200)
+            # response.set_cookie('access_token', generate_jwt(payload, "access"), httponly=True, samesite="lax")
+            response = JsonResponse({'access_token': generate_jwt(payload, "access")}, status=200)
+            response.set_cookie('refresh_token', generate_jwt(payload, "refresh"), httponly=True, samesite=None)
+            return response
+        else: 
+            return 404, {"message": "invalid user"}
+    
+    except User.DoesNotExist:
+        return 404, {"message": "user does not exist"}
 
 @router.get("/login/kakao")
 def kakao_login_get_code(request):
@@ -253,10 +244,18 @@ def make_cookie_response(request):
     response.set_cookie('test', 'test', httponly=True, samesite="None")
     return response
 
-@router.get("/all/banned", response={200: List[UserListOut]}, auth=AuthBearer())
+@router.get("/banned/", response={200: List[UserListOut]}, auth=AuthBearer())
 def get_banned_user_list(request, offset: int = 0, limit: int = 10):
     '''
     차단 계정 목록 조회, offset/limit으로 페이지네이션
     '''
     is_admin(request)
-    return 200, User.objects.filter(status="banned")[offset:offset+limit]
+    return 200, User.objects.filter(status=UserStatus.BANNED)[offset:offset+limit]
+
+@router.post("/test/kakaotoken")
+def kakao_token_test(request, token: TestKakaoToken):
+    '''
+    카카오 토큰 테스트용
+    '''
+    print(token.token)
+    return "ok"

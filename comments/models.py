@@ -18,3 +18,12 @@ class CommentReport(TimeStampedModel):
 
     class Meta:
         db_table = 'comment_report'
+
+class CommentDelete(TimeStampedModel):
+    user          = models.ForeignKey('users.user', related_name='comment_deletes', on_delete=models.CASCADE)
+    comment       = models.ForeignKey(Comment, related_name='deletes', on_delete=models.CASCADE)
+    delete_reason = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        db_table = 'comment_delete'
+

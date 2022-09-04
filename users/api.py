@@ -263,8 +263,7 @@ def kakao_token_test(request, token: TestKakaoToken):
     """
     클라이언트에서 카카오 소셜 로그인 후 액세스 토큰 받아서 회원가입 또는 로그인
     """
-    kakao_api = SocialLoginUserProfile(code=token.token, type="kakao")
-    kakao_profile = kakao_api._user_profile
+    kakao_profile = SocialLoginUserProfile(token.token, "kakao")._user_profile
     try:
         user, is_created = User.objects.get_or_create(
             social_account_id=kakao_profile["id"],
@@ -291,8 +290,7 @@ def google_token_test(request, token: TestKakaoToken):
     """
     클라이언트에서 구글 소셜 로그인 후 액세스 토큰 받아서 회원가입 또는 로그인
     """
-    google_api = SocialLoginUserProfile(code=token.token, type="google")
-    google_profile = google_api._user_profile
+    google_profile = SocialLoginUserProfile(token.token, "google")._user_profile
     try:
         user, is_created = User.objects.get_or_create(
             social_account_id=google_profile["sub"],

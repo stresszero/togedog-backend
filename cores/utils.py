@@ -7,7 +7,7 @@ from django.http import JsonResponse
 from ninja.errors import HttpError
 from ninja.files import UploadedFile
 
-from users.models import NAME_AND_NICKNAME_MAX_LENGTH, User
+from users.models import User
 
 MB = 1024 * 1024
 IMAGE_EXTENSIONS_LIST = ["jpg", "jpeg", "jfif", "png", "webp", "avif", "svg"]

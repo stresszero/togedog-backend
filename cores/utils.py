@@ -7,7 +7,7 @@ from django.conf import settings
 
 def generate_jwt(payload, type):
     if type == "access":
-        exp_days = 30
+        exp_days = 1
         exp = datetime.utcnow() + timedelta(days=exp_days)
 
     elif type == "refresh":
@@ -94,6 +94,66 @@ class GoogleLoginAPI:
             timeout=3
         )
         
+        if not response.status_code == 200:
+            return JsonResponse({'message': 'invalid response'}, status=response.status_code)
+        
+        return response.json()
+
+class SocialLogin:
+    def __init__(self, client_id):
+        self.client_id       = client_id
+        self.kakao_token_uri = "https://kauth.kakao.com/oauth/token"
+        self.kakao_user_uri  = "https://kapi.kakao.com/v2/user/me"
+        self.google_token_uri = "https://oauth2.googleapis.com/token"
+        self.google_user_uri  = "https://www.googleapis.com/oauth2/v3/userinfo"
+        self._access_token   = None
+    
+    def get_token(self, code, type):
+        if type == "kakao":
+            body = {
+                "grant_type"  : "authorization_code",
+                "client_id"   : self.client_id,
+                "redirect_uri": settings.KAKAO_REDIRECT_URI,
+                "code"        : code,
+            }
+            response = requests.post(self.kakao_token_uri, data=body, timeout=3)
+
+        elif type == "google":
+            body = {
+                "grant_type"   : "authorization_code",
+                "code"         : code,
+                "client_id"    : self.client_id,
+                "client_secret": settings.GOOGLE_CLIENT_SECRET,
+                "redirect_uri" : settings.GOOGLE_REDIRECT_URI,
+            }
+            response = requests.post(self.google_token_uri, data=body, timeout=3)
+
+        else:
+            raise Exception("invalid type")
+
+        if not response.status_code == 200:
+            return JsonResponse({'message': 'invalid response'}, status=response.status_code)
+
+        self._access_token = response.json()["access_token"]
+    
+    def get_profile(self, type):
+        if type == "kakao":
+            response = requests.post(
+                self.kakao_user_uri,
+                headers = {"Authorization": f"Bearer {self._access_token}"}, 
+                timeout=3
+            )
+
+        elif type == "google":
+            response = requests.get(
+                self.google_user_uri,
+                headers = {"Authorization": f"Bearer {self._access_token}"}, 
+                timeout=3
+            )
+
+        else:
+            raise Exception("invalid type")
+
         if not response.status_code == 200:
             return JsonResponse({'message': 'invalid response'}, status=response.status_code)
         

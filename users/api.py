@@ -8,14 +8,21 @@ from ninja.files import UploadedFile
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.contrib.auth.hashers import make_password, check_password
+from django.conf import settings
 
-from users.schemas import EmailUserSignupIn, EmailUserSigninIn, ModifyUserIn, UserListOut, UserDetailOut, TestKakaoToken
-from users.auth import AuthBearer, is_admin, has_authority
 from cores.schemas import SuccessOut, AlreadyExistsOut, NotFoundOut, InvalidUserOut
 from cores.models import UserAccountType, UserStatus
 from cores.utils import generate_jwt, KakaoLoginAPI, s3_client
+from users.schemas import (
+    EmailUserSignupIn, 
+    EmailUserSigninIn, 
+    ModifyUserIn, 
+    UserListOut, 
+    UserDetailOut, 
+    TestKakaoToken
+    )
+from users.auth import AuthBearer, is_admin, has_authority
 from users.models import User
-from django.conf import settings
 
 MB = 1024 * 1024
 

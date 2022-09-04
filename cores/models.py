@@ -9,7 +9,7 @@ class UserType(Enum):
     MANAGER = "manager"
 
 class UserStatus(Enum):
-    ACTIVE   = "active"
+    ACTIVE = "active"
     BANNED = "banned"
 
 class UserAccountType(Enum):

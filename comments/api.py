@@ -1,9 +1,9 @@
 from ninja import Router, Form
 
 from cores.schemas import NotFoundOut, SuccessOut, BadRequestOut
-from users.auth import AuthBearer, has_authority, is_admin
 from comments.models import Comment, CommentReport
 from comments.schemas import CreateCommentIn, CreateCommentReportIn, ModifyCommentIn
+from users.auth import AuthBearer, has_authority, is_admin
 from posts.models import Post
 
 router = Router(tags=["댓글 관련 API"], auth=AuthBearer())

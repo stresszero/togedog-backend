@@ -4,12 +4,21 @@ from typing import List
 from ninja import Router, File, Form
 from ninja.files import UploadedFile
 
-from cores.schemas import NotFoundOut, SuccessOut, BadRequestOut
-from cores.utils import s3_client
-from posts.models import Post, PostReport, PostLike, PostDelete
-from posts.schemas import GetPostOut, CreatePostIn, CreatePostReportIn, ModifyPostIn, DeletedPostOut, AdminGetPostOut, DeletePostIn
-from users.auth import AuthBearer, has_authority, is_admin
 from django.conf import settings
+
+from cores.utils import s3_client
+from cores.schemas import NotFoundOut, SuccessOut, BadRequestOut
+from posts.models import Post, PostReport, PostLike, PostDelete
+from posts.schemas import (
+    GetPostOut, 
+    CreatePostIn, 
+    CreatePostReportIn, 
+    ModifyPostIn, 
+    DeletedPostOut, 
+    AdminGetPostOut, 
+    DeletePostIn
+    )
+from users.auth import AuthBearer, has_authority, is_admin
 
 router = Router(tags=["게시글 관련 API"], auth=AuthBearer())
 
@@ -33,7 +42,9 @@ def get_post(request, post_id: int):
             "image_url": post.image_url,
             "created_at": post.created_at,
             "post_likes_count": post.likes.count(),
-            "comments": [comments for comments in post.comments.exclude(is_deleted=True).values('id', 'user_id', 'user__name', 'content', 'created_at')],
+            "comments": [
+                comments for comments in post.comments.exclude(is_deleted=True)
+                .values('id', 'user_id', 'user__name', 'content', 'created_at')],
         }
 
     except Post.DoesNotExist:

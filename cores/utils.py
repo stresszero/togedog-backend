@@ -52,7 +52,7 @@ class KakaoLoginAPI:
             return JsonResponse({'message': 'invalid response'}, status=response.status_code)
 
         self._access_token = response.json()["access_token"]
-        
+    # @property
     def get_kakao_profile(self):
         response = requests.post(
             self.kakao_user_uri,

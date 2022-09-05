@@ -149,7 +149,7 @@ def delete_post(request, post_id: int, body: DeletePostIn = Form(...)):
 
     return 200, {"message": "success"}
 
-@router.post("/{post_id}/report", response={200: SuccessOut, 404: NotFoundOut})
+@router.post("/{post_id}/report/", response={200: SuccessOut, 404: NotFoundOut})
 def report_post(request, post_id: int, body: CreatePostReportIn = Form(...)):
     '''
     게시글 신고하기
@@ -164,7 +164,7 @@ def report_post(request, post_id: int, body: CreatePostReportIn = Form(...)):
     PostReport.objects.create(reporter_id=request.auth.id, post_id=post_id, content=body.content)    
     return 200, {"message": "success"}
 
-@router.delete("/{post_id}/delete/", response={200: SuccessOut, 404: NotFoundOut})
+@router.delete("/{post_id}/delete/hard/", response={200: SuccessOut, 404: NotFoundOut})
 def delete_post_from_db(request, post_id: int):
     '''
     게시글을 DB에서 삭제, 관리자만 가능

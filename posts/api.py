@@ -16,7 +16,8 @@ from posts.schemas import (
     ModifyPostIn, 
     DeletedPostOut, 
     AdminGetPostOut, 
-    DeletePostIn
+    DeletePostIn,
+    AdminGetDeletedPostOut
     )
 from users.auth import AuthBearer, has_authority, is_admin
 
@@ -204,3 +205,17 @@ def get_deleted_posts(request, offset: int = 0, limit: int = 10):
     '''
     is_admin(request)
     return 200, Post.objects.filter(is_deleted=True)[offset:offset+limit]
+
+@router.get("/deleted/{post_id}/", response={200: AdminGetDeletedPostOut, 404: NotFoundOut})
+def get_deleted_post_by_admin(request, post_id: int):
+    '''
+        삭제된 게시글 상세조회, 삭제사유도 조회 가능, 관리자만 조회 가능
+    '''
+    try:
+        is_admin(request)
+        post = Post.objects.get(id=post_id, is_deleted=True)
+
+    except Post.DoesNotExist:
+        return 404, {"message": "post does not exist"}
+
+    return 200, post

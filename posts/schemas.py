@@ -71,4 +71,20 @@ class AdminGetPostOut(Schema):
     class Config:
         model = Post
         model_exclude = ["is_deleted"]
-    
+
+class AdminGetDeletedPostOut(Schema):
+    id: int
+    subject: str
+    content: str
+    image_url: Optional[str]
+    user_id: int
+    user_name: Optional[str] = Field(..., alias="user.name")
+    user_nickname: str = Field(..., alias="user.nickname")
+    user_email: str = Field(... ,alias="user.email")
+    user_mbti: str = Field(..., alias='user.mbti')
+    user_created_at: Optional[datetime] = Field(..., alias='user.created_at')
+    delete_reason: Optional[List] = Field(..., alias="get_delete_reason")
+
+    class Config:
+        model = Post
+        model_exclude = ["is_deleted"]

@@ -262,7 +262,6 @@ def get_banned_user_list(request, offset: int = 0, limit: int = 10):
 @router.post("/test/kakaotoken")
 def kakao_token_test(request, token: TestKakaoToken):
     '''
-    카카오 토큰 테스트용
+        카카오 토큰 테스트용
     '''
-    print(token.token)
-    return "ok"
+    return token.token

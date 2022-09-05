@@ -44,7 +44,8 @@ def get_post(request, post_id: int):
             "post_likes_count": post.likes.count(),
             "comments": [
                 comments for comments in post.comments.exclude(is_deleted=True)
-                .values('id', 'user_id', 'user__name', 'content', 'created_at')],
+                .values('id', 'user_id', 'user__name', 'content', 'created_at')
+                ],
         }
 
     except Post.DoesNotExist:
@@ -58,7 +59,6 @@ def get_post_by_admin(request, post_id: int):
     관리자 페이지 용, 게시글 상세조회
     '''
     try:
-
         is_admin(request)
         post = Post.objects.get(id=post_id, is_deleted=False)
 

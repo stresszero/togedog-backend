@@ -60,7 +60,7 @@ class AdminGetPostOut(Schema):
     id: int
     subject: str
     content: str
-    image_url: str
+    image_url: str = None
     user_id: int
     user_name: str = Field(..., alias="user.name")
     user_nickname: str = Field(..., alias="user.nickname")

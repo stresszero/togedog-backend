@@ -266,20 +266,20 @@ def kakao_token_test(request, token: TestKakaoToken):
     '''
     kakao_response = requests.post(
             "https://kapi.kakao.com/v2/user/me",
-            headers = {"Authorization": f"Bearer {token}"}, 
+            headers = {"Authorization": f"Bearer {token.token}"}, 
             timeout=3
         )
     if not kakao_response.status_code == 200:
         return JsonResponse({'message': 'invalid response'}, status=kakao_response.status_code)
 
-    kakao_profile = response.json()
+    kakao_profile = kakao_response.json()
 
     user, is_created  = User.objects.get_or_create(
             social_account_id = kakao_profile['id'],
             defaults = {
                 'email'        : kakao_profile['kakao_account']['email'],
                 'nickname'     : kakao_profile['kakao_account']['profile']['nickname'],
-                'thumbnail_url': kakao_profile['kakao_account']['profile']['thumbnail_image_url'],
+                # 'thumbnail_url': kakao_profile['kakao_account']['profile']['thumbnail_image_url'],
                 'account_type' : UserAccountType.KAKAO.value,
             }
         )

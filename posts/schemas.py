@@ -19,7 +19,7 @@ class GetCommentOut(ModelSchema):
 class GetPostOut(ModelSchema):
     comments: List = Field(..., alias="comments.values")
     user_id: int = Field(..., alias="user.id")
-    user_name: str = Field(..., alias="user.nickname")
+    user_nickname: str = Field(..., alias="user.nickname")
     user_mbti: str = Field(..., alias='user.mbti')
     user_signup_time: Optional[datetime] = Field(..., alias='user.created_at')
     post_likes_count: int = Field(..., alias='likes.count')
@@ -52,6 +52,9 @@ class DeletePostIn(Schema):
     delete_reason: str = None
 
 class DeletedPostOut(ModelSchema):
+    user_nickname: str = Field(..., alias="user.nickname")
+    user_mbti: str = Field(..., alias='user.mbti')
+
     class Config:
         model = Post
         model_fields = "__all__"

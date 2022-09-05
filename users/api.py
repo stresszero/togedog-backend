@@ -283,7 +283,7 @@ def kakao_token_test(request, token: TestKakaoToken):
                 'account_type' : UserAccountType.KAKAO.value,
             }
         )
-    payload  = {"user": user.id, "user_type": user.user_type.value}
+    payload  = {"user": user.id, "user_type": user.user_type}
     response = JsonResponse({'access_token': generate_jwt(payload, "access")}, status=200)
     response.set_cookie('refresh_token', generate_jwt(payload, "refresh"), httponly=True, samesite="lax")
     return response

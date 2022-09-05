@@ -63,7 +63,7 @@ def modify_comment(request, post_id: int, comment_id: int, body: ModifyCommentIn
 
     return 200, {"message": "success"}
 
-@router.post("/{post_id}/comments/{comment_id}/report", response={200: SuccessOut, 400: BadRequestOut, 404: NotFoundOut})
+@router.post("/{post_id}/comments/{comment_id}/report/", response={200: SuccessOut, 400: BadRequestOut, 404: NotFoundOut})
 def report_comment(request, post_id: int, comment_id: int, body: CreateCommentReportIn = Form(...)):
     '''
     댓글 신고
@@ -82,7 +82,7 @@ def report_comment(request, post_id: int, comment_id: int, body: CreateCommentRe
 
     return 200, {"message": "success"}
 
-@router.delete("/{post_id}/comments/{comment_id}/delete", response={200: SuccessOut, 400: BadRequestOut, 404: NotFoundOut})
+@router.delete("/{post_id}/comments/{comment_id}/delete/", response={200: SuccessOut, 400: BadRequestOut, 404: NotFoundOut})
 def delete_comment_from_db(request, post_id: int, comment_id: int):
     '''
     댓글을 DB에서 삭제, 관리자만 가능

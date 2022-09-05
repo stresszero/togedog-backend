@@ -144,14 +144,14 @@ def email_user_login_with_form(request, payload: EmailUserSigninIn=Form(...)):
         user = User.objects.get(email=payload_dict["email"], account_type=UserAccountType.EMAIL)
         
         if check_password(payload_dict["password"], user.password):
-            payload  = {"user": user.id, "user_type": user.user_type}
+            # payload  = {"user": user.id}
             # response = JsonResponse({'message': 'success'}, status=200)
             # response.set_cookie('access_token', generate_jwt(payload, "access"), httponly=True, samesite="lax")
-            response = JsonResponse({'access_token': generate_jwt(payload, "access")}, status=200)
-            response.set_cookie('refresh_token', generate_jwt(payload, "refresh"), httponly=True, samesite=None)
+            response = JsonResponse({'access_token': generate_jwt({"user": user.id}, "access")}, status=200)
+            response.set_cookie('refresh_token', generate_jwt({"user": user.id}, "refresh"), httponly=True, samesite=None)
             return response
-        else: 
-            return 404, {"message": "invalid user"}
+         
+        return 404, {"message": "invalid user"}
     
     except User.DoesNotExist:
         return 404, {"message": "user does not exist"}
@@ -187,9 +187,9 @@ def kakao_login_get_profile(request, code: str):
                 'account_type' : UserAccountType.KAKAO.value,
             }
         )
-        payload  = {"user": user.id, "user_type": user.user_type.value}
-        response = JsonResponse({'access_token': generate_jwt(payload, "access")}, status=200)
-        response.set_cookie('refresh_token', generate_jwt(payload, "refresh"), httponly=True, samesite="lax")
+        # payload  = {"user": user.id, "user_type": user.user_type.value}
+        response = JsonResponse({'access_token': generate_jwt({"user": user.id}, "access")}, status=200)
+        response.set_cookie('refresh_token', generate_jwt({"user": user.id}, "refresh"), httponly=True, samesite="lax")
         return response
 
     except KeyError:
@@ -237,9 +237,9 @@ def google_login_get_profile(request, code: str):
                 "account_type" : UserAccountType.GOOGLE.value,
             }
         )
-    payload  = {"user": user.id, "user_type": user.user_type.value}
-    response = JsonResponse({'access_token': generate_jwt(payload, "access")}, status=200)
-    response.set_cookie('refresh_token', generate_jwt(payload, "refresh"), httponly=True, samesite="lax")
+    # payload  = {"user": user.id, "user_type": user.user_type}
+    response = JsonResponse({'access_token': generate_jwt({"user": user.id}, "access")}, status=200)
+    response.set_cookie('refresh_token', generate_jwt({"user": user.id}, "refresh"), httponly=True, samesite="lax")
     return response
 
 @router.get("/cookie")
@@ -283,7 +283,7 @@ def kakao_token_test(request, token: TestKakaoToken):
                 'account_type' : UserAccountType.KAKAO.value,
             }
         )
-    payload  = {"user": user.id, "user_type": user.user_type}
-    response = JsonResponse({'access_token': generate_jwt(payload, "access")}, status=200)
-    response.set_cookie('refresh_token', generate_jwt(payload, "refresh"), httponly=True, samesite="lax")
+    # payload  = {"user": user.id, "user_type": user.user_type}
+    response = JsonResponse({'access_token': generate_jwt({"user": user.id}, "access")}, status=200)
+    response.set_cookie('refresh_token', generate_jwt({"user": user.id}, "refresh"), httponly=True, samesite="lax")
     return response

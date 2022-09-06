@@ -49,7 +49,7 @@ class ModifyPostIn(Schema):
     content: Optional[str]
 
 class DeletePostIn(Schema):
-    delete_reason: str = None
+    delete_reason: Optional[str]
 
 class DeletedPostOut(ModelSchema):
     user_nickname: str = Field(..., alias="user.nickname")

@@ -37,7 +37,7 @@ class PostReport(TimeStampedModel):
 class PostDelete(TimeStampedModel):
     user          = models.ForeignKey('users.user', related_name="post_deletes", on_delete=models.CASCADE)
     post          = models.ForeignKey(Post, related_name='deletes', on_delete=models.CASCADE)
-    delete_reason = models.CharField(max_length=200, blank=True)
+    delete_reason = models.CharField(max_length=200, blank=True, null=True)
 
     class Meta:
         db_table = 'post_delete'

@@ -18,10 +18,10 @@ class GetCommentOut(ModelSchema):
 
 class GetPostListOut(ModelSchema):
     # comments: List = Field(..., alias="comments.values")
-    user_id: int = Field(..., alias="user.id")
-    user_nickname: str = Field(..., alias="user.nickname")
     # user_mbti: str = Field(..., alias='user.mbti')
     # user_signup_time: Optional[datetime] = Field(..., alias='user.created_at')
+    user_id: int = Field(..., alias="user.id")
+    user_nickname: str = Field(..., alias="user.nickname")
     post_likes_count: int = Field(..., alias='likes.count')
     
     # @staticmethod

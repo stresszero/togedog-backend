@@ -36,6 +36,31 @@ def get_user_list(request, offset: int = 0, limit: int = 10):
     is_admin(request)
     return User.objects.all()[offset:offset+limit]
 
+@router.get("/bearer", auth=AuthBearer())
+def bearer(request):
+    '''
+    bearer 토큰 확인 테스트
+    '''
+    return {
+        "user_id": request.auth.id, 
+        "user_type": request.auth.user_type,
+        "user_status": request.auth.status,
+        "accout_type": request.auth.account_type
+        }
+        
+@router.post("/signup", response={200: SuccessOut, 201: SuccessOut, 400: AlreadyExistsOut})
+def email_user_signup_with_form(request, payload: EmailUserSignupIn=Form(...)):
+    '''
+    이메일 사용자 회원가입(Form, application/x-www-form-urlencoded)
+    '''
+    payload_dict = payload.dict()
+    if User.objects.filter(email=payload_dict["email"], account_type=UserAccountType.EMAIL).exists():
+        return 400, {"message": "user already exists"}
+
+    payload_dict.update({"password": make_password(payload_dict["password"], salt=settings.PASSWORD_SALT)})
+    User.objects.create(**payload_dict)
+    return 201, {"message": "success"}
+
 @router.get("/{user_id}", response={200: UserDetailOut, 404: NotFoundOut}, auth=[AuthBearer()])    
 def get_user_info(request, user_id: int):
     '''
@@ -108,30 +133,6 @@ def deactivate_user(request, user_id: int):
 
     return 200, {"message": "success"}
 
-@router.get("/bearer/", auth=AuthBearer())
-def bearer(request):
-    '''
-    bearer 토큰 확인 테스트
-    '''
-    return {
-        "user_id": request.auth.id, 
-        "user_type": request.auth.user_type,
-        "user_status": request.auth.status,
-        "accout_type": request.auth.account_type
-        }
-
-@router.post("/signup/", response={200: SuccessOut, 201: SuccessOut, 400: AlreadyExistsOut})
-def email_user_signup_with_form(request, payload: EmailUserSignupIn=Form(...)):
-    '''
-    이메일 사용자 회원가입(Form, application/x-www-form-urlencoded)
-    '''
-    payload_dict = payload.dict()
-    if User.objects.filter(email=payload_dict["email"], account_type=UserAccountType.EMAIL).exists():
-        return 400, {"message": "user already exists"}
-
-    payload_dict.update({"password": make_password(payload_dict["password"], salt=settings.PASSWORD_SALT)})
-    User.objects.create(**payload_dict)
-    return 201, {"message": "success"}
 
 @router.post("/login/", response={200: SuccessOut, 400: NotFoundOut, 404: InvalidUserOut})
 def email_user_login_with_form(request, payload: EmailUserSigninIn=Form(...)):

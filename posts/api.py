@@ -128,7 +128,7 @@ def delete_post(request, post_id: int, body: DeletePostIn = Form(...)):
         has_authority(request, user_id=post.user_id, user_check=True)
         post.is_deleted = True
         post.save()
-        delete_reason = "글쓴이 본인이 삭제" if not body.delete_reason else body.delete_reason
+        delete_reason = "글쓴이 본인이 삭제" if post.user_id == request.auth.id else body.delete_reason
         PostDelete.objects.create(user_id=request.auth.id, post_id=post_id, delete_reason=delete_reason)
 
     except Post.DoesNotExist:

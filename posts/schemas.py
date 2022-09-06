@@ -16,12 +16,12 @@ class GetCommentOut(ModelSchema):
         model = Comment
         model_exclude = ["is_deleted"]
 
-class GetPostOut(ModelSchema):
-    comments: List = Field(..., alias="comments.values")
+class GetPostListOut(ModelSchema):
+    # comments: List = Field(..., alias="comments.values")
     user_id: int = Field(..., alias="user.id")
     user_nickname: str = Field(..., alias="user.nickname")
-    user_mbti: str = Field(..., alias='user.mbti')
-    user_signup_time: Optional[datetime] = Field(..., alias='user.created_at')
+    # user_mbti: str = Field(..., alias='user.mbti')
+    # user_signup_time: Optional[datetime] = Field(..., alias='user.created_at')
     post_likes_count: int = Field(..., alias='likes.count')
     
     # @staticmethod
@@ -32,7 +32,7 @@ class GetPostOut(ModelSchema):
 
     class Config:
         model = Post
-        model_exclude = ["user", "is_deleted"]
+        model_exclude = ["user", "is_deleted", "content"]
         
 class CreatePostIn(ModelSchema):
     class Config:
@@ -91,3 +91,4 @@ class AdminGetDeletedPostOut(Schema):
     class Config:
         model = Post
         model_exclude = ["is_deleted"]
+

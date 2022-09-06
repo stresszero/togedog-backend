@@ -5,12 +5,13 @@ from ninja import Router, File, Form
 from ninja.files import UploadedFile
 
 from django.conf import settings
+from django.http import JsonResponse
 
 from cores.utils import s3_client
 from cores.schemas import NotFoundOut, SuccessOut, BadRequestOut
 from posts.models import Post, PostReport, PostLike, PostDelete
 from posts.schemas import (
-    GetPostOut, 
+    GetPostListOut, 
     CreatePostIn, 
     CreatePostReportIn, 
     ModifyPostIn, 
@@ -25,6 +26,28 @@ router = Router(tags=["게시글 관련 API"], auth=AuthBearer())
 
 MB = 1024 * 1024
 
+@router.get("/deleted", response={200: List[DeletedPostOut]})
+def get_deleted_posts(request, offset: int = 0, limit: int = 10):
+    '''
+        삭제된 게시글 목록 조회, 관리자만 가능, offset/limit으로 페이지네이션
+    '''
+    is_admin(request)
+    return 200, Post.objects.filter(is_deleted=True)[offset:offset+limit]
+
+@router.get("/deleted/{post_id}/", response={200: AdminGetDeletedPostOut, 404: NotFoundOut})
+def get_deleted_post_by_admin(request, post_id: int):
+    '''
+        삭제된 게시글 상세조회, 삭제사유도 조회 가능, 관리자만 조회 가능
+    '''
+    try:
+        is_admin(request)
+        post = Post.objects.get(id=post_id, is_deleted=True)
+
+    except Post.DoesNotExist:
+        return 404, {"message": "post does not exist"}
+
+    return 200, post
+
 @router.get("/{post_id}")
 def get_post(request, post_id: int):
     '''
@@ -35,29 +58,29 @@ def get_post(request, post_id: int):
         post = Post.objects.get(id=post_id, is_deleted=False)
         
         data = {
-            "id": post.id,
-            "user_id": post.user_id,
-            "user_name": post.user.name,
-            "subject": post.subject,
-            "content": post.content,
-            "image_url": post.image_url,
-            "created_at": post.created_at,
+            "id"              : post.id,
+            "user_id"         : post.user_id,
+            "user_nickname"   : post.user.nickname,
+            "subject"         : post.subject,
+            "content"         : post.content,
+            "image_url"       : post.image_url,
+            "created_at"      : post.created_at,
             "post_likes_count": post.likes.count(),
-            "comments": [
+            "comments"        : [
                 comments for comments in post.comments.exclude(is_deleted=True)
-                .values('id', 'user_id', 'user__name', 'content', 'created_at')
+                .values('id', 'user_id', 'user__nickname', 'content', 'created_at')
                 ],
         }
 
     except Post.DoesNotExist:
-        return 404, {"message": "post does not exist"}
+        return JsonResponse({"message": "post does not exist"}, status=404)
 
     return data
 
 @router.get("/{post_id}/admin/", response={200: AdminGetPostOut, 404: NotFoundOut})
 def get_post_by_admin(request, post_id: int):
     '''
-    관리자 페이지 용, 게시글 상세조회
+    관리자 페이지 용, 삭제 안된 정상 게시글 상세조회
     '''
     try:
         is_admin(request)
@@ -67,43 +90,6 @@ def get_post_by_admin(request, post_id: int):
         return 404, {"message": "post does not exist"}
 
     return 200, post
-
-@router.get("", response={200: List[GetPostOut]})
-def get_posts(request, offset: int = 0, limit: int = 9, sort: str = "-created_at"):
-    '''
-    게시글 목록 조회, 한 페이지에 9개씩, 정렬 기본값 최신순(-created_at), is_deleted=False인것만 나옴
-    '''
-    has_authority(request)
-    return 200, Post.objects.filter(is_deleted=False).order_by(sort)[offset:offset+limit]
-
-# @router.post("/upload/", response={200: SuccessOut, 400: BadRequestOut})
-# def upload_file(request, file: UploadedFile = File(...)):
-#     '''
-#     파일 업로드 테스트, 용량 50MB 제한
-#     '''
-#     upload_filename = f'{str(uuid.uuid4())}.{file.name.split(".")[-1]}'
-#     if file.size > 50 * MB:
-#         return 400, {"message": "file size is too large"}
-#     s3_client.upload_fileobj(file, "post_images", upload_filename, ExtraArgs={"ACL": "public-read"})
-#     return 200, {"message": "success", "file_name": file.name}
-
-@router.post("/", response={200: SuccessOut, 400: BadRequestOut})
-def create_post(request, body: CreatePostIn = Form(...), file: UploadedFile = None):
-    '''
-    게시글 생성, 업로드 사진파일은 용량 50MB 제한
-    '''
-    has_authority(request)
-    if file:
-        if file.size > 50 * MB:
-            return 400, {"message": "file size is too large"}
-        upload_filename = f'{str(uuid.uuid4())}.{file.name.split(".")[-1]}'
-        s3_client.upload_fileobj(file, "post_images", upload_filename, ExtraArgs={"ACL": "public-read"})
-        upload_url = f'{settings.POST_IMAGES_URL}{upload_filename}'
-    else:
-        upload_url = None
-
-    Post.objects.create(user_id=request.auth.id, subject=body.subject, content=body.content, image_url=upload_url)
-    return 200, {"message": "success"}
 
 @router.patch("/{post_id}/modify", response={200: SuccessOut, 400: BadRequestOut, 404: NotFoundOut})
 def modify_post(request, post_id: int, body: ModifyPostIn = Form(...), file: UploadedFile = None):
@@ -198,24 +184,28 @@ def like_post(request, post_id: int):
 
     return 200, {"message": "post like created"}
 
-@router.get("/deleted/", response={200: List[DeletedPostOut]})
-def get_deleted_posts(request, offset: int = 0, limit: int = 10):
+@router.get("", response={200: List[GetPostListOut]})
+def get_posts(request, offset: int = 0, limit: int = 9, sort: str = "-created_at"):
     '''
-    삭제된 게시글 목록 조회, 관리자만 가능, offset/limit으로 페이지네이션
+    게시글 목록 조회, 한 페이지에 9개씩, 정렬 기본값 최신순(-created_at), is_deleted=False인것만 나옴
     '''
-    is_admin(request)
-    return 200, Post.objects.filter(is_deleted=True)[offset:offset+limit]
+    has_authority(request)
+    return 200, Post.objects.filter(is_deleted=False).order_by(sort)[offset:offset+limit]
 
-@router.get("/deleted/{post_id}/", response={200: AdminGetDeletedPostOut, 404: NotFoundOut})
-def get_deleted_post_by_admin(request, post_id: int):
+@router.post("", response={200: SuccessOut, 400: BadRequestOut})
+def create_post(request, body: CreatePostIn = Form(...), file: UploadedFile = None):
     '''
-        삭제된 게시글 상세조회, 삭제사유도 조회 가능, 관리자만 조회 가능
+    게시글 생성, 업로드 사진파일은 용량 50MB 제한
     '''
-    try:
-        is_admin(request)
-        post = Post.objects.get(id=post_id, is_deleted=True)
+    has_authority(request)
+    if file:
+        if file.size > 50 * MB:
+            return 400, {"message": "file size is too large"}
+        upload_filename = f'{str(uuid.uuid4())}.{file.name.split(".")[-1]}'
+        s3_client.upload_fileobj(file, "post_images", upload_filename, ExtraArgs={"ACL": "public-read"})
+        upload_url = f'{settings.POST_IMAGES_URL}{upload_filename}'
+    else:
+        upload_url = None
 
-    except Post.DoesNotExist:
-        return 404, {"message": "post does not exist"}
-
-    return 200, post
+    Post.objects.create(user_id=request.auth.id, subject=body.subject, content=body.content, image_url=upload_url)
+    return 200, {"message": "success"}

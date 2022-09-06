@@ -47,7 +47,7 @@ def bearer(request):
         "user_status": request.auth.status,
         "accout_type": request.auth.account_type
         }
-        
+
 @router.post("/signup", response={200: SuccessOut, 201: SuccessOut, 400: AlreadyExistsOut})
 def email_user_signup_with_form(request, payload: EmailUserSignupIn=Form(...)):
     '''
@@ -133,30 +133,6 @@ def deactivate_user(request, user_id: int):
 
     return 200, {"message": "success"}
 
-
-@router.post("/login/", response={200: SuccessOut, 400: NotFoundOut, 404: InvalidUserOut})
-def email_user_login_with_form(request, payload: EmailUserSigninIn=Form(...)):
-    '''
-    이메일 사용자 로그인(Form, application/x-www-form-urlencoded)
-    로그인 후 JWT 액세스 토큰 또는 리프레시 토큰을 httponly 쿠키로 저장
-    '''
-    payload_dict = payload.dict()
-    try:
-        user = User.objects.get(email=payload_dict["email"], account_type=UserAccountType.EMAIL)
-        
-        if check_password(payload_dict["password"], user.password):
-            # payload  = {"user": user.id}
-            # response = JsonResponse({'message': 'success'}, status=200)
-            # response.set_cookie('access_token', generate_jwt(payload, "access"), httponly=True, samesite="lax")
-            response = JsonResponse({'access_token': generate_jwt({"user": user.id}, "access")}, status=200)
-            response.set_cookie('refresh_token', generate_jwt({"user": user.id}, "refresh"), httponly=True, samesite=None)
-            return response
-         
-        return 404, {"message": "invalid user"}
-    
-    except User.DoesNotExist:
-        return 404, {"message": "user does not exist"}
-
 @router.get("/login/kakao")
 def kakao_login_get_code(request):
     '''
@@ -188,7 +164,6 @@ def kakao_login_get_profile(request, code: str):
                 'account_type' : UserAccountType.KAKAO.value,
             }
         )
-        # payload  = {"user": user.id, "user_type": user.user_type.value}
         response = JsonResponse({'access_token': generate_jwt({"user": user.id}, "access")}, status=200)
         response.set_cookie('refresh_token', generate_jwt({"user": user.id}, "refresh"), httponly=True, samesite="lax")
         return response
@@ -238,12 +213,31 @@ def google_login_get_profile(request, code: str):
                 "account_type" : UserAccountType.GOOGLE.value,
             }
         )
-    # payload  = {"user": user.id, "user_type": user.user_type}
     response = JsonResponse({'access_token': generate_jwt({"user": user.id}, "access")}, status=200)
     response.set_cookie('refresh_token', generate_jwt({"user": user.id}, "refresh"), httponly=True, samesite="lax")
     return response
 
-@router.get("/cookie")
+@router.post("/login/email", response={200: SuccessOut, 400: NotFoundOut, 404: InvalidUserOut})
+def email_user_login_with_form(request, payload: EmailUserSigninIn=Form(...)):
+    '''
+    이메일 사용자 로그인(Form, application/x-www-form-urlencoded)
+    로그인 후 JWT 액세스 토큰 또는 리프레시 토큰을 httponly 쿠키로 저장
+    '''
+    payload_dict = payload.dict()
+    try:
+        user = User.objects.get(email=payload_dict["email"], account_type=UserAccountType.EMAIL)
+        
+        if check_password(payload_dict["password"], user.password):
+            response = JsonResponse({'access_token': generate_jwt({"user": user.id}, "access")}, status=200)
+            response.set_cookie('refresh_token', generate_jwt({"user": user.id}, "refresh"), httponly=True, samesite=None)
+            return response
+         
+        return 404, {"message": "invalid user"}
+    
+    except User.DoesNotExist:
+        return 404, {"message": "user does not exist"}
+
+@router.get("/cookie/")
 def make_cookie_response(request):
     '''
     쿠키 테스트용, httponly 쿠키 저장됐는지 확인
@@ -252,7 +246,7 @@ def make_cookie_response(request):
     response.set_cookie('test', 'test', httponly=True, samesite="None")
     return response
 
-@router.get("/banned/", response={200: List[UserListOut]}, auth=AuthBearer())
+@router.get("/banned/all", response={200: List[UserListOut]}, auth=AuthBearer())
 def get_banned_user_list(request, offset: int = 0, limit: int = 10):
     '''
     차단 계정 목록 조회, offset/limit으로 페이지네이션
@@ -284,7 +278,6 @@ def kakao_token_test(request, token: TestKakaoToken):
                 'account_type' : UserAccountType.KAKAO.value,
             }
         )
-    # payload  = {"user": user.id, "user_type": user.user_type}
     response = JsonResponse({'access_token': generate_jwt({"user": user.id}, "access")}, status=200)
     response.set_cookie('refresh_token', generate_jwt({"user": user.id}, "refresh"), httponly=True, samesite="lax")
     return response

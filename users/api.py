@@ -198,7 +198,7 @@ def google_login_get_profile(request, code: str):
         "client_secret": settings.GOOGLE_CLIENT_SECRET,
         "redirect_uri" : settings.GOOGLE_REDIRECT_URI,
     }
-
+    
     access_token = requests.post(google_token_api, data=data, timeout=3).json()['access_token']
     req_uri      = 'https://www.googleapis.com/oauth2/v3/userinfo'
     headers      = {'Authorization': f'Bearer {access_token}'}
@@ -254,7 +254,7 @@ def get_banned_user_list(request, offset: int = 0, limit: int = 10):
     is_admin(request)
     return 200, User.objects.filter(status=UserStatus.BANNED)[offset:offset+limit]
 
-@router.post("/test/kakaotoken")
+@router.post("/test/kakaotoken/")
 def kakao_token_test(request, token: TestKakaoToken):
     '''
         카카오 토큰 테스트용
@@ -276,6 +276,29 @@ def kakao_token_test(request, token: TestKakaoToken):
                 'nickname'     : kakao_profile['kakao_account']['profile']['nickname'],
                 # 'thumbnail_url': kakao_profile['kakao_account']['profile']['thumbnail_image_url'],
                 'account_type' : UserAccountType.KAKAO.value,
+            }
+        )
+    response = JsonResponse({'access_token': generate_jwt({"user": user.id}, "access")}, status=200)
+    response.set_cookie('refresh_token', generate_jwt({"user": user.id}, "refresh"), httponly=True, samesite="lax")
+    return response
+
+@router.post("/test/googletoken/")
+def google_token_test(request, token: TestKakaoToken):
+    '''
+        구글 토큰 테스트용
+    '''
+    print(token, token.token)
+    req_uri      = 'https://www.googleapis.com/oauth2/v3/userinfo'
+    headers      = {'Authorization': f'Bearer {token.token}'}
+    user_info    = requests.get(req_uri, headers=headers, timeout=3).json()
+    print(user_info)
+    user, is_created = User.objects.get_or_create(
+            social_account_id = user_info["sub"],
+            defaults = {
+                "email"        : user_info["email"],
+                "nickname"     : user_info["name"],
+                "thumbnail_url": user_info["picture"],
+                "account_type" : UserAccountType.GOOGLE.value,
             }
         )
     response = JsonResponse({'access_token': generate_jwt({"user": user.id}, "access")}, status=200)

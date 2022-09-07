@@ -9,6 +9,7 @@ from users.models import User
 REGEX_PASSWORD = "^(?=.*[A-Za-z])(?=.*\d)(?=.*[$@$!%*#?&])[A-Za-z\d$@$!%*#?&]{8,16}$"
 
 class EmailUserSignupIn(Schema):
+    name: str
     nickname: str
     email: EmailStr
     password: str

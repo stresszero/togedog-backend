@@ -37,7 +37,7 @@ def get_user_list(request, offset: int = 0, limit: int = 10):
     return User.objects.all()[offset:offset+limit]
 
 @router.get("/bearer", auth=AuthBearer())
-def bearer(request):
+def check_bearer(request):
     '''
     bearer 토큰 확인 테스트
     '''
@@ -54,6 +54,7 @@ def email_user_signup_with_form(request, payload: EmailUserSignupIn=Form(...)):
     이메일 사용자 회원가입(Form, application/x-www-form-urlencoded)
     '''
     payload_dict = payload.dict()
+    print(payload_dict)
     if User.objects.filter(email=payload_dict["email"], account_type=UserAccountType.EMAIL).exists():
         return 400, {"message": "user already exists"}
 

@@ -6,7 +6,7 @@ sio = socketio.AsyncServer(cors_allowed_origins="*")
 app = web.Application()
 sio.attach(app)
 
-async def index(request):
+def index(request):
     """Serve the client-side application."""
     print("working")
     with open('index.html') as f:

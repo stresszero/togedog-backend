@@ -11,7 +11,7 @@ from cores.api import router as cores_router
 # from chat.api import router as chat_router
 from ninja.security import APIKeyCookie
 
-api = NinjaAPI()
+api = NinjaAPI(title="Togedog API Document", version="0.5.0")
 
 api.add_router("/users", users_router)
 api.add_router("/posts", posts_router)

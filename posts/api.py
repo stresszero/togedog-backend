@@ -66,8 +66,9 @@ def get_post(request, post_id: int):
             "image_url"       : post.image_url,
             "created_at"      : post.created_at,
             "post_likes_count": post.likes.count(),
+            "is_liked"        : True if post.likes.filter(like_user_id=request.auth.id).exists() else False,
             "comments"        : [
-                comments for comments in post.comments.exclude(is_deleted=True)
+                comments for comments in post.comments.filter(is_deleted=False)
                 .values('id', 'user_id', 'user__nickname', 'content', 'created_at')
                 ],
         }

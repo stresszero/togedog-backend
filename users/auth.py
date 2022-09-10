@@ -44,3 +44,49 @@ class AuthBearer(HttpBearer):
 #     def authenticate(self, request, token):
 #         if request.auth.status == UserStatus.BANNED:
 #             raise HttpError(403, "forbidden")
+
+
+from ninja.security import APIKeyCookie
+
+
+# class CookieKey(APIKeyCookie):
+#     param_name: str = "access_token"
+
+#     def authenticate(self, request, access_token):
+#         try:
+#             # print(request.COOKIES.get('access_token'))
+#             payload = jwt.decode(request.COOKIES.get('access_token'), settings.SECRET_KEY, algorithms=settings.ALGORITHM) 
+#             user = User.objects.get(id=payload["user"])
+
+#         except User.DoesNotExist:
+#             return HttpError(400, "user does not exist")
+
+#         except jwt.ExpiredSignatureError:
+#             raise HttpError(401, "token expired")
+
+#         except jwt.DecodeError:
+#             raise HttpError(400, "invalid token")
+
+#         return user
+
+class CookieKey(APIKeyCookie):
+    param_name: str = "access_token"
+
+    def authenticate(self, request, key):
+        try:
+            print(key)
+            payload = jwt.decode(key, settings.SECRET_KEY, algorithms=settings.ALGORITHM) 
+            user = User.objects.get(id=payload["user"])
+
+        except User.DoesNotExist:
+            return HttpError(400, "user does not exist")
+
+        except jwt.ExpiredSignatureError:
+            raise HttpError(401, "token expired")
+
+        except jwt.DecodeError:
+            raise HttpError(400, "invalid token")
+
+        return user
+
+cookie_key = CookieKey()

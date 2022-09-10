@@ -6,7 +6,7 @@ from ninja import Router, Form
 from ninja.files import UploadedFile
 
 from django.http import JsonResponse
-from django.shortcuts import redirect
+from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth.hashers import make_password, check_password
 from django.conf import settings
 
@@ -75,6 +75,12 @@ def get_user_info(request, user_id: int):
         return 404, {"message": "user does not exist"}
     
     return 200, user
+
+@router.get("/getor404/{user_id}", response={200: UserDetailOut, 404: NotFoundOut})
+def get_user_info_or_404(request, user_id: int):
+    # is_admin(request)
+    user = get_object_or_404(User, id=user_id)
+    return user
 
 @router.patch("/{user_id}", response={200: SuccessOut, 404: NotFoundOut}, auth=[AuthBearer()])
 def modify_user_info(request, user_id: int, body: ModifyUserIn = Form(...), file: UploadedFile = None):
@@ -229,8 +235,10 @@ def email_user_login_with_form(request, payload: EmailUserSigninIn=Form(...)):
         user = User.objects.get(email=payload_dict["email"], account_type=UserAccountType.EMAIL)
         
         if check_password(payload_dict["password"], user.password):
-            response = JsonResponse({'access_token': generate_jwt({"user": user.id}, "access")}, status=200)
-            response.set_cookie('refresh_token', generate_jwt({"user": user.id}, "refresh"), httponly=True, samesite=None)
+            # response = JsonResponse({'access_token': generate_jwt({"user": user.id}, "access")}, status=200)
+            # response.set_cookie('refresh_token', generate_jwt({"user": user.id}, "refresh"), httponly=True, samesite=None)
+            response = JsonResponse({'message': 'success'}, status=200)
+            response.set_cookie('access_token', generate_jwt({"user": user.id}, "access"), httponly=True, samesite="lax")
             return response
          
         return 404, {"message": "invalid user"}

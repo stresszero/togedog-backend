@@ -2,17 +2,18 @@ import requests
 import uuid
 
 from typing import List
-from ninja import Router, Form
-from ninja.files import UploadedFile
-
 from django.http import JsonResponse
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth.hashers import make_password, check_password
 from django.conf import settings
+from ninja import Router, Form
+from ninja.files import UploadedFile
 
 from cores.schemas import SuccessOut, AlreadyExistsOut, NotFoundOut, InvalidUserOut
 from cores.models import UserAccountType, UserStatus
 from cores.utils import generate_jwt, KakaoLoginAPI, s3_client
+from users.auth import AuthBearer, is_admin, has_authority
+from users.models import User
 from users.schemas import (
     EmailUserSignupIn, 
     EmailUserSigninIn, 
@@ -21,8 +22,6 @@ from users.schemas import (
     UserDetailOut, 
     TestKakaoToken
     )
-from users.auth import AuthBearer, is_admin, has_authority
-from users.models import User
 
 MB = 1024 * 1024
 
@@ -54,7 +53,6 @@ def email_user_signup_with_form(request, payload: EmailUserSignupIn=Form(...)):
     이메일 사용자 회원가입(Form, application/x-www-form-urlencoded)
     '''
     payload_dict = payload.dict()
-    print(payload_dict)
     if User.objects.filter(email=payload_dict["email"], account_type=UserAccountType.EMAIL).exists():
         return 400, {"message": "user already exists"}
 
@@ -246,15 +244,6 @@ def email_user_login_with_form(request, payload: EmailUserSigninIn=Form(...)):
     except User.DoesNotExist:
         return 404, {"message": "user does not exist"}
 
-@router.get("/cookie/")
-def make_cookie_response(request):
-    '''
-    쿠키 테스트용, httponly 쿠키 저장됐는지 확인
-    '''
-    response = JsonResponse({'message': 'success'}, status=200)
-    response.set_cookie('test', 'test', httponly=True, samesite="None")
-    return response
-
 @router.get("/banned/all", response={200: List[UserListOut]}, auth=AuthBearer())
 def get_banned_user_list(request, offset: int = 0, limit: int = 10):
     '''
@@ -296,11 +285,10 @@ def google_token_test(request, token: TestKakaoToken):
     '''
         구글 토큰 테스트용
     '''
-    print(token, token.token)
-    req_uri      = 'https://www.googleapis.com/oauth2/v3/userinfo'
-    headers      = {'Authorization': f'Bearer {token.token}'}
-    user_info    = requests.get(req_uri, headers=headers, timeout=3).json()
-    print(user_info)
+    req_uri     = 'https://www.googleapis.com/oauth2/v3/userinfo'
+    headers     = {'Authorization': f'Bearer {token.token}'}
+    user_info   = requests.get(req_uri, headers=headers, timeout=3).json()
+    
     user, is_created = User.objects.get_or_create(
             social_account_id = user_info["sub"],
             defaults = {
@@ -313,3 +301,13 @@ def google_token_test(request, token: TestKakaoToken):
     response = JsonResponse({'access_token': generate_jwt({"user": user.id}, "access")}, status=200)
     response.set_cookie('refresh_token', generate_jwt({"user": user.id}, "refresh"), httponly=True, samesite="lax")
     return response
+
+# @router.get("/test/deletecookies")
+# def delete_cookie(request):
+#     '''
+#     쿠키 삭제 테스트
+#     '''
+#     response = JsonResponse({'message': 'success'}, status=200)
+#     response.delete_cookie('access_token')
+#     response.delete_cookie('refresh_token')
+#     return response

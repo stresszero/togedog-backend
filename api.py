@@ -22,5 +22,8 @@ from users.auth import cookie_key
 
 
 @api.get("/cookiekey", auth=cookie_key)
-def apikey(request):
+def cookie_test(request):
+    '''
+    쿠키 인가 테스트
+    '''
     return f"Token = {request.auth}, {request.auth.id}, {request.auth.user_type}"

@@ -1,13 +1,13 @@
 import uuid
 
 from typing import List
+from django.conf import settings
+from django.http import JsonResponse
 from ninja import Router, File, Form
 from ninja.files import UploadedFile
 
-from django.conf import settings
-from django.http import JsonResponse
-
 from cores.utils import s3_client
+from users.auth import AuthBearer, has_authority, is_admin
 from cores.schemas import NotFoundOut, SuccessOut, BadRequestOut
 from posts.models import Post, PostReport, PostLike, PostDelete
 from posts.schemas import (
@@ -20,7 +20,6 @@ from posts.schemas import (
     DeletePostIn,
     AdminGetDeletedPostOut
     )
-from users.auth import AuthBearer, has_authority, is_admin
 
 router = Router(tags=["게시글 관련 API"], auth=AuthBearer())
 
@@ -32,7 +31,7 @@ def get_deleted_posts(request, offset: int = 0, limit: int = 10):
         삭제된 게시글 목록 조회, 관리자만 가능, offset/limit으로 페이지네이션
     '''
     is_admin(request)
-    return 200, Post.objects.filter(is_deleted=True)[offset:offset+limit]
+    return 200, Post.objects.filter(is_deleted=True).select_related('user')[offset:offset+limit]
 
 @router.get("/deleted/{post_id}/", response={200: AdminGetDeletedPostOut, 404: NotFoundOut})
 def get_deleted_post_by_admin(request, post_id: int):
@@ -55,7 +54,8 @@ def get_post(request, post_id: int):
     '''
     try:
         has_authority(request)
-        post = Post.objects.get(id=post_id, is_deleted=False)
+        # post =  Post.objects.get(id=post_id, is_deleted=False)
+        post =  Post.objects.select_related('user').prefetch_related('likes').get(id=post_id, is_deleted=False)
         
         data = {
             "id"              : post.id,
@@ -85,7 +85,7 @@ def get_post_by_admin(request, post_id: int):
     '''
     try:
         is_admin(request)
-        post = Post.objects.get(id=post_id, is_deleted=False)
+        post = Post.objects.select_related('user').get(id=post_id, is_deleted=False)
 
     except Post.DoesNotExist:
         return 404, {"message": "post does not exist"}
@@ -191,7 +191,7 @@ def get_posts(request, offset: int = 0, limit: int = 9, sort: str = "-created_at
     게시글 목록 조회, 한 페이지에 9개씩, 정렬 기본값 최신순(-created_at), is_deleted=False인것만 나옴
     '''
     has_authority(request)
-    return 200, Post.objects.filter(is_deleted=False).order_by(sort)[offset:offset+limit]
+    return 200, Post.objects.filter(is_deleted=False).select_related('user').prefetch_related('likes').order_by(sort)[offset:offset+limit]
 
 @router.post("", response={200: SuccessOut, 400: BadRequestOut})
 def create_post(request, body: CreatePostIn = Form(...), file: UploadedFile = None):
@@ -210,3 +210,18 @@ def create_post(request, body: CreatePostIn = Form(...), file: UploadedFile = No
 
     Post.objects.create(user_id=request.auth.id, subject=body.subject, content=body.content, image_url=upload_url)
     return 200, {"message": "success"}
+
+# @router.get("/reports/")
+# def check_notification(request):
+#     '''
+#     신고 알림 유무 확인
+#     '''
+#     is_admin(request)
+#     count = PostReport.objects.filter(is_checked=False).count() + PostDelete.objects.filter(is_checked=False).count() + CommentReport.objects.filter(is_checked=False).count() + CommentDelete.objects.filter(is_checked=False).count()
+#     return 200, {"notification_count": count}
+
+# @router.get("/asdf/asdf/")
+# def asdf(request):
+#     post = list(Post.objects.all().values())
+#     post_report = list(PostReport.objects.all().values())
+#     return JsonResponse({'post': post, 'post_report': post_report})

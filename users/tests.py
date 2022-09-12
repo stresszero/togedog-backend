@@ -6,7 +6,9 @@ from unittest.mock import patch, MagicMock
 
 from django.contrib.auth.hashers import make_password
 from django.conf import settings
+from django.core.files.base import ContentFile
 from django.test import TestCase, Client, RequestFactory
+from django.test.client import MULTIPART_CONTENT, encode_multipart, BOUNDARY
 from django.urls import reverse
 
 from users.models import User
@@ -276,11 +278,11 @@ class DeactivateUserTest(UserTest):
     
     def test_fail_403_deactivate_user(self):
         response = self.client.patch(
-                    reverse(
-                        "api-1.0.0:deactivate_user", 
-                        kwargs={"user_id": self.test_user_1.id}
-                    ), 
-                    HTTP_AUTHORIZATION=f'Bearer {self.user_jwt}'
+            reverse(
+                "api-1.0.0:deactivate_user", 
+                kwargs={"user_id": self.test_user_1.id}
+            ), 
+            HTTP_AUTHORIZATION=f'Bearer {self.user_jwt}'
         )
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.json(), {'detail': 'forbidden'})
@@ -482,7 +484,27 @@ class GetBannedUserListTest(UserTest):
 
 
 class ModifyUserInfoTest(UserTest):
-    def test_success_modify_user_info(self):
+    def test_success_without_file_modify_user_info(self):
+        modify_data = {"name": "asdf", "nickname": "asdf"}
+        response = self.client.patch(
+            reverse(
+                "api-1.0.0:modify_user_info", 
+                kwargs={"user_id": self.test_user_1.id}
+            ),
+            data=encode_multipart(data=modify_data, boundary=BOUNDARY),
+            content_type=MULTIPART_CONTENT,
+            HTTP_AUTHORIZATION=f'Bearer {self.user_jwt}',
+        )
+        results = {
+            "name_input": "asdf",
+            "nickname_input": "asdf",
+        }
+        self.assertEqual(User.objects.get(id=self.test_user_1.id).name, "asdf")
+        self.assertEqual(User.objects.get(id=self.test_user_1.id).nickname, "asdf")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), results)
+
+    def test_success_with_file_modify_user_info(self):
         pass
 
     def test_fail_400_modify_user_info(self):
@@ -490,4 +512,27 @@ class ModifyUserInfoTest(UserTest):
 
     def test_fail_401_modify_user_info(self):
         pass
+
+    def test_fail_403_modify_user_info(self):
+        response = self.client.patch(
+            reverse(
+                "api-1.0.0:modify_user_info", 
+                kwargs={"user_id": self.test_admin.id}
+            ),
+            HTTP_AUTHORIZATION=f'Bearer {self.user_jwt}',
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json(), {"detail": "forbidden"})
+
+    def test_fail_404_modify_user_info(self):
+        response = self.client.patch(
+            reverse(
+                "api-1.0.0:modify_user_info", 
+                kwargs={"user_id": 12345}
+            ),
+            HTTP_AUTHORIZATION=f'Bearer {self.admin_jwt}',
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json(), {"detail": "Not Found"})
+
 

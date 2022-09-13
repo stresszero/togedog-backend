@@ -19,7 +19,8 @@ from users.schemas import (
     EmailUserSigninIn, 
     ModifyUserIn, 
     UserListOut, 
-    UserDetailOut, 
+    UserDetailOut,
+    EmailSignupCheckIn,
     TestKakaoToken
     )
 
@@ -46,6 +47,15 @@ def check_bearer(request):
         "user_status": request.auth.status,
         "accout_type": request.auth.account_type
         }
+
+@router.post("/signup/emailcheck/", response={200: SuccessOut, 400: AlreadyExistsOut})
+def check_email(request, body: EmailSignupCheckIn):
+    '''
+    이메일 회원가입 시 이메일 중복 확인, 중복이면 400 에러("message": "email already exists")
+    '''
+    if User.objects.filter(email=body.email, account_type=UserAccountType.EMAIL).exists():
+        return 400, {"message": "email already exists"}
+    return 200, {"message": "success"}
 
 @router.post("/signup", response={200: SuccessOut, 201: SuccessOut, 400: AlreadyExistsOut})
 def email_user_signup_with_form(request, payload: EmailUserSignupIn=Form(...)):

@@ -28,7 +28,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # Channels
-# ASGI_APPLICATION = 'togedog_dj.asgi.application'
 # CHANNEL_LAYERS = {
 #     'default': {
 #         'BACKEND': 'channels_redis.core.RedisChannelLayer',
@@ -69,7 +68,8 @@ INSTALLED_APPS = [
     "users",
     "posts",
     "comments",
-    "chat"
+    "chat",
+    "socketio"
 ]
 
 MIDDLEWARE = [
@@ -85,7 +85,7 @@ MIDDLEWARE = [
 ]
 
 ##CORS
-CORS_ORIGIN_ALLOW_ALL=True
+CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOW_METHODS = (
@@ -129,6 +129,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "togedog_dj.wsgi.application"
 
+
+# ASGI_APPLICATION = 'togedog_dj.asgi.application'
 
 
 # Password validation
@@ -189,20 +191,20 @@ GOOGLE_RESPONSE_TYPE = GOOGLE_RESPONSE_TYPE
 GOOGLE_SCOPE         = GOOGLE_SCOPE
 
 # runserver logging
-LOGGING = {
-    'disable_existing_loggers': False,
-    'version': 1,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'level': 'DEBUG',
-        },
-    },
-    'loggers': {
-        'django.db.backends': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-    },
-}
+# LOGGING = {
+#     'disable_existing_loggers': False,
+#     'version': 1,
+#     'handlers': {
+#         'console': {
+#             'class': 'logging.StreamHandler',
+#             'level': 'DEBUG',
+#         },
+#     },
+#     'loggers': {
+#         'django.db.backends': {
+#             'handlers': ['console'],
+#             'level': 'DEBUG',
+#             'propagate': False,
+#         },
+#     },
+# }

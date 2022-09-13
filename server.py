@@ -1,33 +1,32 @@
-from aiohttp import web
-import socketio
+# from aiohttp import web
+# import socketio
 
-# cors_allowed_origin
-sio = socketio.AsyncServer(cors_allowed_origins="*")
-app = web.Application()
-sio.attach(app)
+# # cors_allowed_origin
+# sio = socketio.AsyncServer(cors_allowed_origins="*")
+# app = web.Application()
+# sio.attach(app)
 
-def index(request):
-    """Serve the client-side application."""
-    print("working")
-    with open('index.html') as f:
-        return web.Response(text=f.read(), content_type='text/html')
+# def index(request):
+#     """Serve the client-side application."""
+#     print("working")
+#     with open('index.html') as f:
+#         return web.Response(text=f.read(), content_type='text/html')
 
-@sio.event
-def connect(sid, data):
-    print("connect ", sid)
-# @sio.on("asdf")
 # @sio.event
+# def connect(sid, data):
+#     print("connect ", sid)
 
-@sio.event
-async def chat_message(sid, data):
-    print("message ", data)
 
-@sio.event
-def disconnect(sid):
-    print('disconnect ', sid)
+# @sio.event
+# async def chat_message(sid, data):
+#     print("message ", data)
 
-# app.router.add_static('/static', 'static')
-app.router.add_get('/', index)
+# @sio.event
+# def disconnect(sid):
+#     print('disconnect ', sid)
 
-if __name__ == '__main__':
-    web.run_app(app, port=3000)
+# # app.router.add_static('/static', 'static')
+# app.router.add_get('/', index)
+
+# if __name__ == '__main__':
+#     web.run_app(app, port=3000)

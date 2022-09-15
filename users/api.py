@@ -2,6 +2,8 @@ import requests
 import uuid
 
 from typing import List
+from ninja.pagination import paginate, PageNumberPagination
+from django.db.models import Q, Count
 from django.http import JsonResponse
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth.hashers import make_password, check_password
@@ -21,7 +23,8 @@ from users.schemas import (
     UserListOut, 
     UserDetailOut,
     EmailSignupCheckIn,
-    TestKakaoToken
+    TestKakaoToken,
+    ReportUserIn
     )
 
 MB = 1024 * 1024
@@ -29,12 +32,24 @@ MB = 1024 * 1024
 router = Router(tags=["사용자 관련 API"])
 
 @router.get("", response=List[UserListOut], auth=[AuthBearer()])
-def get_user_list(request, offset: int = 0, limit: int = 10):
+@paginate(PageNumberPagination, page_size=10)
+def get_user_list(request, search: str = None, reported: int = None):
     '''
-    사용자 목록 조회, 관리자 계정만 조회 가능, offset/limit로 페이지네이션
+    사용자 목록 조회, 관리자 계정만 조회 가능, 한페이지에 10개씩 조회, 
+    쿼리 파라미터 search: 사용자 닉네임으로 검색, reported: 정수값을 넣으면 해당 정수값 이상 신고받은 사용자 검색
+    키값: items: 유저정보 목록(배열), count: 응답으로 나온 사용자의 전체 갯수,
     '''
     is_admin(request)
-    return User.objects.all()[offset:offset+limit]
+
+    q = Q()
+    if search:
+        q &= Q(nickname__icontains=search)
+    if reported:
+        q &= Q(reported_count__gte=reported)
+
+    return User.objects.annotate(
+        reported_count = Count("post_reported", distinct=True) + Count("comment_reported", distinct=True)
+        ).filter(q).prefetch_related('post_reported', 'comment_reported')
 
 @router.get("/bearer", auth=AuthBearer())
 def check_bearer(request):
@@ -46,7 +61,7 @@ def check_bearer(request):
         "user_type": request.auth.user_type,
         "user_status": request.auth.status,
         "accout_type": request.auth.account_type
-        }
+    }
 
 @router.post("/signup/emailcheck/", response={200: SuccessOut, 400: AlreadyExistsOut})
 def check_email(request, body: EmailSignupCheckIn):
@@ -58,12 +73,12 @@ def check_email(request, body: EmailSignupCheckIn):
     return 200, {"message": "success"}
 
 @router.post("/signup", response={200: SuccessOut, 201: SuccessOut, 400: AlreadyExistsOut})
-def email_user_signup_with_form(request, payload: EmailUserSignupIn=Form(...)):
+def email_user_signup(request, payload: EmailUserSignupIn):
     '''
-    이메일 사용자 회원가입(Form, application/x-www-form-urlencoded)
+    이메일 사용자 회원가입(application/json), 중복이면 400 에러("message": "email already exists")
     '''
     payload_dict = payload.dict()
-    if User.objects.filter(email=payload_dict["email"], account_type=UserAccountType.EMAIL).exists():
+    if User.objects.filter(email=payload_dict["email"], account_type=UserAccountType.EMAIL.value).exists():
         return 400, {"message": "user already exists"}
 
     payload_dict.update({"password": make_password(payload_dict["password"], salt=settings.PASSWORD_SALT)})
@@ -91,7 +106,7 @@ def get_user_info_or_404(request, user_id: int):
     return user
 
 @router.patch("/{user_id}", response={200: SuccessOut, 404: NotFoundOut}, auth=[AuthBearer()])
-def modify_user_info(request, user_id: int, body: ModifyUserIn = Form(...), file: UploadedFile = None):
+def modify_user_info(request, user_id: int, body: ModifyUserIn, file: UploadedFile = None):
     '''
     사용자 정보 수정, 로그인한 본인 계정 또는 관리자만 수정 가능
     '''
@@ -232,10 +247,10 @@ def google_login_get_profile(request, code: str):
     response.set_cookie('refresh_token', generate_jwt({"user": user.id}, "refresh"), httponly=True, samesite="lax")
     return response
 
-@router.post("/login/email", response={200: SuccessOut, 400: NotFoundOut, 404: InvalidUserOut})
-def email_user_login_with_form(request, payload: EmailUserSigninIn=Form(...)):
+@router.post("/login/email", response={200: SuccessOut, 404: NotFoundOut, 400: InvalidUserOut})
+def email_user_login(request, payload: EmailUserSigninIn):
     '''
-    이메일 사용자 로그인(Form, application/x-www-form-urlencoded)
+    이메일 사용자 로그인(application/json)
     로그인 후 JWT 액세스 토큰 또는 리프레시 토큰을 httponly 쿠키로 저장
     '''
     payload_dict = payload.dict()
@@ -243,13 +258,27 @@ def email_user_login_with_form(request, payload: EmailUserSigninIn=Form(...)):
         user = User.objects.get(email=payload_dict["email"], account_type=UserAccountType.EMAIL)
         
         if check_password(payload_dict["password"], user.password):
+            # response = JsonResponse({'message': 'success'}, status=200)
+            data = {
+                "access_token" : generate_jwt({"user": user.id}, "access"),
+                "user": {
+                    "name"         : user.name,
+                    "nickname"     : user.nickname,
+                    "email"        : user.email,
+                    "user_type"    : user.user_type,
+                    "status"       : user.status,
+                    "account_type" : user.account_type,
+                    "thumbnail_url": user.thumbnail_url,
+                    "mbti"         : user.mbti,
+                }
+            }
             # response = JsonResponse({'access_token': generate_jwt({"user": user.id}, "access")}, status=200)
-            # response.set_cookie('refresh_token', generate_jwt({"user": user.id}, "refresh"), httponly=True, samesite=None)
-            response = JsonResponse({'message': 'success'}, status=200)
+            response = JsonResponse(data, status=200)
+            response.set_cookie('refresh_token', generate_jwt({"user": user.id}, "refresh"), httponly=True, samesite=None)
             response.set_cookie('access_token', generate_jwt({"user": user.id}, "access"), httponly=True, samesite="lax")
             return response
          
-        return 404, {"message": "invalid user"}
+        return 400, {"message": "invalid user"}
     
     except User.DoesNotExist:
         return 404, {"message": "user does not exist"}

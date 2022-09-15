@@ -15,8 +15,6 @@ botocore==1.27.59
 CacheControl==0.12.11
 cachy==0.3.0
 cffi==1.15.1
-channels==3.0.5
-channels-redis==3.4.1
 charset-normalizer==2.1.1
 cleo==0.8.1
 click==8.1.3
@@ -32,11 +30,9 @@ decorator==5.1.1
 defusedxml==0.7.1
 distlib==0.3.4
 Django==4.1
-django-allauth==0.51.0
 django-cors-headers==3.13.0
 django-extensions==3.2.0
 django-ninja==0.19.1
-djangorestframework==3.13.1
 dnspython==2.2.1
 email-validator==1.2.1
 eventlet==0.33.1

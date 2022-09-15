@@ -13,9 +13,10 @@ def is_admin(request):
 
 def has_authority(request, user_id=None, user_check=False, banned_check=True):
     '''
-    banned_check: 강퇴 유저인지 확인할 경우 True, 아니면 False
+    banned_check: 차단된 유저인지 확인할 경우 True, 아니면 False
     user_check: user_id가 있는 경우에 해당 유저가 로그인한 유저(request.auth)와 
     같은지 확인, 관리자는 일치하지 않아도 통과
+    인자로 request만 들어오면 차단된 유저 인지만 확인함
     '''
     if banned_check and request.auth.status == UserStatus.BANNED.value:
         raise HttpError(403, "forbidden")

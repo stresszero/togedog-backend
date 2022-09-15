@@ -3,17 +3,18 @@ import uuid
 from typing import List
 from django.conf import settings
 from django.http import JsonResponse
+from django.db.models import F
 from ninja import Router, File, Form
 from ninja.files import UploadedFile
 
 from cores.utils import s3_client
 from users.auth import AuthBearer, has_authority, is_admin
 from cores.schemas import NotFoundOut, SuccessOut, BadRequestOut
-from posts.models import Post, PostReport, PostLike, PostDelete
+from posts.models import Post, PostLike, PostDelete, PostReport
 from posts.schemas import (
     GetPostListOut, 
     CreatePostIn, 
-    CreatePostReportIn, 
+    CreatePostReportIn,
     ModifyPostIn, 
     DeletedPostOut, 
     AdminGetPostOut, 
@@ -40,7 +41,7 @@ def get_deleted_post_by_admin(request, post_id: int):
     '''
     try:
         is_admin(request)
-        post = Post.objects.get(id=post_id, is_deleted=True)
+        post = Post.objects.select_related('user').get(id=post_id, is_deleted=True)
 
     except Post.DoesNotExist:
         return 404, {"message": "post does not exist"}
@@ -61,6 +62,7 @@ def get_post(request, post_id: int):
             "id"              : post.id,
             "user_id"         : post.user_id,
             "user_nickname"   : post.user.nickname,
+            "user_thumbnail"  : post.user.thumbnail_url,
             "subject"         : post.subject,
             "content"         : post.content,
             "image_url"       : post.image_url,
@@ -69,7 +71,7 @@ def get_post(request, post_id: int):
             "is_liked"        : True if post.likes.filter(like_user_id=request.auth.id).exists() else False,
             "comments"        : [
                 comments for comments in post.comments.filter(is_deleted=False)
-                .values('id', 'user_id', 'user__nickname', 'content', 'created_at')
+                .values('id', 'user_id', 'content', 'created_at', user_nickname=F("user__nickname"))
                 ],
         }
 
@@ -149,7 +151,12 @@ def report_post(request, post_id: int, body: CreatePostReportIn = Form(...)):
     except Post.DoesNotExist:
         return 404, {"message": "post does not exist"}
 
-    PostReport.objects.create(reporter_id=request.auth.id, post_id=post_id, content=body.content)    
+    PostReport.objects.create(
+        reporter_user_id=request.auth.id,
+        reported_user_id=post.user_id, 
+        post_id=post_id, 
+        content=body.content
+        )    
     return 200, {"message": "success"}
 
 @router.delete("/{post_id}/delete/hard/", response={200: SuccessOut, 404: NotFoundOut})

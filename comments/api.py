@@ -4,7 +4,7 @@ from cores.schemas import NotFoundOut, SuccessOut, BadRequestOut
 from users.auth import AuthBearer, has_authority, is_admin
 from posts.models import Post
 from comments.models import Comment, CommentReport
-from comments.schemas import CreateCommentIn, CreateCommentReportIn, ModifyCommentIn
+from comments.schemas import CreateCommentIn, ModifyCommentIn, CreateCommentReportIn
 
 router = Router(tags=["댓글 관련 API"], auth=AuthBearer())
 
@@ -71,9 +71,13 @@ def report_comment(request, post_id: int, comment_id: int, body: CreateCommentRe
     try:
         has_authority(request)
         Post.objects.get(id=post_id)
-        Comment.objects.get(id=comment_id, is_deleted=False)
-        CommentReport.objects.create(reporter_id=request.auth.id, comment_id=comment_id, content=body.content)
-
+        comment = Comment.objects.get(id=comment_id, is_deleted=False)
+        CommentReport.objects.create(
+            reporter_user_id=request.auth.id, 
+            reported_user_id=comment.user_id,
+            comment_id=comment_id, 
+            content=body.content
+            )
     except Post.DoesNotExist:
         return 404, {"message": "post does not exist"}
 

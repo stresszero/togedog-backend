@@ -42,7 +42,7 @@ class CreatePostIn(ModelSchema):
 class CreatePostReportIn(ModelSchema):
     class Config:
         model = PostReport
-        model_exclude = ["id", "reporter", "post", "created_at", "updated_at"]
+        model_fields = ["content"]
 
 class ModifyPostIn(Schema):
     subject: Optional[str]

@@ -2,6 +2,8 @@ from django.db import models
 
 from cores.models import TimeStampedModel, EnumField, UserType, UserStatus, UserAccountType
 
+DEFAULT_USER_THUMBNAIL_URL = 'http://thumbnail.url'
+
 class User(TimeStampedModel):
     name              = models.CharField(max_length=50, null=True)
     nickname          = models.CharField(max_length=50)
@@ -11,10 +13,14 @@ class User(TimeStampedModel):
     user_type         = EnumField(enum=UserType, default=UserType.NORMAL, max_length=10)
     status            = EnumField(enum=UserStatus, default=UserStatus.ACTIVE, max_length=10)
     account_type      = EnumField(enum=UserAccountType, max_length=20)
-    thumbnail_url     = models.CharField(max_length=500, default='http://thumbnail.url')
+    thumbnail_url     = models.CharField(max_length=500, default=DEFAULT_USER_THUMBNAIL_URL)
     address           = models.CharField(max_length=20, null=True)
     mbti              = models.CharField(max_length=4, default="none")
     
+    # @property
+    # def reported_count(self):
+    #     return self.post_reported.count() + self.comment_reported.count()
+
     class Meta:
         db_table = 'user'
 
@@ -22,9 +28,9 @@ class User(TimeStampedModel):
         return self.nickname
 
 # class UserReport(TimeStampedModel):
-#     reporter = models.ForeignKey('users.user', related_name='user_reports', on_delete=models.CASCADE)
-#     user     = models.ForeignKey(User, related_name='reports', on_delete=models.CASCADE)
-#     content  = models.CharField(max_length=500)
+    # reporter_user = models.ForeignKey(User, related_name='reporter', on_delete=models.CASCADE)
+    # reported_user = models.ForeignKey(User, related_name='reported', on_delete=models.CASCADE)
+    # content       = models.CharField(max_length=500)
 
 #     class Meta:
 #         db_table = 'user_report'

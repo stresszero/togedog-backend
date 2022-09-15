@@ -12,10 +12,11 @@ class Comment(TimeStampedModel):
         db_table = 'comment'
 
 class CommentReport(TimeStampedModel):
-    reporter = models.ForeignKey('users.user', related_name='comment_reports', on_delete=models.CASCADE)
-    comment  = models.ForeignKey(Comment, related_name='reports', on_delete=models.CASCADE)
-    content  = models.CharField(max_length=500)
-    # is_checked  = models.BooleanField(default=False)
+    reporter_user = models.ForeignKey('users.user', related_name='comment_reporter', on_delete=models.CASCADE)
+    reported_user = models.ForeignKey('users.user', related_name='comment_reported', on_delete=models.CASCADE)
+    comment       = models.ForeignKey(Comment, related_name='reports', on_delete=models.CASCADE)
+    content       = models.CharField(max_length=500)
+    is_checked    = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'comment_report'

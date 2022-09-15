@@ -1,7 +1,8 @@
 import re
 from datetime import datetime
+from typing import Optional
 
-from ninja import Schema, ModelSchema
+from ninja import Schema, ModelSchema, Field
 from pydantic import EmailStr, validator
 
 from users.models import User
@@ -16,8 +17,8 @@ class EmailUserSignupIn(Schema):
     nickname: str
     email: EmailStr
     password: str
-    account_type: str = 'email'
-    address: str = None
+    account_type: str = "email"
+    address: Optional[str] 
 
     @validator('password')
     def validate_password(cls, value):
@@ -31,7 +32,7 @@ class EmailUserSigninIn(Schema):
 
 class UserListOut(Schema):
     id: int
-    name: str = None
+    name: Optional[str]
     nickname: str
     email: EmailStr
     user_type: str
@@ -39,6 +40,10 @@ class UserListOut(Schema):
     account_type: str
     thumbnail_url: str
     mbti: str
+    reported_count: int 
+
+    class Config:
+        model = User
 
 class UserDetailOut(Schema):
     id: int
@@ -54,11 +59,12 @@ class UserDetailOut(Schema):
     created_at: datetime
 
 class ModifyUserIn(Schema):
-    name: str = None
-    nickname: str = None
-    address: str = None
-    mbti: str = None
-    mbti: str = None
+    name: Optional[str]
+    nickname: Optional[str]
+    mbti: Optional[str]
 
 class TestKakaoToken(Schema):
     token: str
+
+class ReportUserIn(Schema):
+    content: str

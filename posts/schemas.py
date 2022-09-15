@@ -22,6 +22,7 @@ class GetPostListOut(ModelSchema):
     # user_signup_time: Optional[datetime] = Field(..., alias='user.created_at')
     user_id: int = Field(..., alias="user.id")
     user_nickname: str = Field(..., alias="user.nickname")
+    user_thumbnail: str = Field(..., alias="user.thumbnail_url")
     post_likes_count: int = Field(..., alias='likes.count')
     
     # @staticmethod

@@ -71,6 +71,7 @@ def get_post(request, post_id: int):
             "comments"        : [
                 comments for comments in post.comments.filter(is_deleted=False)
                 .values('id', 'content', 'created_at', 'user_id', user_nickname=F("user__nickname"))
+                .order_by('created_at')
                 ],
         }
 
@@ -194,7 +195,8 @@ def like_post(request, post_id: int):
 @router.get("", response={200: List[GetPostListOut]})
 def get_posts(request, offset: int = 0, limit: int = 9, sort: str = "-created_at"):
     '''
-    게시글 목록 조회, 한 페이지에 9개씩, 정렬 기본값 최신순(-created_at), is_deleted=False인것만 나옴
+    게시글 목록 조회, 한 페이지에 9개씩, 정렬 기본값 최신순(-created_at), 인기순(likes)
+    is_deleted=False인것만 나옴
     '''
     has_authority(request)
     return 200, Post.objects.filter(is_deleted=False).select_related('user').prefetch_related('likes').order_by(sort)[offset:offset+limit]

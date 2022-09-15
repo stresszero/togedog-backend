@@ -55,7 +55,6 @@ def get_post(request, post_id: int):
     '''
     try:
         has_authority(request)
-        # post =  Post.objects.get(id=post_id, is_deleted=False)
         post =  Post.objects.select_related('user').prefetch_related('likes').get(id=post_id, is_deleted=False)
         
         data = {
@@ -71,7 +70,7 @@ def get_post(request, post_id: int):
             "is_liked"        : True if post.likes.filter(like_user_id=request.auth.id).exists() else False,
             "comments"        : [
                 comments for comments in post.comments.filter(is_deleted=False)
-                .values('id', 'user_id', 'content', 'created_at', user_nickname=F("user__nickname"))
+                .values('id', 'content', 'created_at', 'user_id', user_nickname=F("user__nickname"))
                 ],
         }
 

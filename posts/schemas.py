@@ -17,9 +17,6 @@ class GetCommentOut(ModelSchema):
         model_exclude = ["is_deleted"]
 
 class GetPostListOut(ModelSchema):
-    # comments: List = Field(..., alias="comments.values")
-    # user_mbti: str = Field(..., alias='user.mbti')
-    # user_signup_time: Optional[datetime] = Field(..., alias='user.created_at')
     user_id: int = Field(..., alias="user.id")
     user_nickname: str = Field(..., alias="user.nickname")
     user_thumbnail: str = Field(..., alias="user.thumbnail_url")
@@ -34,6 +31,24 @@ class GetPostListOut(ModelSchema):
     class Config:
         model = Post
         model_exclude = ["user", "is_deleted", "content"]
+
+class AdminGetPostListOut(GetPostListOut):
+    user_mbti: str = Field(..., alias='user.mbti')
+    user_nickname: str = Field(..., alias="user.nickname")
+    user_signup_time: datetime = Field(..., alias='user.created_at')
+    reported_count: int = Field(..., alias='reports.count')
+
+# class AdminGetPostListOut(ModelSchema):
+#     user_id: int = Field(..., alias="user.id")
+#     user_mbti: str = Field(..., alias='user.mbti')
+#     user_nickname: str = Field(..., alias="user.nickname")
+#     user_signup_time: datetime = Field(..., alias='user.created_at')
+#     reported_count: int = Field(..., alias='reports.count')
+#     class Config:
+#         model = Post
+#         model_exclude = ["user", "is_deleted", "content"]
+
+
         
 class CreatePostIn(ModelSchema):
     class Config:

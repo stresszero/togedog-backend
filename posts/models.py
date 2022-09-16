@@ -19,6 +19,10 @@ class Post(TimeStampedModel):
     def get_delete_reason(self):
         return self.deletes.values_list('delete_reason', flat=True)
 
+    @property
+    def get_reports_count(self):
+        return self.reports.count()
+
 class PostLike(TimeStampedModel):
     like_user = models.ForeignKey('users.user', related_name="post_likes", on_delete=models.CASCADE)
     post      = models.ForeignKey(Post, related_name='likes', on_delete=models.CASCADE)

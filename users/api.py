@@ -8,10 +8,10 @@ from django.http import JsonResponse
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth.hashers import make_password, check_password
 from django.conf import settings
-from ninja import Router, Form
+from ninja import Router
 from ninja.files import UploadedFile
 
-from cores.schemas import SuccessOut, AlreadyExistsOut, NotFoundOut, InvalidUserOut
+from cores.schemas import SuccessOut, AlreadyExistsOut, NotFoundOut, InvalidUserOut, BadRequestOut
 from cores.models import UserAccountType, UserStatus
 from cores.utils import generate_jwt, KakaoLoginAPI, s3_client
 from users.auth import AuthBearer, is_admin, has_authority
@@ -24,7 +24,6 @@ from users.schemas import (
     UserDetailOut,
     EmailSignupCheckIn,
     TestKakaoToken,
-    ReportUserIn
     )
 
 MB = 1024 * 1024
@@ -91,21 +90,15 @@ def get_user_info(request, user_id: int):
     사용자 정보 조회, 로그인한 본인 계정 또는 관리자만 조회 가능
     '''
     has_authority(request, user_id, user_check=True, banned_check=False)
-    try:
-        user = User.objects.get(id=user_id)
+    # try:
+    #     user = User.objects.get(id=user_id)
 
-    except User.DoesNotExist:
-        return 404, {"message": "user does not exist"}
+    # except User.DoesNotExist:
+    #     return 404, {"message": "user does not exist"}
     
-    return 200, user
+    return 200, get_object_or_404(User, id=user_id)
 
-@router.get("/getor404/{user_id}", response={200: UserDetailOut, 404: NotFoundOut})
-def get_user_info_or_404(request, user_id: int):
-    # is_admin(request)
-    user = get_object_or_404(User, id=user_id)
-    return user
-
-@router.patch("/{user_id}", response={200: SuccessOut, 404: NotFoundOut}, auth=[AuthBearer()])
+@router.patch("/{user_id}", response={200: SuccessOut, 400: BadRequestOut, 404: NotFoundOut}, auth=[AuthBearer()])
 def modify_user_info(request, user_id: int, body: ModifyUserIn, file: UploadedFile = None):
     '''
     사용자 정보 수정, 로그인한 본인 계정 또는 관리자만 수정 가능
@@ -114,6 +107,8 @@ def modify_user_info(request, user_id: int, body: ModifyUserIn, file: UploadedFi
     try:
         user = User.objects.get(id=user_id)
         if file:
+            if file.name.split(".")[-1].lower() not in ["jpg", "jpeg", "jfif", "png", "webp", "avif", "svg"]:
+                return 400, {"message": "invalid image format"}
             if file.size > 50 * MB:
                 return 400, {"message": "file size is too large"}
             if user.thumbnail_url:
@@ -284,12 +279,20 @@ def email_user_login(request, payload: EmailUserSigninIn):
         return 404, {"message": "user does not exist"}
 
 @router.get("/banned/all", response={200: List[UserListOut]}, auth=AuthBearer())
-def get_banned_user_list(request, offset: int = 0, limit: int = 10):
+@paginate(PageNumberPagination, page_size=10)
+def get_banned_user_list(request, search: str = None):
     '''
-    차단 계정 목록 조회, offset/limit으로 페이지네이션
+    차단 계정 목록 조회
     '''
     is_admin(request)
-    return 200, User.objects.filter(status=UserStatus.BANNED)[offset:offset+limit]
+
+    q = Q()
+    if search:
+        q &= Q(nickname__icontains=search) | Q(email__icontains=search)
+
+    return User.objects.annotate(
+        reported_count = Count("post_reported", distinct=True) + Count("comment_reported", distinct=True)
+        ).filter(q, status=UserStatus.BANNED).prefetch_related('post_reported', 'comment_reported')
 
 @router.post("/test/kakaotoken/")
 def kakao_token_test(request, token: TestKakaoToken):

@@ -3,8 +3,9 @@ import uuid
 from typing import List
 from django.conf import settings
 from django.http import JsonResponse
-from django.db.models import F
-from ninja import Router, File, Form
+from django.db.models import F, Q, Count
+from ninja import Router, Form
+from ninja.pagination import paginate, PageNumberPagination
 from ninja.files import UploadedFile
 
 from cores.utils import s3_client
@@ -19,20 +20,47 @@ from posts.schemas import (
     DeletedPostOut, 
     AdminGetPostOut, 
     DeletePostIn,
-    AdminGetDeletedPostOut
+    AdminGetDeletedPostOut,
+    AdminGetPostListOut
     )
 
 router = Router(tags=["게시글 관련 API"], auth=AuthBearer())
 
 MB = 1024 * 1024
 
-@router.get("/deleted", response={200: List[DeletedPostOut]})
-def get_deleted_posts(request, offset: int = 0, limit: int = 10):
+@router.get("/admin", response=List[AdminGetPostListOut])
+@paginate(PageNumberPagination, page_size=10)
+def get_posts_by_admin(request, search: str = None, reported: int = None):
     '''
-        삭제된 게시글 목록 조회, 관리자만 가능, offset/limit으로 페이지네이션
+    관리자 페이지 게시글 조회
+    관리자 계정만 조회 가능, 한페이지에 10개씩 조회
+    search: 사용자 닉네임으로 검색
     '''
     is_admin(request)
-    return 200, Post.objects.filter(is_deleted=True).select_related('user')[offset:offset+limit]
+
+    q = Q()
+    if search:
+        q &= Q(user__nickname__icontains=search)
+    if reported:
+        q &= Q(reported_count__gte=reported)
+        
+    return Post.objects.annotate(reported_count=Count('reports', distinct=True))\
+        .select_related('user').filter(q, is_deleted=False)\
+        .prefetch_related('likes', 'reports').order_by('-created_at')
+
+@router.get("/deleted/", response={200: List[DeletedPostOut]})
+@paginate(PageNumberPagination, page_size=10)
+def get_deleted_posts(request, search: str = None):
+    '''
+        삭제된 게시글 목록 조회, 관리자만 가능
+    '''
+    is_admin(request)
+
+    q = Q()
+    if search:
+        q &= Q(user__nickname__icontains=search)
+
+    return Post.objects.select_related('user').filter(q, is_deleted=True)
 
 @router.get("/deleted/{post_id}/", response={200: AdminGetDeletedPostOut, 404: NotFoundOut})
 def get_deleted_post_by_admin(request, post_id: int):
@@ -218,6 +246,8 @@ def create_post(request, body: CreatePostIn = Form(...), file: UploadedFile = No
 
     Post.objects.create(user_id=request.auth.id, subject=body.subject, content=body.content, image_url=upload_url)
     return 200, {"message": "success"}
+
+
 
 # @router.get("/reports/")
 # def check_notification(request):

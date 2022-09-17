@@ -63,12 +63,12 @@ INSTALLED_APPS = [
     "corsheaders",
     "django_extensions",
     "django.contrib.postgres",
+    "socketio",
     "cores",
     "users",
     "posts",
     "comments",
     "chat",
-    "socketio"
 ]
 
 MIDDLEWARE = [

@@ -46,8 +46,9 @@ def get_user_list(request, search: str = None, reported: int = None):
     if reported:
         q &= Q(reported_count__gte=reported)
 
-    return User.objects.annotate(
-        reported_count = Count("post_reported", distinct=True) + Count("comment_reported", distinct=True)
+    return User.objects\
+        .annotate(
+            reported_count = Count("post_reported", distinct=True) + Count("comment_reported", distinct=True)
         ).filter(q).prefetch_related('post_reported', 'comment_reported')
 
 @router.get("/bearer", auth=AuthBearer())
@@ -269,7 +270,7 @@ def email_user_login(request, payload: EmailUserSigninIn):
             }
             # response = JsonResponse({'access_token': generate_jwt({"user": user.id}, "access")}, status=200)
             response = JsonResponse(data, status=200)
-            response.set_cookie('refresh_token', generate_jwt({"user": user.id}, "refresh"), httponly=True, samesite=None)
+            response.set_cookie('refresh_token', generate_jwt({"user": user.id}, "refresh"), httponly=True, samesite="lax")
             response.set_cookie('access_token', generate_jwt({"user": user.id}, "access"), httponly=True, samesite="lax")
             return response
          

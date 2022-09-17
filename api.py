@@ -18,6 +18,10 @@ api.add_router("/cores", cores_router)
 def hello(request):
     return {"hello": "world"}
 
+@api.get("/notifications")
+def get_notifications(request):
+    return {"notifications": "notifications"}
+
 # from users.auth import cookie_key
 
 

@@ -43,7 +43,7 @@ def get_posts_by_admin(request, search: str = None, reported: int = None):
         q &= Q(user__nickname__icontains=search)
     if reported:
         q &= Q(reported_count__gte=reported)
-        
+
     return Post.objects.annotate(reported_count=Count('reports', distinct=True))\
         .select_related('user').filter(q, is_deleted=False)\
         .prefetch_related('likes', 'reports').order_by('-created_at')
@@ -223,7 +223,7 @@ def like_post(request, post_id: int):
 @router.get("", response={200: List[GetPostListOut]})
 def get_posts(request, offset: int = 0, limit: int = 9, sort: str = "-created_at"):
     '''
-    게시글 목록 조회, 한 페이지에 9개씩, 정렬 기본값 최신순(-created_at), 인기순(likes)
+    게시글 목록 조회, 한 페이지에 9개씩, 정렬(sort) 기본값 최신순(-created_at), 인기순(likes)
     is_deleted=False인것만 나옴
     '''
     has_authority(request)
@@ -246,7 +246,6 @@ def create_post(request, body: CreatePostIn = Form(...), file: UploadedFile = No
 
     Post.objects.create(user_id=request.auth.id, subject=body.subject, content=body.content, image_url=upload_url)
     return 200, {"message": "success"}
-
 
 
 # @router.get("/reports/")

@@ -57,7 +57,11 @@ class S3Service:
             raise HttpError(400, "S3 service is not available") from error
 
     def delete(self, type, url):
-        self.s3_client.delete_object(Bucket=type, Key=url.split("/")[-1])
+        try:
+            self.s3_client.delete_object(Bucket=type, Key=url.split("/")[-1])
+
+        except botocore.exceptions.ClientError as error:
+            raise HttpError(400, "S3 service is not available") from error
 
 
 s3_service = S3Service()

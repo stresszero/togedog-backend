@@ -1,6 +1,9 @@
-import jwt, requests
+import logging
+import jwt, requests, uuid
 import boto3
 from datetime import datetime, timedelta
+
+from botocore.exceptions import ClientError
 
 from django.http import JsonResponse
 from django.conf import settings
@@ -30,6 +33,47 @@ s3_client = boto3.client(
     aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
     region_name=settings.AWS_S3_REGION_NAME
 )
+
+image_extension_list = ["jpg", "jpeg", "jfif", "gif", "png", "webp", "avif", "svg"]
+
+class FileUploader:
+    def __init__(self, client):
+        self.client = client
+
+    def upload(self, file, type):
+        try: 
+            extra_args = {
+                "ContentType": file.content_type,
+                "ACL": "public-read"
+            }
+
+            upload_filename = f'{str(uuid.uuid4())}.{file.name.split(".")[-1]}'
+
+            self.client.upload_fileobj(
+                file,
+                type,
+                Key=upload_filename,
+                ExtraArgs=extra_args
+            )
+            return f'{settings.PROFILE_IMAGES_URL}{upload_filename}' \
+                if type == "user_thumbnail" else f'{settings.POST_IMAGES_URL}{upload_filename}'
+
+        except ClientError as e:
+            logging.error(e)
+            return False
+
+    def delete(self, file_name, type):
+        return self.client.delete_object(Bucket=type, Key=file_name)
+
+class FileHandler:
+    def __init__(self, file_uploader):
+        self.file_uploader = file_uploader
+    
+    def upload(self, file):
+        return self.file_uploader.upload(file)
+        
+    def delete(self, file_name):
+        return self.file_uploader.delete(file_name)
 
 class KakaoLoginAPI:
     def __init__(self, client_id):
@@ -158,3 +202,4 @@ class SocialLogin:
             return JsonResponse({'message': 'invalid response'}, status=response.status_code)
         
         return response.json()
+

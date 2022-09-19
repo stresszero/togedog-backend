@@ -32,7 +32,7 @@ router = Router(tags=["사용자 관련 API"])
 
 @router.get("", response=List[UserListOut], auth=[AuthBearer()])
 @paginate(PageNumberPagination, page_size=10)
-def get_user_list(request, search: str = None, reported: int = None):
+def get_user_list(request, search: str = None, reported: int = None, date: str= None):
     '''
     사용자 목록 조회, 관리자 계정만 조회 가능, 한페이지에 10개씩 조회, 
     쿼리 파라미터 search: 사용자 닉네임으로 검색, reported: 정수값을 넣으면 해당 정수값 이상 신고받은 사용자 검색
@@ -45,6 +45,8 @@ def get_user_list(request, search: str = None, reported: int = None):
         q &= Q(nickname__icontains=search)
     if reported:
         q &= Q(reported_count__gte=reported)
+    if date:
+        q &= Q(created_at__range=[date.split('~')[0], date.split('~')[1]])
 
     return User.objects\
         .annotate(
@@ -254,7 +256,6 @@ def email_user_login(request, payload: EmailUserSigninIn):
         user = User.objects.get(email=payload_dict["email"], account_type=UserAccountType.EMAIL)
         
         if check_password(payload_dict["password"], user.password):
-            # response = JsonResponse({'message': 'success'}, status=200)
             data = {
                 "access_token" : generate_jwt({"user": user.id}, "access"),
                 "user": {
@@ -270,8 +271,8 @@ def email_user_login(request, payload: EmailUserSigninIn):
             }
             # response = JsonResponse({'access_token': generate_jwt({"user": user.id}, "access")}, status=200)
             response = JsonResponse(data, status=200)
-            response.set_cookie('refresh_token', generate_jwt({"user": user.id}, "refresh"), httponly=True, samesite="lax")
             response.set_cookie('access_token', generate_jwt({"user": user.id}, "access"), httponly=True, samesite="lax")
+            response.set_cookie('refresh_token', generate_jwt({"user": user.id}, "refresh"), httponly=True, samesite="lax")
             return response
          
         return 400, {"message": "invalid user"}
@@ -319,7 +320,22 @@ def kakao_token_test(request, token: TestKakaoToken):
                 'account_type' : UserAccountType.KAKAO.value,
             }
         )
-    response = JsonResponse({'access_token': generate_jwt({"user": user.id}, "access")}, status=200)
+    data = {
+        "access_token" : generate_jwt({"user": user.id}, "access"),
+        "user": {
+            "name"         : user.name,
+            "nickname"     : user.nickname,
+            "email"        : user.email,
+            "user_type"    : user.user_type,
+            "status"       : user.status,
+            "account_type" : user.account_type,
+            "thumbnail_url": user.thumbnail_url,
+            "mbti"         : user.mbti,
+        }
+    }
+    response = JsonResponse(data, status=200)
+    # response = JsonResponse({'access_token': generate_jwt({"user": user.id}, "access")}, status=200)
+    response.set_cookie('access_token', generate_jwt({"user": user.id}, "access"), httponly=True, samesite="lax")
     response.set_cookie('refresh_token', generate_jwt({"user": user.id}, "refresh"), httponly=True, samesite="lax")
     return response
 
@@ -341,7 +357,22 @@ def google_token_test(request, token: TestKakaoToken):
                 "account_type" : UserAccountType.GOOGLE.value,
             }
         )
-    response = JsonResponse({'access_token': generate_jwt({"user": user.id}, "access")}, status=200)
+    data = {
+        "access_token" : generate_jwt({"user": user.id}, "access"),
+        "user": {
+            "name"         : user.name,
+            "nickname"     : user.nickname,
+            "email"        : user.email,
+            "user_type"    : user.user_type,
+            "status"       : user.status,
+            "account_type" : user.account_type,
+            "thumbnail_url": user.thumbnail_url,
+            "mbti"         : user.mbti,
+        }
+    }
+    response = JsonResponse(data, status=200)
+    # response = JsonResponse({'access_token': generate_jwt({"user": user.id}, "access")}, status=200)
+    response.set_cookie('access_token', generate_jwt({"user": user.id}, "access"), httponly=True, samesite="lax")
     response.set_cookie('refresh_token', generate_jwt({"user": user.id}, "refresh"), httponly=True, samesite="lax")
     return response
 

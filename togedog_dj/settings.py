@@ -18,7 +18,8 @@ from .admin_settings import (
     GOOGLE_RESPONSE_TYPE,
     GOOGLE_SCOPE,
     POST_IMAGES_URL,
-    PROFILE_IMAGES_URL
+    PROFILE_IMAGES_URL,
+    DEFAULT_USER_THUMBNAIL_URL
     )
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -172,6 +173,8 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+DEFAULT_USER_THUMBNAIL_URL = DEFAULT_USER_THUMBNAIL_URL
 
 # AWS S3
 AWS_ACCESS_KEY_ID     = AWS_ACCESS_KEY_ID

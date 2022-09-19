@@ -248,17 +248,3 @@ def create_post(request, body: CreatePostIn = Form(...), file: UploadedFile = No
     return 200, {"message": "success"}
 
 
-# @router.get("/reports/")
-# def check_notification(request):
-#     '''
-#     신고 알림 유무 확인
-#     '''
-#     is_admin(request)
-#     count = PostReport.objects.filter(is_checked=False).count() + PostDelete.objects.filter(is_checked=False).count() + CommentReport.objects.filter(is_checked=False).count() + CommentDelete.objects.filter(is_checked=False).count()
-#     return 200, {"notification_count": count}
-
-# @router.get("/asdf/asdf/")
-# def asdf(request):
-#     post = list(Post.objects.all().values())
-#     post_report = list(PostReport.objects.all().values())
-#     return JsonResponse({'post': post, 'post_report': post_report})

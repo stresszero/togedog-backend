@@ -5,7 +5,7 @@ from cores.models import TimeStampedModel
 class Post(TimeStampedModel):
     user       = models.ForeignKey('users.user', related_name="posts", on_delete=models.CASCADE)
     subject    = models.CharField(max_length=100, blank=True)
-    content    = models.TextField()
+    content    = models.CharField(max_length=1000, blank=True)
     image_url  = models.CharField(max_length=500, null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
 

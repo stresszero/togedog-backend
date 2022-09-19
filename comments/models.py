@@ -5,7 +5,7 @@ from cores.models import TimeStampedModel
 class Comment(TimeStampedModel):
     user       = models.ForeignKey('users.user', related_name='comments', on_delete=models.CASCADE)
     post       = models.ForeignKey('posts.post', related_name='comments', on_delete=models.CASCADE)
-    content    = models.CharField(max_length=500, blank=True)
+    content    = models.CharField(max_length=300, blank=True)
     is_deleted = models.BooleanField(default=False)
 
     class Meta:

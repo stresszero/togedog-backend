@@ -1,8 +1,9 @@
 from django.db import models
+from django.conf import settings
 
 from cores.models import TimeStampedModel, EnumField, UserType, UserStatus, UserAccountType
 
-DEFAULT_USER_THUMBNAIL_URL = 'http://thumbnail.url'
+DEFAULT_USER_THUMBNAIL_URL = settings.DEFAULT_USER_THUMBNAIL_URL
 
 class User(TimeStampedModel):
     name              = models.CharField(max_length=50, null=True)

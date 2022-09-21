@@ -1,6 +1,18 @@
 import socketio
+from bson import ObjectId
+from pymongo import MongoClient, DESCENDING
+
+from django.conf import settings
 
 sio = socketio.Server(async_mode='eventlet', cors_allowed_origins='*', logger=True)
+
+client = MongoClient(settings.MONGODB_ADDRESS)
+
+chat_db = client.get_database("mbtichat")
+messages_collection = chat_db.get_collection("messages")
+# users_collection = chat_db.get_collection("users")
+# rooms_collection = chat_db.get_collection("rooms")
+# room_members_collection = chat_db.get_collection("room_members")
 
 users = {}
 
@@ -11,7 +23,6 @@ def my_event(sid, message):
 
 @sio.on('join')
 def handle_join(sid, data):
-    # print(data)
     users[sid] = data
     sio.enter_room(sid, room=data['room'])
     sio.emit('add_message', {"user": '함께하개 관리자', "text": f"{data['nickname']}님이 들어왔어요."}, to=data['room'])
@@ -20,10 +31,6 @@ def handle_join(sid, data):
 @sio.on('send_message')
 def handle_send_message(sid, message, nickname, room, currentTime, userMbti):
     print(message, nickname, room, currentTime, userMbti)
-    # print('message', message)
-    # print('nickname', nickname)
-    # print('room', room)
-    # print('time', currentTime)
     data = {"user": nickname, "text": message, "time": currentTime, "mbti": userMbti}
     sio.emit('add_message', data, to=room)
 
@@ -32,14 +39,4 @@ def disconnect(sid):
     leave_username = users.get(sid).get('nickname')
     leave_room_number = users.get(sid).get('room')
     sio.emit('add_message', {"user": '함께하개 관리자', "text": f"{leave_username}님이 퇴장하셨어요."}, to=leave_room_number)
-    # sio.leave_room(sid, room=leave_room_number)
     del users[sid]
-
-# @socketio.on('join')
-# def handle_join(data):
-#     print(data)
-#     # app.logger.info(f"{data['nickname']}")
-#     join_room(data['room'])
-#     socketio.send(f"{data['nickname']}님이 들어왔어요.", to=data['room'])
-#     # socketio.emit('add_message', {"user": '함께하개 관리자', "text": f"{data['nickname']}님>이 들어왔어요."})
-#     socketio.emit('add_message', {"user": '함께하개 관리자', "text": f"{data['nickname']}님이 들어왔어요."}, broadcast=True)

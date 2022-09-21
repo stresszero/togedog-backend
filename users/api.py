@@ -8,7 +8,7 @@ from django.http import JsonResponse
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth.hashers import make_password, check_password
 from django.conf import settings
-from ninja import Router
+from ninja import Router, Form
 from ninja.files import UploadedFile
 
 from cores.schemas import SuccessOut, AlreadyExistsOut, NotFoundOut, InvalidUserOut, BadRequestOut
@@ -102,33 +102,37 @@ def get_user_info(request, user_id: int):
     return 200, get_object_or_404(User, id=user_id)
 
 @router.patch("/{user_id}", response={200: SuccessOut, 400: BadRequestOut, 404: NotFoundOut}, auth=[AuthBearer()])
-def modify_user_info(request, user_id: int, body: ModifyUserIn, file: UploadedFile = None):
+def modify_user_info(request, user_id: int, body: ModifyUserIn = Form(...), file: UploadedFile = None):
     '''
     사용자 정보 수정, 로그인한 본인 계정 또는 관리자만 수정 가능
     '''
+    print(request, body, file)
     has_authority(request, user_id, user_check=True, banned_check=False)
-    try:
-        user = User.objects.get(id=user_id)
-        if file:
-            if file.name.split(".")[-1].lower() not in ["jpg", "jpeg", "jfif", "png", "webp", "avif", "svg"]:
-                return 400, {"message": "invalid image format"}
-            if file.size > 50 * MB:
-                return 400, {"message": "file size is too large"}
-            if user.thumbnail_url:
-                s3_client.delete_object(Bucket="user_thumbnail", Key=user.thumbnail_url.split("/")[-1])
+    user = get_object_or_404(User, id=user_id)
+
+    if file:
+        if file.name.split(".")[-1].lower() not in ["jpg", "jpeg", "jfif", "png", "webp", "avif", "svg"]:
+            return 400, {"message": "invalid image format"}
+        if file.size > 50 * MB:
+            return 400, {"message": "file size is too large"}
+        if user.thumbnail_url != settings.DEFAULT_USER_THUMBNAIL_URL:
+            s3_client.delete_object(Bucket="user_thumbnail", Key=user.thumbnail_url.split("/")[-1])
 
         upload_filename = f'{str(uuid.uuid4())}.{file.name.split(".")[-1]}'
-        s3_client.upload_fileobj(file, "user_thumbnail", upload_filename, ExtraArgs={"ACL": "public-read"})
+        s3_client.upload_fileobj(file, "user_thumbnail", upload_filename, ExtraArgs={"ACL": "public-read", "ContentType": file.content_type})
         user.thumbnail_url = f'{settings.PROFILE_IMAGES_URL}{upload_filename}'
+    print(body.name)
+    if body.name:
+        user.name = body.name
+    if body.nickname:
+        user.nickname = body.nickname
+    if body.mbti:
+        user.mbti = body.mbti
+    # for attr, value in body.dict().items():
+    #     setattr(user, attr, value)
+    user.save()
 
-        for attr, value in body.dict().items():
-            setattr(user, attr, value)
-        user.save()
-
-    except User.DoesNotExist:
-        return 404, {"message": "user does not exist"}
-
-    return 200, {"message": "success"}
+    return JsonResponse({"mbti_input": body.mbti})           
 
 @router.delete("/{user_id}", response={200: SuccessOut, 404: NotFoundOut}, auth=[AuthBearer()])
 def delete_user(request, user_id: int):
@@ -259,6 +263,7 @@ def email_user_login(request, payload: EmailUserSigninIn):
             data = {
                 "access_token" : generate_jwt({"user": user.id}, "access"),
                 "user": {
+                    "id"           : user.id,
                     "name"         : user.name,
                     "nickname"     : user.nickname,
                     "email"        : user.email,
@@ -271,8 +276,8 @@ def email_user_login(request, payload: EmailUserSigninIn):
             }
             # response = JsonResponse({'access_token': generate_jwt({"user": user.id}, "access")}, status=200)
             response = JsonResponse(data, status=200)
-            response.set_cookie('access_token', generate_jwt({"user": user.id}, "access"), httponly=True, samesite="lax")
-            response.set_cookie('refresh_token', generate_jwt({"user": user.id}, "refresh"), httponly=True, samesite="lax")
+            response.set_cookie('access_token', generate_jwt({"user": user.id}, "access"), httponly=True, samesite="None", secure=True)
+            response.set_cookie('refresh_token', generate_jwt({"user": user.id}, "refresh"), httponly=True, samesite="None", secure=True)
             return response
          
         return 400, {"message": "invalid user"}

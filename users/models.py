@@ -3,8 +3,6 @@ from django.conf import settings
 
 from cores.models import TimeStampedModel, EnumField, UserType, UserStatus, UserAccountType
 
-DEFAULT_USER_THUMBNAIL_URL = settings.DEFAULT_USER_THUMBNAIL_URL
-
 class User(TimeStampedModel):
     name              = models.CharField(max_length=50, null=True)
     nickname          = models.CharField(max_length=50)
@@ -14,7 +12,7 @@ class User(TimeStampedModel):
     user_type         = EnumField(enum=UserType, default=UserType.NORMAL, max_length=10)
     status            = EnumField(enum=UserStatus, default=UserStatus.ACTIVE, max_length=10)
     account_type      = EnumField(enum=UserAccountType, max_length=20)
-    thumbnail_url     = models.CharField(max_length=500, default=DEFAULT_USER_THUMBNAIL_URL)
+    thumbnail_url     = models.CharField(max_length=500, default=settings.DEFAULT_USER_THUMBNAIL_URL)
     address           = models.CharField(max_length=20, null=True)
     mbti              = models.CharField(max_length=4, default="none")
     

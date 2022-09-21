@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 
 from cores.models import TimeStampedModel
 
@@ -6,7 +7,7 @@ class Post(TimeStampedModel):
     user       = models.ForeignKey('users.user', related_name="posts", on_delete=models.CASCADE)
     subject    = models.CharField(max_length=100, blank=True)
     content    = models.CharField(max_length=1000, blank=True)
-    image_url  = models.CharField(max_length=500, null=True, blank=True)
+    image_url  = models.CharField(max_length=500, blank=True, default=settings.DEFAULT_POST_IMAGE_URL)
     is_deleted = models.BooleanField(default=False)
 
     class Meta:

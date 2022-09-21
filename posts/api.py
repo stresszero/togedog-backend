@@ -4,6 +4,7 @@ from typing import List
 from django.conf import settings
 from django.http import JsonResponse
 from django.db.models import F, Q, Count
+from django.shortcuts import get_object_or_404
 from ninja import Router, Form
 from ninja.pagination import paginate, PageNumberPagination
 from ninja.files import UploadedFile
@@ -98,7 +99,7 @@ def get_post(request, post_id: int):
             "is_liked"        : True if post.likes.filter(like_user_id=request.auth.id).exists() else False,
             "comments"        : [
                 comments for comments in post.comments.filter(is_deleted=False)
-                .values('id', 'content', 'created_at', 'user_id', user_nickname=F("user__nickname"))
+                .values('id', 'content', 'created_at', 'user_id', user_nickname=F("user__nickname"), user_thumbnail_url=F("user__thumbnail_url"))
                 .order_by('created_at')
                 ],
         }
@@ -127,12 +128,8 @@ def modify_post(request, post_id: int, body: ModifyPostIn = Form(...), file: Upl
     '''
     게시글 수정, 업로드 사진파일은 용량 50MB 제한
     '''
-    try:
-        post = Post.objects.get(id=post_id, is_deleted=False)
-        has_authority(request, user_id=post.user_id, user_check=True)
-        
-    except Post.DoesNotExist:
-        return 404, {"message": "post does not exist"}
+    has_authority(request, user_id=post.user_id, user_check=True)
+    post = get_object_or_404(Post, id=post_id, is_deleted=False)
 
     if file:
         if file.size > 50 * MB:
@@ -154,52 +151,40 @@ def delete_post(request, post_id: int, body: DeletePostIn = Form(...)):
     '''
     게시글 삭제, DB삭제가 아니라 해당 게시글의 is_deleted 값만 True로 바꿈, 관리자가 삭제하는 경우 삭제 사유 입력
     '''
-    try:
-        post = Post.objects.get(id=post_id, is_deleted=False)
-        has_authority(request, user_id=post.user_id, user_check=True)
-        post.is_deleted = True
-        post.save()
-        delete_reason = "글쓴이 본인이 삭제" if post.user_id == request.auth.id else body.delete_reason
-        PostDelete.objects.create(user_id=request.auth.id, post_id=post_id, delete_reason=delete_reason)
-
-    except Post.DoesNotExist:
-        return 404, {"message": "post does not exist"}
+    has_authority(request, user_id=post.user_id, user_check=True)
+    post = get_object_or_404(Post, id=post_id, is_deleted=False)
+    post.is_deleted = True
+    post.save()
+    delete_reason = "글쓴이 본인이 삭제" if post.user_id == request.auth.id else body.delete_reason
+    PostDelete.objects.create(user_id=request.auth.id, post_id=post_id, delete_reason=delete_reason)
 
     return 200, {"message": "success"}
 
-@router.post("/{post_id}/report/", response={200: SuccessOut, 404: NotFoundOut})
+@router.post("/{post_id}/report/", response={200: SuccessOut})
 def report_post(request, post_id: int, body: CreatePostReportIn = Form(...)):
     '''
     게시글 신고하기
     '''
-    try:
-        has_authority(request)
-        post = Post.objects.get(id=post_id, is_deleted=False)
-        
-    except Post.DoesNotExist:
-        return 404, {"message": "post does not exist"}
-
+    has_authority(request)
+    post = get_object_or_404(Post, id=post_id, is_deleted=False)
+    
     PostReport.objects.create(
         reporter_user_id=request.auth.id,
         reported_user_id=post.user_id, 
         post_id=post_id, 
         content=body.content
-        )    
+    )    
     return 200, {"message": "success"}
 
-@router.delete("/{post_id}/delete/hard/", response={200: SuccessOut, 404: NotFoundOut})
+@router.delete("/{post_id}/delete/hard/", response={200: SuccessOut})
 def delete_post_from_db(request, post_id: int):
     '''
     게시글을 DB에서 삭제, 관리자만 가능
     '''
-    try:
-        is_admin(request)
-        post = Post.objects.get(id=post_id)
-        post.delete()
+    is_admin(request)
+    post = get_object_or_404(Post, id=post_id)
+    post.delete()
         
-    except Post.DoesNotExist:
-        return 404, {"message": "post does not exist"}
-
     return 200, {"message": "success"}
 
 @router.post("/{post_id}/like", response={200: SuccessOut, 404: NotFoundOut})
@@ -239,12 +224,18 @@ def create_post(request, body: CreatePostIn = Form(...), file: UploadedFile = No
         if file.size > 50 * MB:
             return 400, {"message": "file size is too large"}
         upload_filename = f'{str(uuid.uuid4())}.{file.name.split(".")[-1]}'
-        s3_client.upload_fileobj(file, "post_images", upload_filename, ExtraArgs={"ACL": "public-read"})
+        s3_client.upload_fileobj(file, "post_images", upload_filename, ExtraArgs={"ACL": "public-read", "ContentType": file.content_type})
         upload_url = f'{settings.POST_IMAGES_URL}{upload_filename}'
     else:
         upload_url = None
-
-    Post.objects.create(user_id=request.auth.id, subject=body.subject, content=body.content, image_url=upload_url)
+    
+    Post.objects.create(
+        user_id=request.auth.id, 
+        subject=body.subject, 
+        content=body.content, 
+        image_url=upload_url if upload_url else settings.DEFAULT_POST_IMAGE_URL,
+    )
+    
     return 200, {"message": "success"}
 
 

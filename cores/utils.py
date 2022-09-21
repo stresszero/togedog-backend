@@ -34,7 +34,7 @@ s3_client = boto3.client(
     region_name=settings.AWS_S3_REGION_NAME
 )
 
-image_extension_list = ["jpg", "jpeg", "jfif", "gif", "png", "webp", "avif", "svg"]
+image_extension_list = ["jpg", "jpeg", "jfif", "png", "webp", "avif", "svg"]
 
 class FileUploader:
     def __init__(self, client):
@@ -74,6 +74,7 @@ class FileHandler:
         
     def delete(self, file_name):
         return self.file_uploader.delete(file_name)
+
 
 class KakaoLoginAPI:
     def __init__(self, client_id):

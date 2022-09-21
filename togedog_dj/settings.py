@@ -19,7 +19,9 @@ from .admin_settings import (
     GOOGLE_SCOPE,
     POST_IMAGES_URL,
     PROFILE_IMAGES_URL,
-    DEFAULT_USER_THUMBNAIL_URL
+    DEFAULT_USER_THUMBNAIL_URL,
+    DEFAULT_POST_IMAGE_URL,
+    MONGODB_ADDRESS
     )
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -28,15 +30,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
-# Channels
-# CHANNEL_LAYERS = {
-#     'default': {
-#         'BACKEND': 'channels_redis.core.RedisChannelLayer',
-#         'CONFIG': {
-#             "hosts": [('127.0.0.1', 6379)],
-#         },
-#     },
-# }
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = SECRET_KEY
 DATABASES = DATABASES
@@ -77,16 +70,20 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
+    # "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "cores.middleware.PutPatchWithFileFormMiddleware",
 ]
 
-##CORS
+# CORS
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
+# CORS_ORIGIN_WHITELIST = [
+#     'http://127.0.0.1:3000',
+#     'http://localhost:3000'
+#     ]
 
 CORS_ALLOW_METHODS = (
     'DELETE',
@@ -107,6 +104,7 @@ CORS_ALLOW_HEADERS = (
     'user-agent',
     'x-csrftoken',
     'x-requested-with',
+    'Access-Control-Allow-Headers',
 )
 
 ROOT_URLCONF = "togedog_dj.urls"
@@ -128,10 +126,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "togedog_dj.wsgi.application"
-
-
 # ASGI_APPLICATION = 'togedog_dj.asgi.application'
-
 
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
@@ -163,7 +158,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
@@ -174,7 +168,10 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+POST_IMAGES_URL            = POST_IMAGES_URL
+PROFILE_IMAGES_URL         = PROFILE_IMAGES_URL
 DEFAULT_USER_THUMBNAIL_URL = DEFAULT_USER_THUMBNAIL_URL
+DEFAULT_POST_IMAGE_URL     = DEFAULT_POST_IMAGE_URL
 
 # AWS S3
 AWS_ACCESS_KEY_ID     = AWS_ACCESS_KEY_ID
@@ -191,6 +188,9 @@ GOOGLE_CLIENT_SECRET = GOOGLE_CLIENT_SECRET
 GOOGLE_REDIRECT_URI  = GOOGLE_REDIRECT_URI
 GOOGLE_RESPONSE_TYPE = GOOGLE_RESPONSE_TYPE
 GOOGLE_SCOPE         = GOOGLE_SCOPE
+
+# MongoDB
+MONGODB_ADDRESS = MONGODB_ADDRESS
 
 # runserver logging
 # LOGGING = {

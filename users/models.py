@@ -4,8 +4,8 @@ from django.conf import settings
 from cores.models import TimeStampedModel, EnumField, UserType, UserStatus, UserAccountType
 
 class User(TimeStampedModel):
-    name              = models.CharField(max_length=50, null=True)
-    nickname          = models.CharField(max_length=50)
+    name              = models.CharField(max_length=10, null=True)
+    nickname          = models.CharField(max_length=30)
     email             = models.CharField(max_length=100)
     password          = models.CharField(max_length=600, null=True)
     social_account_id = models.CharField(max_length=100, null=True, unique=True)

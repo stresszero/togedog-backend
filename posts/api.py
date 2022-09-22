@@ -51,7 +51,7 @@ def get_posts_by_admin(request, search: str = None, reported: int = None):
 
 @router.get("/deleted/", response={200: List[DeletedPostOut]})
 @paginate(PageNumberPagination, page_size=10)
-def get_deleted_posts(request, search: str = None):
+def get_deleted_posts(request, search: str = None, date: str = None):
     '''
         삭제된 게시글 목록 조회, 관리자만 가능
     '''
@@ -60,6 +60,8 @@ def get_deleted_posts(request, search: str = None):
     q = Q()
     if search:
         q &= Q(user__nickname__icontains=search)
+    if date:
+        q &= Q(created_at__range=[date.split('~')[0], date.split('~')[1]])
 
     return Post.objects.select_related('user').filter(q, is_deleted=True)
 
@@ -239,3 +241,7 @@ def create_post(request, body: CreatePostIn = Form(...), file: UploadedFile = No
     return 200, {"message": "success"}
 
 
+@router.post("/upload")
+def upload(request, file: UploadedFile = None):
+    data = file.read()
+    return {'name': file.name, 'len': len(data)}

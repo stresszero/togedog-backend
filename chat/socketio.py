@@ -1,18 +1,8 @@
 import socketio
-from bson import ObjectId
-from pymongo import MongoClient, DESCENDING
 
-from django.conf import settings
+from .mongodb import save_message
 
 sio = socketio.Server(async_mode='eventlet', cors_allowed_origins='*', logger=True)
-
-client = MongoClient(settings.MONGODB_ADDRESS)
-
-chat_db = client.get_database("mbtichat")
-messages_collection = chat_db.get_collection("messages")
-# users_collection = chat_db.get_collection("users")
-# rooms_collection = chat_db.get_collection("rooms")
-# room_members_collection = chat_db.get_collection("room_members")
 
 users = {}
 
@@ -30,8 +20,16 @@ def handle_join(sid, data):
 
 @sio.on('send_message')
 def handle_send_message(sid, message, nickname, room, currentTime, userMbti):
-    print(message, nickname, room, currentTime, userMbti)
-    data = {"user": nickname, "text": message, "time": currentTime, "mbti": userMbti}
+    # print(message, nickname, room, currentTime, userMbti)
+    
+    data = {
+        "user"      : nickname,
+        "text"      : message,
+        "time"      : currentTime,
+        "mbti"      : userMbti,
+        "message_id": save_message(message, nickname, room)
+    }
+    # data['message_id'] = save_message(room, data['text'], data['user'])
     sio.emit('add_message', data, to=room)
 
 @sio.event

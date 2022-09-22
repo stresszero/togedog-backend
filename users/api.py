@@ -106,7 +106,7 @@ def modify_user_info(request, user_id: int, body: ModifyUserIn = Form(...), file
     '''
     사용자 정보 수정, 로그인한 본인 계정 또는 관리자만 수정 가능
     '''
-    print(request, body, file)
+    print(body, file)
     has_authority(request, user_id, user_check=True, banned_check=False)
     user = get_object_or_404(User, id=user_id)
 
@@ -121,18 +121,21 @@ def modify_user_info(request, user_id: int, body: ModifyUserIn = Form(...), file
         upload_filename = f'{str(uuid.uuid4())}.{file.name.split(".")[-1]}'
         s3_client.upload_fileobj(file, "user_thumbnail", upload_filename, ExtraArgs={"ACL": "public-read", "ContentType": file.content_type})
         user.thumbnail_url = f'{settings.PROFILE_IMAGES_URL}{upload_filename}'
-    print(body.name)
+    res = {}
     if body.name:
         user.name = body.name
+        res['name_input'] = body.name
     if body.nickname:
         user.nickname = body.nickname
+        res['nickname_input'] = body.nickname
     if body.mbti:
         user.mbti = body.mbti
+        res['mbti_input'] = body.mbti
     # for attr, value in body.dict().items():
     #     setattr(user, attr, value)
     user.save()
 
-    return JsonResponse({"mbti_input": body.mbti})           
+    return JsonResponse(res)         
 
 @router.delete("/{user_id}", response={200: SuccessOut, 404: NotFoundOut}, auth=[AuthBearer()])
 def delete_user(request, user_id: int):
@@ -235,7 +238,7 @@ def google_login_get_profile(request, code: str):
     req_uri      = 'https://www.googleapis.com/oauth2/v3/userinfo'
     headers      = {'Authorization': f'Bearer {access_token}'}
     user_info    = requests.get(req_uri, headers=headers, timeout=3).json()
-
+    print(user_info)
     user, is_created = User.objects.get_or_create(
             social_account_id = user_info["sub"],
             defaults = {

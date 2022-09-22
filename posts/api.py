@@ -114,6 +114,31 @@ def get_post(request, post_id: int):
 
     return data
 
+@router.patch("/{post_id}", response={200: SuccessOut, 400: BadRequestOut, 404: NotFoundOut})
+def modify_post(request, post_id: int, body: ModifyPostIn = Form(...), file: UploadedFile = None):
+    '''
+    게시글 수정, 업로드 사진파일은 용량 50MB 제한
+    '''
+    post = get_object_or_404(Post, id=post_id, is_deleted=False)
+    has_authority(request, user_id=post.user_id, user_check=True)
+
+    if file:
+        if file.name.split(".")[-1].lower() not in ["jpg", "jpeg", "jfif", "png", "webp", "avif", "svg"]:
+            return 400, {"message": "invalid image format"}
+        if file.size > 50 * MB:
+            return 400, {"message": "file size is too large"}
+        if post.image_url != settings.DEFAULT_POST_IMAGE_URL:
+            s3_client.delete_object(Bucket="post_images", Key=post.image_url.split("/")[-1])
+
+        upload_filename = f'{str(uuid.uuid4())}.{file.name.split(".")[-1]}'
+        s3_client.upload_fileobj(file, "post_images", upload_filename, ExtraArgs={"ACL": "public-read", "ContentType": file.content_type})
+        post.image_url = f'{settings.POST_IMAGES_URL}{upload_filename}'
+        
+    post.subject = body.subject
+    post.content = body.content
+    post.save()
+    return 200, {"message": "success"}
+
 @router.get("/{post_id}/admin/", response={200: AdminGetPostOut, 404: NotFoundOut})
 def get_post_by_admin(request, post_id: int):
     '''
@@ -127,29 +152,6 @@ def get_post_by_admin(request, post_id: int):
         return 404, {"message": "post does not exist"}
 
     return 200, post
-
-@router.patch("/{post_id}/modify", response={200: SuccessOut, 400: BadRequestOut, 404: NotFoundOut})
-def modify_post(request, post_id: int, body: ModifyPostIn = Form(...), file: UploadedFile = None):
-    '''
-    게시글 수정, 업로드 사진파일은 용량 50MB 제한
-    '''
-    post = get_object_or_404(Post, id=post_id, is_deleted=False)
-    has_authority(request, user_id=post.user_id, user_check=True)
-
-    if file:
-        if file.size > 50 * MB:
-            return 400, {"message": "file size is too large"}
-        if post.image_url:
-            s3_client.delete_object(Bucket="post_images", Key=post.image_url.split("/")[-1])
-
-        upload_filename = f'{str(uuid.uuid4())}.{file.name.split(".")[-1]}'
-        s3_client.upload_fileobj(file, "post_images", upload_filename, ExtraArgs={"ACL": "public-read"})
-        post.image_url = f'{settings.POST_IMAGES_URL}{upload_filename}'
-        
-    post.subject = body.subject
-    post.content = body.content
-    post.save()
-    return 200, {"message": "success"}
 
 @router.post("/{post_id}/delete/", response={200: SuccessOut, 404: NotFoundOut})
 def delete_post(request, post_id: int, body: DeletePostIn = Form(...)):

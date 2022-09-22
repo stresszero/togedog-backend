@@ -11,7 +11,7 @@ from django.conf import settings
 from ninja import Router, Form
 from ninja.files import UploadedFile
 
-from cores.schemas import SuccessOut, AlreadyExistsOut, NotFoundOut, InvalidUserOut, BadRequestOut
+from cores.schemas import MessageOut, SuccessOut, AlreadyExistsOut, NotFoundOut, InvalidUserOut, BadRequestOut
 from cores.models import UserAccountType, UserStatus
 from cores.utils import generate_jwt, KakaoLoginAPI, s3_client
 from users.auth import AuthBearer, is_admin, has_authority
@@ -65,7 +65,7 @@ def check_bearer(request):
         "accout_type": request.auth.account_type
     }
 
-@router.post("/signup/emailcheck/", response={200: SuccessOut, 400: AlreadyExistsOut})
+@router.post("/signup/emailcheck/", response={200: MessageOut, 400: MessageOut})
 def check_email(request, body: EmailSignupCheckIn):
     '''
     이메일 회원가입 시 이메일 중복 확인, 중복이면 400 에러("message": "email already exists")
@@ -74,7 +74,7 @@ def check_email(request, body: EmailSignupCheckIn):
         return 400, {"message": "email already exists"}
     return 200, {"message": "success"}
 
-@router.post("/signup", response={200: SuccessOut, 201: SuccessOut, 400: AlreadyExistsOut})
+@router.post("/signup", response={200: MessageOut, 201: MessageOut, 400: MessageOut})
 def email_user_signup(request, payload: EmailUserSignupIn):
     '''
     이메일 사용자 회원가입(application/json), 중복이면 400 에러("message": "email already exists")
@@ -90,21 +90,16 @@ def email_user_signup(request, payload: EmailUserSignupIn):
     User.objects.create(**payload_dict)
     return 201, {"message": "success"}
 
-@router.get("/{user_id}", response={200: UserDetailOut, 404: NotFoundOut}, auth=[AuthBearer()])    
+@router.get("/{user_id}", response={200: UserDetailOut}, auth=[AuthBearer()])    
 def get_user_info(request, user_id: int):
     '''
     사용자 정보 조회, 로그인한 본인 계정 또는 관리자만 조회 가능
     '''
     has_authority(request, user_id, user_check=True, banned_check=False)
-    # try:
-    #     user = User.objects.get(id=user_id)
-
-    # except User.DoesNotExist:
-    #     return 404, {"message": "user does not exist"}
     
-    return 200, get_object_or_404(User, id=user_id)
+    return get_object_or_404(User, id=user_id)
 
-@router.patch("/{user_id}", response={200: SuccessOut, 400: BadRequestOut, 404: NotFoundOut}, auth=[AuthBearer()])
+@router.patch("/{user_id}", response={400: MessageOut}, auth=[AuthBearer()])
 def modify_user_info(request, user_id: int, body: ModifyUserIn = Form(...), file: UploadedFile = None):
     '''
     사용자 정보 수정, 로그인한 본인 계정 또는 관리자만 수정 가능
@@ -127,49 +122,43 @@ def modify_user_info(request, user_id: int, body: ModifyUserIn = Form(...), file
         user.thumbnail_url = f'{settings.PROFILE_IMAGES_URL}{upload_filename}'
         res["user_thumbnail_url"] = user.thumbnail_url
 
-    if body.name:
-        user.name = body.name
-        res['name_input'] = body.name
-    if body.nickname:
-        user.nickname = body.nickname
-        res['nickname_input'] = body.nickname
-    if body.mbti:
-        user.mbti = body.mbti
-        res['mbti_input'] = body.mbti
-    # for attr, value in body.dict().items():
-    #     setattr(user, attr, value)
+    # if body.name:
+    #     user.name = body.name
+    #     res['name_input'] = body.name
+    # if body.nickname:
+    #     user.nickname = body.nickname
+    #     res['nickname_input'] = body.nickname
+    # if body.mbti:
+    #     user.mbti = body.mbti
+    #     res['mbti_input'] = body.mbti
+    for attr, value in body.dict().items():
+        if value:
+            setattr(user, attr, value)
+            res[f'{attr}_input'] = value
     user.save()
 
     return JsonResponse(res)         
 
-@router.delete("/{user_id}", response={200: SuccessOut, 404: NotFoundOut}, auth=[AuthBearer()])
+@router.delete("/{user_id}", response={200: MessageOut}, auth=[AuthBearer()])
 def delete_user(request, user_id: int):
     '''
     회원 탈퇴, 로그인한 본인 또는 관리자만 가능, DB에서 완전히 삭제됨
     '''
-    try:
-        user = User.objects.get(id=user_id)
-        has_authority(request, user_id, user_check=True, banned_check=False)
-        user.delete()
-
-    except User.DoesNotExist:
-        return 404, {"message": "user does not exist"}
+    has_authority(request, user_id, user_check=True, banned_check=False)
+    user = get_object_or_404(User, id=user_id)
+    user.delete()
 
     return 200, {"message": "success"}
 
-@router.patch("/{user_id}/ban", response={200: SuccessOut, 404: NotFoundOut}, auth=[AuthBearer()])
+@router.patch("/{user_id}/ban", response={200: SuccessOut}, auth=[AuthBearer()])
 def deactivate_user(request, user_id: int):
     '''
     사용자 비활성화, 관리자만 가능, 사용자의 status 값만 바뀜
     '''
     is_admin(request)
-    try:
-        user = User.objects.get(id=user_id)
-        user.status = UserStatus.BANNED
-        user.save()
-
-    except User.DoesNotExist:
-        return 404, {"message": "user does not exist"}
+    user = get_object_or_404(User, id=user_id)
+    user.status = UserStatus.BANNED
+    user.save()
 
     return 200, {"message": "success"}
 
@@ -257,7 +246,7 @@ def google_login_get_profile(request, code: str):
     response.set_cookie('refresh_token', generate_jwt({"user": user.id}, "refresh"), httponly=True, samesite="lax")
     return response
 
-@router.post("/login/email", response={200: SuccessOut, 404: NotFoundOut, 400: InvalidUserOut})
+@router.post("/login/email", response={200: MessageOut, 400: MessageOut, 404: MessageOut})
 def email_user_login(request, payload: EmailUserSigninIn):
     '''
     이메일 사용자 로그인(application/json)

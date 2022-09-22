@@ -4,6 +4,9 @@ from ninja import Schema, ModelSchema
 from comments.models import CommentReport
 from posts.models import PostReport
 
+class MessageOut(Schema):
+    message: str
+
 class SuccessOut(Schema):
     message: str = "success"
 

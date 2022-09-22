@@ -133,8 +133,8 @@ def modify_post(request, post_id: int, body: ModifyPostIn = Form(...), file: Upl
     '''
     게시글 수정, 업로드 사진파일은 용량 50MB 제한
     '''
-    has_authority(request, user_id=post.user_id, user_check=True)
     post = get_object_or_404(Post, id=post_id, is_deleted=False)
+    has_authority(request, user_id=post.user_id, user_check=True)
 
     if file:
         if file.size > 50 * MB:
@@ -156,8 +156,8 @@ def delete_post(request, post_id: int, body: DeletePostIn = Form(...)):
     '''
     게시글 삭제, DB삭제가 아니라 해당 게시글의 is_deleted 값만 True로 바꿈, 관리자가 삭제하는 경우 삭제 사유 입력
     '''
-    has_authority(request, user_id=post.user_id, user_check=True)
     post = get_object_or_404(Post, id=post_id, is_deleted=False)
+    has_authority(request, user_id=post.user_id, user_check=True)
     post.is_deleted = True
     post.save()
     delete_reason = "글쓴이 본인이 삭제" if post.user_id == request.auth.id else body.delete_reason

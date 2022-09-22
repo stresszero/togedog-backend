@@ -1,8 +1,8 @@
 import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "togedog_dj.settings")
 
-import django
-django.setup()
+# import django
+# django.setup()
 
 from datetime import datetime
 

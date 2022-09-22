@@ -80,6 +80,9 @@ def email_user_signup(request, payload: EmailUserSignupIn):
     이메일 사용자 회원가입(application/json), 중복이면 400 에러("message": "email already exists")
     '''
     payload_dict = payload.dict()
+    if payload_dict['name'] in settings.BAD_WORDS_LIST or payload_dict['nickname'] in settings.BAD_WORDS_LIST:
+        return 400, {"message": "bad words in name or nickname"}
+
     if User.objects.filter(email=payload_dict["email"], account_type=UserAccountType.EMAIL.value).exists():
         return 400, {"message": "user already exists"}
 
@@ -109,6 +112,7 @@ def modify_user_info(request, user_id: int, body: ModifyUserIn = Form(...), file
     print(body, file)
     has_authority(request, user_id, user_check=True, banned_check=False)
     user = get_object_or_404(User, id=user_id)
+    res = {}
 
     if file:
         if file.name.split(".")[-1].lower() not in ["jpg", "jpeg", "jfif", "png", "webp", "avif", "svg"]:
@@ -121,7 +125,8 @@ def modify_user_info(request, user_id: int, body: ModifyUserIn = Form(...), file
         upload_filename = f'{str(uuid.uuid4())}.{file.name.split(".")[-1]}'
         s3_client.upload_fileobj(file, "user_thumbnail", upload_filename, ExtraArgs={"ACL": "public-read", "ContentType": file.content_type})
         user.thumbnail_url = f'{settings.PROFILE_IMAGES_URL}{upload_filename}'
-    res = {}
+        res["user_thumbnail_url"] = user.thumbnail_url
+
     if body.name:
         user.name = body.name
         res['name_input'] = body.name
@@ -243,7 +248,7 @@ def google_login_get_profile(request, code: str):
             social_account_id = user_info["sub"],
             defaults = {
                 "email"        : user_info["email"],
-                "nickname"     : user_info["name"],
+                "nickname"     : user_info["given_name"],
                 "thumbnail_url": user_info["picture"],
                 "account_type" : UserAccountType.GOOGLE.value,
             }
@@ -362,7 +367,7 @@ def google_token_test(request, token: TestKakaoToken):
             social_account_id = user_info["sub"],
             defaults = {
                 "email"        : user_info["email"],
-                "nickname"     : user_info["name"],
+                "nickname"     : user_info["given_name"],
                 "thumbnail_url": user_info["picture"],
                 "account_type" : UserAccountType.GOOGLE.value,
             }

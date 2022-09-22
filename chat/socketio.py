@@ -1,3 +1,9 @@
+import os
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "togedog_dj.settings")
+
+import django
+django.setup()
+
 import socketio
 
 from .mongodb import save_message

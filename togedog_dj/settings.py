@@ -23,6 +23,7 @@ from .admin_settings import (
     DEFAULT_POST_IMAGE_URL,
     MONGODB_ADDRESS
     )
+from .bad_words import BAD_WORDS_LIST
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -191,6 +192,8 @@ GOOGLE_SCOPE         = GOOGLE_SCOPE
 
 # MongoDB
 MONGODB_ADDRESS = MONGODB_ADDRESS
+
+BAD_WORDS_LIST = BAD_WORDS_LIST
 
 # runserver logging
 # LOGGING = {

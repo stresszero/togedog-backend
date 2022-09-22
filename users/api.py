@@ -290,7 +290,7 @@ def email_user_login(request, payload: EmailUserSigninIn):
 
 @router.get("/banned/all", response={200: List[UserListOut]}, auth=AuthBearer())
 @paginate(PageNumberPagination, page_size=10)
-def get_banned_user_list(request, search: str = None):
+def get_banned_user_list(request, search: str = None, date: str = None):
     '''
     차단 계정 목록 조회
     '''
@@ -299,6 +299,8 @@ def get_banned_user_list(request, search: str = None):
     q = Q()
     if search:
         q &= Q(nickname__icontains=search) | Q(email__icontains=search)
+    if date:
+        q &= Q(created_at__range=[date.split('~')[0], date.split('~')[1]])
 
     return User.objects.annotate(
         reported_count = Count("post_reported", distinct=True) + Count("comment_reported", distinct=True)

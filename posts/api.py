@@ -31,11 +31,12 @@ MB = 1024 * 1024
 
 @router.get("/admin", response=List[AdminGetPostListOut])
 @paginate(PageNumberPagination, page_size=10)
-def get_posts_by_admin(request, search: str = None, reported: int = None):
+def get_posts_by_admin(request, search: str = None, reported: int = None, date: str = None):
     '''
-    관리자 페이지 게시글 조회
-    관리자 계정만 조회 가능, 한페이지에 10개씩 조회
-    search: 사용자 닉네임으로 검색
+    관리자 페이지 게시글 조회, is_deleted=False인 글만 조회함,
+    관리자 계정만 조회 가능하고 한페이지에 10개씩 조회,
+    search: 사용자 닉네임으로 검색, reported: 신고건수 이상 글 조회(3입력하면 신고건수 3회 이상 글만 조회),
+    date: 글 작성기간으로 검색(형식: 2021-01-01~2021-01-31, 중간에 ~으로 구분)
     '''
     is_admin(request)
 
@@ -44,6 +45,8 @@ def get_posts_by_admin(request, search: str = None, reported: int = None):
         q &= Q(user__nickname__icontains=search)
     if reported:
         q &= Q(reported_count__gte=reported)
+    if date:
+        q &= Q(created_at__range=[date.split('~')[0], date.split('~')[1]])
 
     return Post.objects.annotate(reported_count=Count('reports', distinct=True))\
         .select_related('user').filter(q, is_deleted=False)\
@@ -53,7 +56,7 @@ def get_posts_by_admin(request, search: str = None, reported: int = None):
 @paginate(PageNumberPagination, page_size=10)
 def get_deleted_posts(request, search: str = None, date: str = None):
     '''
-        삭제된 게시글 목록 조회, 관리자만 가능
+        삭제된 게시글 목록 조회, 관리자만 가능, search/date 파라미터 값 의미는 get posts by admin과 동일
     '''
     is_admin(request)
 
@@ -181,7 +184,7 @@ def report_post(request, post_id: int, body: CreatePostReportIn = Form(...)):
 @router.delete("/{post_id}/delete/hard/", response={200: SuccessOut})
 def delete_post_from_db(request, post_id: int):
     '''
-    게시글을 DB에서 삭제, 관리자만 가능
+    게시글을 DB에서 완전히 삭제(hard delete), 관리자만 가능
     '''
     is_admin(request)
     post = get_object_or_404(Post, id=post_id)
@@ -192,7 +195,7 @@ def delete_post_from_db(request, post_id: int):
 @router.post("/{post_id}/like", response={200: SuccessOut, 404: NotFoundOut})
 def like_post(request, post_id: int):
     '''
-    게시글 좋아요, 이미 좋아요한 상태면 좋아요 취소
+    게시글 좋아요(발도장), 이미 좋아요한 상태면 좋아요 취소
     '''
     try:    
         has_authority(request)
@@ -211,7 +214,7 @@ def like_post(request, post_id: int):
 def get_posts(request, offset: int = 0, limit: int = 9, sort: str = "-created_at"):
     '''
     게시글 목록 조회, 한 페이지에 9개씩, 정렬(sort) 기본값 최신순(-created_at), 인기순(likes)
-    is_deleted=False인것만 나옴
+    is_deleted=False인 게시글만 나옴
     '''
     has_authority(request)
     return 200, Post.objects.filter(is_deleted=False).select_related('user').prefetch_related('likes').order_by(sort)[offset:offset+limit]
@@ -239,9 +242,3 @@ def create_post(request, body: CreatePostIn = Form(...), file: UploadedFile = No
     )
     
     return 200, {"message": "success"}
-
-
-@router.post("/upload")
-def upload(request, file: UploadedFile = None):
-    data = file.read()
-    return {'name': file.name, 'len': len(data)}

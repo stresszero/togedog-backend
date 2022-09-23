@@ -1,16 +1,11 @@
 import os
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "togedog_dj.settings")
-
-# import django
-# django.setup()
-
 from datetime import datetime
 
-from bson import ObjectId
-from pymongo import MongoClient, DESCENDING
+from pymongo import MongoClient
 
 from django.conf import settings
 
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "togedog_dj.settings")
 
 client = MongoClient(settings.MONGODB_ADDRESS)
 

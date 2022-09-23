@@ -1,9 +1,9 @@
 from datetime import datetime
 from typing import List, Optional
 
-from ninja import Schema, ModelSchema, Field, Form, File
+from ninja import Schema, ModelSchema, Field
 
-from posts.models import Post, PostLike, PostReport
+from posts.models import Post, PostReport
 from comments.models import Comment
 
 class PostUser(Schema):
@@ -22,12 +22,6 @@ class GetPostListOut(ModelSchema):
     user_thumbnail: str = Field(..., alias="user.thumbnail_url")
     post_likes_count: int = Field(..., alias='likes.count')
     
-    # @staticmethod
-    # def resolve_time(obj):
-    #     if not obj.user_signup_time:
-    #         return
-    #     return str(obj.user_signup_time)[0:5]
-
     class Config:
         model = Post
         model_exclude = ["user", "is_deleted", "content"]
@@ -38,24 +32,9 @@ class AdminGetPostListOut(GetPostListOut):
     user_signup_time: datetime = Field(..., alias='user.created_at')
     reported_count: int = Field(..., alias='reports.count')
 
-# class AdminGetPostListOut(ModelSchema):
-#     user_id: int = Field(..., alias="user.id")
-#     user_mbti: str = Field(..., alias='user.mbti')
-#     user_nickname: str = Field(..., alias="user.nickname")
-#     user_signup_time: datetime = Field(..., alias='user.created_at')
-#     reported_count: int = Field(..., alias='reports.count')
-#     class Config:
-#         model = Post
-#         model_exclude = ["user", "is_deleted", "content"]
-
 class CreatePostIn(Schema):
     subject: str
     content: str
-    
-# class CreatePostIn(ModelSchema):
-#     class Config:
-#         model = Post
-#         model_exclude ["id", "user", "created_at", "updated_at", "image_url", "is_deleted"]
 
 class CreatePostReportIn(ModelSchema):
     class Config:

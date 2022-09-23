@@ -1,4 +1,3 @@
-from typing import List
 from ninja import NinjaAPI
 from django.http import JsonResponse
 
@@ -10,7 +9,7 @@ from chat.api import router as chat_router
 from comments.api import router as comments_router
 from comments.models import CommentReport
 from cores.api import router as cores_router
-from cores.schemas import MessageOut, CommentReportOut, SuccessOut, NoticeReportOut
+from cores.schemas import MessageOut, NoticeReportOut
 
 
 api = NinjaAPI(title="함께하개 API 문서", version="0.8.0")
@@ -41,30 +40,48 @@ def get_notices(request):
     comment_reports = CommentReport.objects.filter(is_checked=False)
 
     return {
-        "count": comment_reports.count() + post_reports.count(),
         "post_reports": list(post_reports),
         "comment_reports": list(comment_reports),
+        "count": comment_reports.count() + post_reports.count(),
     }
 
-
-@api.post("/admin/notices/all", response=MessageOut, auth=AuthBearer())
-def check_all_notices(request):
+@api.post("/admin/notices", response=MessageOut, auth=AuthBearer())
+def check_notice(request, id: int, type: str):
     """
-    게시글/댓글 신고 모두 확인처리(db에서 is_checked를 True로 바꿈), 관리자만 가능
+    게시글/댓글 신고 확인, 관리자만 가능
     """
-    print(request.headers)
-    print(request.body)
-    print(request.auth.id)
     is_admin(request)
-    PostReport.objects.filter(is_checked=False).update(is_checked=True)
-    CommentReport.objects.filter(is_checked=False).update(is_checked=True)
+    if type == "post_report":
+        PostReport.objects.filter(id=id).update(is_checked=True)
+
+    if type == "comment_report":
+        CommentReport.objects.filter(id=id).update(is_checked=True)
+
+    if type == "all":
+        PostReport.objects.filter(is_checked=False).update(is_checked=True)
+        CommentReport.objects.filter(is_checked=False).update(is_checked=True)
+          
     return {"message": "success"}
 
 
-# @api.get("/cookietest")
-# def test_cookie(request):
-#     print(request.COOKIES)
-#     return JsonResponse({'cookie_access_token': request.COOKIES['access_token']})
+# @api.post("/admin/notices/all", response=MessageOut, auth=AuthBearer())
+# def check_all_notices(request):
+#     """
+#     게시글/댓글 신고 모두 확인처리(db에서 is_checked를 True로 바꿈), 관리자만 가능
+#     """
+#     # print(request.headers)
+#     # print(request.body)
+#     # print(request.auth.id)
+#     is_admin(request)
+#     PostReport.objects.filter(is_checked=False).update(is_checked=True)
+#     CommentReport.objects.filter(is_checked=False).update(is_checked=True)
+#     return {"message": "success"}
+
+
+@api.get("/cookie/test")
+def test_cookie(request):
+    print(request.COOKIES)
+    return JsonResponse({'cookie_access_token': request.COOKIES['access_token']})
 
 # from users.auth import cookie_key
 

@@ -30,6 +30,7 @@ def handle_send_message(sid, message, nickname, room, currentTime, userMbti):
     
     data = {
         "user"      : nickname,
+        # "user_id"   : user_id,
         "text"      : message,
         "time"      : currentTime,
         "mbti"      : userMbti,

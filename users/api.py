@@ -1,18 +1,18 @@
 import requests
 import uuid
-
 from typing import List
-from ninja.pagination import paginate, PageNumberPagination
+
+from django.contrib.auth.hashers import make_password, check_password
+from django.conf import settings
 from django.db.models import Q, Count
 from django.http import JsonResponse
 from django.shortcuts import redirect, get_object_or_404
-from django.contrib.auth.hashers import make_password, check_password
-from django.conf import settings
 from ninja import Router, Form
 from ninja.files import UploadedFile
+from ninja.pagination import paginate, PageNumberPagination
 
-from cores.schemas import MessageOut, SuccessOut, AlreadyExistsOut, NotFoundOut, InvalidUserOut, BadRequestOut
 from cores.models import UserAccountType, UserStatus
+from cores.schemas import MessageOut
 from cores.utils import generate_jwt, KakaoLoginAPI, s3_client
 from users.auth import AuthBearer, is_admin, has_authority
 from users.models import User
@@ -126,15 +126,6 @@ def modify_user_info(request, user_id: int, body: ModifyUserIn = Form(...), file
         user.thumbnail_url = f'{settings.PROFILE_IMAGES_URL}{upload_filename}'
         res["user_thumbnail_url"] = user.thumbnail_url
 
-    # if body.name:
-    #     user.name = body.name
-    #     res['name_input'] = body.name
-    # if body.nickname:
-    #     user.nickname = body.nickname
-    #     res['nickname_input'] = body.nickname
-    # if body.mbti:
-    #     user.mbti = body.mbti
-    #     res['mbti_input'] = body.mbti
     for attr, value in body_dict.items():
         if value:
             setattr(user, attr, value)
@@ -154,7 +145,7 @@ def delete_user(request, user_id: int):
 
     return 200, {"message": "success"}
 
-@router.patch("/{user_id}/ban", response={200: SuccessOut}, auth=[AuthBearer()])
+@router.patch("/{user_id}/ban", response={200: MessageOut}, auth=[AuthBearer()])
 def deactivate_user(request, user_id: int):
     '''
     사용자 비활성화, 관리자만 가능, 사용자의 status 값만 바뀜

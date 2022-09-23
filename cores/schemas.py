@@ -1,4 +1,5 @@
-from typing import List, Optional
+from typing import List
+
 from ninja import Schema, ModelSchema
 
 from comments.models import CommentReport
@@ -6,21 +7,6 @@ from posts.models import PostReport
 
 class MessageOut(Schema):
     message: str
-
-class SuccessOut(Schema):
-    message: str = "success"
-
-class AlreadyExistsOut(Schema):
-    message: str = 'already exists'
-
-class NotFoundOut(Schema):
-    message: str = 'not found'
-
-class BadRequestOut(Schema):
-    message: str = 'bad request'
-
-class InvalidUserOut(Schema):
-    message: str = 'invalid user'
 
 class CommentReportOut(ModelSchema):
     class Config:

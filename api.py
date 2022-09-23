@@ -48,7 +48,7 @@ def get_notices(request):
 @api.post("/admin/notices", response=MessageOut, auth=AuthBearer())
 def check_notice(request, id: int, type: str):
     """
-    게시글/댓글 신고 확인, 관리자만 가능
+    게시글/댓글 신고 확인, 관리자만 가능, type이 post_report면 게시글 신고 확인, comment_report면 댓글 신고 확인, all이면 모든 신고건 확인 처리
     """
     is_admin(request)
     if type == "post_report":

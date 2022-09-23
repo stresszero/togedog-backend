@@ -23,6 +23,10 @@ class Post(TimeStampedModel):
     @property
     def get_reports_count(self):
         return self.reports.count()
+    
+    @property
+    def get_comments_not_deleted(self):
+        return self.comments.filter(is_deleted=False)
 
 class PostLike(TimeStampedModel):
     like_user = models.ForeignKey('users.user', related_name="post_likes", on_delete=models.CASCADE)

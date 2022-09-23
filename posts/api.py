@@ -11,7 +11,7 @@ from ninja.files import UploadedFile
 
 from cores.utils import s3_client
 from users.auth import AuthBearer, has_authority, is_admin
-from cores.schemas import NotFoundOut, SuccessOut, BadRequestOut
+from cores.schemas import MessageOut, NotFoundOut, SuccessOut, BadRequestOut
 from posts.models import Post, PostLike, PostDelete, PostReport
 from posts.schemas import (
     GetPostListOut, 
@@ -73,14 +73,9 @@ def get_deleted_post_by_admin(request, post_id: int):
     '''
         삭제된 게시글 상세조회, 삭제사유도 조회 가능, 관리자만 조회 가능
     '''
-    try:
-        is_admin(request)
-        post = Post.objects.select_related('user').get(id=post_id, is_deleted=True)
+    is_admin(request)
 
-    except Post.DoesNotExist:
-        return 404, {"message": "post does not exist"}
-
-    return 200, post
+    return 200, get_object_or_404(Post.objects.select_related('user'), id=post_id, is_deleted=True)
 
 @router.get("/{post_id}")
 def get_post(request, post_id: int):
@@ -183,21 +178,23 @@ def report_post(request, post_id: int, body: CreatePostReportIn = Form(...)):
     )    
     return 200, {"message": "success"}
 
-@router.delete("/{post_id}/delete/hard/", response={200: SuccessOut})
+@router.delete("/{post_id}/delete/hard", response={200: SuccessOut})
 def delete_post_from_db(request, post_id: int):
     '''
     게시글을 DB에서 완전히 삭제(hard delete), 관리자만 가능
     '''
     is_admin(request)
     post = get_object_or_404(Post, id=post_id)
+    if post.image_url != settings.DEFAULT_POST_IMAGE_URL:
+        s3_client.delete_object(Bucket="post_images", Key=post.image_url.split("/")[-1])
     post.delete()
         
     return 200, {"message": "success"}
 
-@router.post("/{post_id}/like", response={200: SuccessOut, 404: NotFoundOut})
-def like_post(request, post_id: int):
+@router.post("/{post_id}/likes", response={200: SuccessOut, 404: NotFoundOut})
+def create_post_like(request, post_id: int):
     '''
-    게시글 좋아요(발도장), 이미 좋아요한 상태면 좋아요 취소
+    게시글 좋아요(발도장) 생성, 사용자가 이미 좋아요한 상태면 좋아요 취소
     '''
     try:    
         has_authority(request)
@@ -227,20 +224,15 @@ def create_post(request, body: CreatePostIn = Form(...), file: UploadedFile = No
     게시글 생성, 업로드 사진파일은 용량 50MB 제한
     '''
     has_authority(request)
+    body_dict = body.dict()
     if file:
+        if file.name.split(".")[-1].lower() not in ["jpg", "jpeg", "jfif", "png", "webp", "avif", "svg"]:
+            return 400, {"message": "invalid image format"}
         if file.size > 50 * MB:
             return 400, {"message": "file size is too large"}
         upload_filename = f'{str(uuid.uuid4())}.{file.name.split(".")[-1]}'
         s3_client.upload_fileobj(file, "post_images", upload_filename, ExtraArgs={"ACL": "public-read", "ContentType": file.content_type})
-        upload_url = f'{settings.POST_IMAGES_URL}{upload_filename}'
-    else:
-        upload_url = None
-    
-    Post.objects.create(
-        user_id=request.auth.id, 
-        subject=body.subject, 
-        content=body.content, 
-        image_url=upload_url if upload_url else settings.DEFAULT_POST_IMAGE_URL,
-    )
-    
+        body_dict['image_url'] = f'{settings.POST_IMAGES_URL}{upload_filename}'
+
+    Post.objects.create(user_id=request.auth.id, **body_dict)
     return 200, {"message": "success"}

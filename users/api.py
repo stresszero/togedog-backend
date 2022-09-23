@@ -75,19 +75,19 @@ def check_email(request, body: EmailSignupCheckIn):
     return 200, {"message": "success"}
 
 @router.post("/signup", response={200: MessageOut, 201: MessageOut, 400: MessageOut})
-def email_user_signup(request, payload: EmailUserSignupIn):
+def email_user_signup(request, body: EmailUserSignupIn):
     '''
     이메일 사용자 회원가입(application/json), 중복이면 400 에러("message": "email already exists")
     '''
-    payload_dict = payload.dict()
-    if payload_dict['name'] in settings.BAD_WORDS_LIST or payload_dict['nickname'] in settings.BAD_WORDS_LIST:
+    body_dict = body.dict()
+    if body_dict['name'] in settings.BAD_WORDS_LIST or body_dict['nickname'] in settings.BAD_WORDS_LIST:
         return 400, {"message": "bad words in name or nickname"}
 
-    if User.objects.filter(email=payload_dict["email"], account_type=UserAccountType.EMAIL.value).exists():
+    if User.objects.filter(email=body_dict["email"], account_type=UserAccountType.EMAIL.value).exists():
         return 400, {"message": "user already exists"}
 
-    payload_dict.update({"password": make_password(payload_dict["password"], salt=settings.PASSWORD_SALT)})
-    User.objects.create(**payload_dict)
+    body_dict.update({"password": make_password(body_dict["password"], salt=settings.PASSWORD_SALT)})
+    User.objects.create(**body_dict)
     return 201, {"message": "success"}
 
 @router.get("/{user_id}", response={200: UserDetailOut}, auth=[AuthBearer()])    
@@ -108,6 +108,10 @@ def modify_user_info(request, user_id: int, body: ModifyUserIn = Form(...), file
     has_authority(request, user_id, user_check=True, banned_check=False)
     user = get_object_or_404(User, id=user_id)
     res = {}
+
+    body_dict = body.dict()
+    if body_dict['name'] in settings.BAD_WORDS_LIST or body_dict['nickname'] in settings.BAD_WORDS_LIST:
+        return 400, {"message": "bad words in name or nickname"}
 
     if file:
         if file.name.split(".")[-1].lower() not in ["jpg", "jpeg", "jfif", "png", "webp", "avif", "svg"]:
@@ -131,7 +135,7 @@ def modify_user_info(request, user_id: int, body: ModifyUserIn = Form(...), file
     # if body.mbti:
     #     user.mbti = body.mbti
     #     res['mbti_input'] = body.mbti
-    for attr, value in body.dict().items():
+    for attr, value in body_dict.items():
         if value:
             setattr(user, attr, value)
             res[f'{attr}_input'] = value
@@ -315,11 +319,15 @@ def kakao_token_test(request, token: TestKakaoToken):
 
     kakao_profile = kakao_response.json()
 
+    kakao_nickname = kakao_profile['kakao_account']['profile']['nickname'] \
+        if len(kakao_profile['kakao_account']['profile']['nickname']) <= 10 \
+            else kakao_profile['kakao_account']['profile']['nickname'][:10]
+
     user, is_created  = User.objects.get_or_create(
             social_account_id = kakao_profile['id'],
             defaults = {
                 'email'        : kakao_profile['kakao_account']['email'],
-                'nickname'     : kakao_profile['kakao_account']['profile']['nickname'],
+                'nickname'     : kakao_nickname,
                 # 'thumbnail_url': kakao_profile['kakao_account']['profile']['thumbnail_image_url'],
                 'account_type' : UserAccountType.KAKAO.value,
             }
@@ -351,16 +359,18 @@ def google_token_test(request, token: TestKakaoToken):
     req_uri     = 'https://www.googleapis.com/oauth2/v3/userinfo'
     headers     = {'Authorization': f'Bearer {token.token}'}
     user_info   = requests.get(req_uri, headers=headers, timeout=3).json()
-    
+    google_name = user_info["given_name"] if len(user_info["given_name"]) <= 10 else user_info["name"][:10]
+
     user, is_created = User.objects.get_or_create(
             social_account_id = user_info["sub"],
             defaults = {
                 "email"        : user_info["email"],
-                "nickname"     : user_info["given_name"],
+                "nickname"     : google_name,
                 "thumbnail_url": user_info["picture"],
                 "account_type" : UserAccountType.GOOGLE.value,
             }
         )
+        
     data = {
         "access_token" : generate_jwt({"user": user.id}, "access"),
         "user": {

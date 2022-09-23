@@ -7,7 +7,7 @@ class Post(TimeStampedModel):
     user       = models.ForeignKey('users.user', related_name="posts", on_delete=models.CASCADE)
     subject    = models.CharField(max_length=100, blank=True)
     content    = models.CharField(max_length=1000, blank=True)
-    image_url  = models.CharField(max_length=500, blank=True, default=settings.DEFAULT_POST_IMAGE_URL)
+    image_url  = models.CharField(max_length=500, default=settings.DEFAULT_POST_IMAGE_URL)
     is_deleted = models.BooleanField(default=False)
 
     class Meta:
@@ -44,7 +44,7 @@ class PostReport(TimeStampedModel):
 class PostDelete(TimeStampedModel):
     user          = models.ForeignKey('users.user', related_name="post_deletes", on_delete=models.CASCADE)
     post          = models.ForeignKey(Post, related_name='deletes', on_delete=models.CASCADE)
-    delete_reason = models.CharField(max_length=200, blank=True, null=True)
+    delete_reason = models.CharField(max_length=200, blank=True)
 
     class Meta:
         db_table = 'post_delete'

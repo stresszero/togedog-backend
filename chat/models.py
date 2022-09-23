@@ -1,9 +1,14 @@
-# from django.db import models
+from django.db import models
 
-# from cores.models import TimeStampedModel
+from cores.models import TimeStampedModel
 
-# class ChatRoom(TimeStampedModel):
-#     pass
+class ChatReport(TimeStampedModel):
+    reporter_user = models.ForeignKey('users.user', related_name="chat_reporter", on_delete=models.CASCADE)
+    reported_user = models.ForeignKey('users.user', related_name="chat_reported", on_delete=models.CASCADE)
+    message_id    = models.CharField(max_length=30)
+    message_text  = models.CharField(max_length=100)
+    content       = models.CharField(max_length=500)
+    is_checked    = models.BooleanField(default=False)
 
-# class ChatReport(TimeStampedModel):
-#     pass
+    class Meta:
+        db_table = 'chat_report'

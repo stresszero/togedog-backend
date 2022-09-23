@@ -5,7 +5,7 @@ from cores.models import TimeStampedModel, EnumField, UserType, UserStatus, User
 
 class User(TimeStampedModel):
     name              = models.CharField(max_length=10, null=True)
-    nickname          = models.CharField(max_length=30)
+    nickname          = models.CharField(max_length=10)
     email             = models.CharField(max_length=100)
     password          = models.CharField(max_length=600, null=True)
     social_account_id = models.CharField(max_length=100, null=True, unique=True)

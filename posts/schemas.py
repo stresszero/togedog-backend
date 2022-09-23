@@ -48,12 +48,14 @@ class AdminGetPostListOut(GetPostListOut):
 #         model = Post
 #         model_exclude = ["user", "is_deleted", "content"]
 
-
-        
-class CreatePostIn(ModelSchema):
-    class Config:
-        model = Post
-        model_exclude = ["id", "user", "created_at", "updated_at", "image_url", "is_deleted"]
+class CreatePostIn(Schema):
+    subject: str
+    content: str
+    
+# class CreatePostIn(ModelSchema):
+#     class Config:
+#         model = Post
+#         model_exclude ["id", "user", "created_at", "updated_at", "image_url", "is_deleted"]
 
 class CreatePostReportIn(ModelSchema):
     class Config:

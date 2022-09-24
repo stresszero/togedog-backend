@@ -1,4 +1,3 @@
-from xml.sax.handler import property_declaration_handler
 from django.db import models
 from django.conf import settings
 

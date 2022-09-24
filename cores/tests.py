@@ -2,10 +2,8 @@ import boto3
 import unittest
 from moto import mock_s3
 
-from django.test import TestCase
 from django.conf import settings
 
-from .utils import s3_service, file_handler
 
 s3_resource = boto3.resource(
     's3', 

@@ -16,7 +16,6 @@ from users.models import User
 sio = socketio.Server(
     async_mode="eventlet",
     cors_allowed_origins=settings.CORS_ALLOWED_ORIGINS,
-    # logger=True
 )
 
 

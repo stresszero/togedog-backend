@@ -129,7 +129,7 @@ def censor_text(text: str) -> str:
             censored_text = (
                 censored_text[:bad_word_index]
                 + "*" * bad_word_length
-                + censored_text[bad_word_index + bad_word_length :]
+                + censored_text[bad_word_index + bad_word_length:]
             )
             bad_word_index = text.find(bad_word, bad_word_index + 1)
     return censored_text

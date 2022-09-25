@@ -26,17 +26,16 @@ def handle_join(sid, data):
     # sio.emit('add_message', {"user": '함께하개 관리자', "text": f"{data['nickname']}님이 들어오셨습니다."}, to=data['room'], skip_sid=sid)
 
 @sio.on('send_message')
-def handle_send_message(sid, message, nickname, room, currentTime, userMbti):
+def handle_send_message(sid, message, nickname, room, currentTime, userMbti, userImage, userId):
     data = {
-        "user"      : nickname,
-        # "user_id"   : user_id,
-        "text"      : message,
-        "time"      : currentTime,
-        "mbti"      : userMbti,
-        "message_id": save_message(message, nickname, room),
-        # "message_id": save_message(message, user_id, room),
+        "user_nickname": nickname,
+        "user_id"      : userId,
+        "text"         : message,
+        "time"         : currentTime,
+        "user_mbti"    : userMbti,
+        "user_image"   : userImage,
+        "message_id"   : save_message(message, nickname, userId, room),
     }
-    # data['message_id'] = save_message(room, data['text'], data['user'])
     sio.emit('add_message', data, to=room)
 
 @sio.event

@@ -14,10 +14,11 @@ client = MongoClient(settings.MONGODB_ADDRESS)
 chat_db = client.get_database("mbtichat")
 messages_collection = chat_db.get_collection("messages")
 
-def save_message(message, sender_id, room_id):
+def save_message(message, nickname, sender_id, room_id):
     return str(messages_collection
     .insert_one({
         'message': message, 
+        'sender_nickname': nickname,
         'sender_id': sender_id, 
         'room_id': room_id, 
         'created_at': datetime.utcnow()

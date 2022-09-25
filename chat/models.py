@@ -12,3 +12,13 @@ class ChatReport(TimeStampedModel):
 
     class Meta:
         db_table = 'chat_report'
+
+class MessageSaveTest(models.Model):
+    message         = models.CharField(max_length=50)
+    sender_nickname = models.CharField(max_length=10)
+    sender_id       = models.IntegerField()
+    room_id         = models.IntegerField()
+    created_at      = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'message_save_test'

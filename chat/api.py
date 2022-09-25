@@ -9,7 +9,7 @@ from .mongodb import get_message
 
 router = Router(tags=["채팅 관련 API"], auth=AuthBearer())
 
-@router.post("/report", response=MessageOut, summary='채팅 메시지 신고하기')
+@router.post("/report", response={200: MessageOut, 400: MessageOut}, summary='채팅 메시지 신고하기')
 def report_chat_message(request, body: ChatReportIn):
     '''
     채팅 신고하기(application/json)
@@ -22,4 +22,4 @@ def report_chat_message(request, body: ChatReportIn):
     if not get_message(body.message_id):
         return 400, {"message": "message not found"}
     ChatReport.objects.create(reporter_user_id=request.auth.id, **body.dict())
-    return {"message": "success"}
+    return 200, {"message": "success"}

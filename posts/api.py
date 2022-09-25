@@ -100,7 +100,8 @@ def get_post(request, post_id: int):
         "is_liked"        : True if post.likes.filter(like_user_id=request.auth.id).exists() else False,
         "comments"        : [
             comments for comments in post.comments.filter(is_deleted=False)
-            .values('id', 'content', 'created_at', 'user_id', user_nickname=F("user__nickname"), user_thumbnail_url=F("user__thumbnail_url"))
+            .values('id', 'content', 'created_at', 'user_id', \
+            user_nickname=F("user__nickname"), user_thumbnail_url=F("user__thumbnail_url"))
             .order_by('created_at')
         ],
     }

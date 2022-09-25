@@ -7,6 +7,12 @@ from botocore.exceptions import ClientError
 
 from django.http import JsonResponse
 from django.conf import settings
+from ninja.errors import HttpError
+from ninja.files import UploadedFile
+
+
+MB = 1024 * 1024
+IMAGE_EXTENSIONS_LIST = ["jpg", "jpeg", "jfif", "png", "webp", "avif", "svg"]
 
 def generate_jwt(payload, type):
     if type == "access":
@@ -34,7 +40,27 @@ s3_client = boto3.client(
     region_name=settings.AWS_S3_REGION_NAME
 )
 
-image_extension_list = ["jpg", "jpeg", "jfif", "png", "webp", "avif", "svg"]
+def validate_upload_file(file: UploadedFile):
+    if not file:
+        return False
+    if file.name.split(".")[-1].lower() not in IMAGE_EXTENSIONS_LIST:
+        raise HttpError(400, "invalid file extension")
+    if file.size > 50 * MB:
+        raise HttpError(400, "file size is too large")
+    return True
+
+def handle_upload_file(file: UploadedFile, type: str):
+    upload_filename = f'{str(uuid.uuid4())}.{file.name.split(".")[-1]}'
+    if type == "user_thumbnail":
+        url = f'{settings.PROFILE_IMAGES_URL}{upload_filename}'
+    elif type == "post_images":
+        url = f'{settings.POST_IMAGES_URL}{upload_filename}'
+    else:
+        raise HttpError(400, "invalid upload type")
+    s3_client.upload_fileobj(file, type, upload_filename, \
+        ExtraArgs={"ACL": "public-read", "ContentType": file.content_type})
+    return url
+    
 
 class FileUploader:
     def __init__(self, client):

@@ -3,6 +3,14 @@ from enum import Enum
 from django.db import models
 from django.db.models import CharField
 
+
+class TimeStampedModel(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        abstract = True
+
 class UserType(Enum):
     ADMIN   = "admin"
     NORMAL  = "normal"
@@ -16,13 +24,6 @@ class UserAccountType(Enum):
     EMAIL  = "email"
     KAKAO  = "kakao"
     GOOGLE = "google"
-
-class TimeStampedModel(models.Model):
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
-    class Meta:
-        abstract = True
 
 class EnumField(CharField):
 

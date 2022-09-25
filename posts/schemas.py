@@ -69,7 +69,7 @@ class AdminGetPostOut(Schema):
     user_email: str = Field(... ,alias="user.email")
     user_mbti: str = Field(..., alias='user.mbti')
     user_created_at: Optional[datetime] = Field(..., alias='user.created_at')
-    comments: List[GetCommentOut] = Field(..., alias='get_comments_not_deleted')
+    comments: List = Field(..., alias='get_comments_not_deleted')
 
     class Config:
         model = Post

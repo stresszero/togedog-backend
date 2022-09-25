@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import F
 from django.conf import settings
 
 from cores.models import TimeStampedModel
@@ -26,7 +27,10 @@ class Post(TimeStampedModel):
     
     @property
     def get_comments_not_deleted(self):
-        return self.comments.filter(is_deleted=False)
+        # return self.comments.filter(is_deleted=False).order_by('created_at')
+        return self.comments.filter(is_deleted=False) \
+        .values('id', 'created_at', 'content', 'user_id', user_nickname=F("user__nickname"), 
+        user_thumbnail=F("user__thumbnail_url")).order_by('created_at')
 
 class PostLike(TimeStampedModel):
     like_user = models.ForeignKey('users.user', related_name="post_likes", on_delete=models.CASCADE)

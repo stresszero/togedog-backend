@@ -1,4 +1,5 @@
 import os
+from bson.errors import InvalidId
 from datetime import datetime
 
 from bson import ObjectId
@@ -23,4 +24,8 @@ def save_message(message, sender_id, room_id):
     }).inserted_id)
 
 def get_message(message_id):
-    return messages_collection.find_one({'_id': ObjectId(message_id)})
+    try:
+        message_data = messages_collection.find_one({'_id': ObjectId(message_id)})
+    except InvalidId:
+        return False
+    return message_data

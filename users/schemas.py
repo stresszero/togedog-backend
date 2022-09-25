@@ -47,7 +47,7 @@ class UserListOut(Schema):
 
 class UserDetailOut(Schema):
     id: int
-    name: str = None
+    name: Optional[str]
     nickname: str
     email: EmailStr
     user_type: str
@@ -55,7 +55,7 @@ class UserDetailOut(Schema):
     account_type: str
     thumbnail_url: str
     mbti: str
-    address: str = None
+    address: Optional[str]
     created_at: datetime
 
 class ModifyUserIn(Schema):
@@ -65,6 +65,3 @@ class ModifyUserIn(Schema):
 
 class TestKakaoToken(Schema):
     token: str
-
-class ReportUserIn(Schema):
-    content: str

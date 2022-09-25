@@ -2,9 +2,8 @@ from ninja import Router, Form
 
 from django.shortcuts import get_object_or_404
 
-from cores.schemas import MessageOut
+from cores.schemas import MessageOut, ContentIn
 from comments.models import Comment, CommentReport
-from comments.schemas import CreateCommentIn, ModifyCommentIn, CreateCommentReportIn
 from posts.models import Post
 from users.auth import AuthBearer, has_authority, is_admin
 
@@ -16,7 +15,7 @@ router = Router(tags=["댓글 관련 API"], auth=AuthBearer())
     response={200: MessageOut},
     summary="댓글 작성"
 )
-def create_comment(request, post_id: int, body: CreateCommentIn = Form(...)):
+def create_comment(request, post_id: int, body: ContentIn = Form(...)):
     """
     댓글 작성
     """
@@ -52,7 +51,7 @@ def delete_comment(request, post_id: int, comment_id: int):
     response={200: MessageOut},
     summary="댓글 수정"
 )
-def modify_comment(request, post_id: int, comment_id: int, body: ModifyCommentIn):
+def modify_comment(request, post_id: int, comment_id: int, body: ContentIn):
     """
     댓글 수정
     """
@@ -71,7 +70,7 @@ def modify_comment(request, post_id: int, comment_id: int, body: ModifyCommentIn
     summary="댓글 신고하기"
 )
 def report_comment(
-    request, post_id: int, comment_id: int, body: CreateCommentReportIn = Form(...)
+    request, post_id: int, comment_id: int, body: ContentIn = Form(...)
 ):
     """
     댓글 신고

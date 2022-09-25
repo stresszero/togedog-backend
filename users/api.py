@@ -1,5 +1,4 @@
 import requests
-import uuid
 from typing import List
 
 from django.contrib.auth.hashers import make_password, check_password

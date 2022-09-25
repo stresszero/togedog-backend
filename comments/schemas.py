@@ -1,8 +1,8 @@
 from datetime import datetime
 
-from ninja import Schema, ModelSchema, Field
+from ninja import Schema, ModelSchema
 
-from comments.models import Comment, CommentReport
+from comments.models import Comment
 
 class CommentUser(Schema):
     id: int
@@ -14,19 +14,3 @@ class GetCommentOut(ModelSchema):
     class Config:
         model = Comment
         model_exclude = ["is_deleted"]
-
-class CreateCommentIn(ModelSchema):
-
-    class Config:
-        model = Comment
-        model_fields = ["content"]
-
-class CreateCommentReportIn(ModelSchema):
-    
-        class Config:
-            model = CommentReport
-            model_fields = ["content"]
-
-class ModifyCommentIn(Schema):
-    content: str
-    

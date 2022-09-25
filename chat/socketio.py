@@ -10,7 +10,7 @@ users = {}
 
 @sio.event
 def connect(sid, environ, auth):
-    print('connect ', sid)
+    print('connected ', sid)
     print(environ)
     print(auth)
 
@@ -18,9 +18,10 @@ def connect(sid, environ, auth):
 def handle_join(sid, data):
     users[sid] = data
     sio.enter_room(sid, room=data['room'])
-    sio.emit('add_message', 
-    {"user": '함께하개 관리자', "text": f"{data['nickname']}님이 들어왔어요."}, 
-    to=data['room']
+    sio.emit(
+        'add_message', 
+        {"user": '함께하개 관리자', "text": f"{data['nickname']}님이 들어왔어요."}, 
+        to=data['room']
     )
     # sio.emit('add_message', {"user": '함께하개 관리자', "text": f"{data['nickname']}님이 들어오셨습니다."}, to=data['room'], skip_sid=sid)
 
@@ -42,8 +43,9 @@ def handle_send_message(sid, message, nickname, room, currentTime, userMbti):
 def disconnect(sid):
     leave_username = users[sid].get('nickname')
     leave_room_number = users[sid].get('room')
-    sio.emit('add_message', 
-    {"user": '함께하개 관리자', "text": f"{leave_username}님이 퇴장하셨어요."}, 
-    to=leave_room_number
+    sio.emit(
+        'add_message', 
+        {"user": '함께하개 관리자', "text": f"{leave_username}님이 퇴장하셨어요."}, 
+        to=leave_room_number
     )
     del users[sid]

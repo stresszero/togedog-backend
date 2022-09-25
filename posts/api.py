@@ -1,4 +1,3 @@
-import uuid
 from typing import List
 
 from django.conf import settings
@@ -9,12 +8,11 @@ from ninja.files import UploadedFile
 from ninja.pagination import paginate, PageNumberPagination
 
 from cores.utils import s3_client, validate_upload_file, handle_upload_file
-from cores.schemas import MessageOut
+from cores.schemas import MessageOut, ContentIn
 from posts.models import Post, PostLike, PostDelete, PostReport
 from posts.schemas import (
     GetPostListOut, 
     CreatePostIn, 
-    CreatePostReportIn,
     ModifyPostIn, 
     DeletedPostOut, 
     AdminGetPostOut, 
@@ -118,9 +116,7 @@ def modify_post(request, post_id: int, body: ModifyPostIn = Form(...), file: Upl
     if validate_upload_file(file):
         if post.image_url != settings.DEFAULT_POST_IMAGE_URL:
             s3_client.delete_object(Bucket="post_images", Key=post.image_url.split("/")[-1])
-        upload_filename = f'{str(uuid.uuid4())}.{file.name.split(".")[-1]}'
-        s3_client.upload_fileobj(file, "post_images", upload_filename, ExtraArgs={"ACL": "public-read", "ContentType": file.content_type})
-        post.image_url = f'{settings.POST_IMAGES_URL}{upload_filename}'
+        post.image_url = handle_upload_file(file, "post_images")
         
     post.subject = body.subject
     post.content = body.content
@@ -134,7 +130,8 @@ def get_post_by_admin(request, post_id: int):
     '''
     is_admin(request)
 
-    return 200, get_object_or_404(Post.objects.select_related('user'), id=post_id, is_deleted=False)
+    return 200, get_object_or_404(Post.objects.select_related('user')
+    .prefetch_related('comments'), id=post_id, is_deleted=False)
 
 @router.post("/{post_id}/delete/", response={200: MessageOut}, summary="게시글 삭제하기(soft delete)")
 def delete_post(request, post_id: int, body: DeletePostIn = Form(...)):
@@ -156,7 +153,7 @@ def delete_post(request, post_id: int, body: DeletePostIn = Form(...)):
     return 200, {"message": "success"}
 
 @router.post("/{post_id}/report/", response={200: MessageOut}, summary="게시글 신고하기")
-def report_post(request, post_id: int, body: CreatePostReportIn = Form(...)):
+def report_post(request, post_id: int, body: ContentIn = Form(...)):
     '''
     게시글 신고하기
     '''
@@ -218,10 +215,7 @@ def create_post(request, body: CreatePostIn = Form(...), file: UploadedFile = No
     has_authority(request)
     body_dict = body.dict()
     if validate_upload_file(file):
-        # upload_filename = f'{str(uuid.uuid4())}.{file.name.split(".")[-1]}'
-        # s3_client.upload_fileobj(file, "post_images", upload_filename, ExtraArgs={"ACL": "public-read", "ContentType": file.content_type})
-        # body_dict['image_url'] = f'{settings.POST_IMAGES_URL}{upload_filename}'
         body_dict['image_url'] = handle_upload_file(file, "post_images")
-        
+
     Post.objects.create(user_id=request.auth.id, **body_dict)
     return 200, {"message": "success"}

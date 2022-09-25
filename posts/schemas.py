@@ -36,11 +36,6 @@ class CreatePostIn(Schema):
     subject: str
     content: str
 
-class CreatePostReportIn(ModelSchema):
-    class Config:
-        model = PostReport
-        model_fields = ["content"]
-
 class ModifyPostIn(Schema):
     subject: Optional[str]
     content: Optional[str]
@@ -79,7 +74,7 @@ class AdminGetDeletedPostOut(Schema):
     id: int
     subject: str
     content: str
-    image_url: Optional[str]
+    image_url: str
     user_id: int
     user_name: Optional[str] = Field(..., alias="user.name")
     user_nickname: str = Field(..., alias="user.nickname")

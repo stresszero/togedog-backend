@@ -7,4 +7,5 @@ Development
 
 Deployment
 - Heroku
+- MongoDB Cloud
 - AWS S3, RDS, EC2

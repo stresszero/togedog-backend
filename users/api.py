@@ -1,18 +1,18 @@
 import requests
 from typing import List
 
-from django.contrib.auth.hashers import make_password, check_password
 from django.conf import settings
+from django.contrib.auth.hashers import make_password, check_password
 from django.db.models import Q, Count
 from django.http import JsonResponse
-from django.shortcuts import redirect, get_object_or_404
+from django.shortcuts import get_object_or_404
 from ninja import Router, Form
 from ninja.files import UploadedFile
 from ninja.pagination import paginate, PageNumberPagination
 
 from cores.models import UserAccountType, UserStatus
 from cores.schemas import MessageOut
-from cores.utils import generate_jwt, KakaoLoginAPI, s3_client, validate_upload_file, handle_upload_file
+from cores.utils import generate_jwt, s3_client, validate_upload_file, handle_upload_file
 from users.auth import AuthBearer, is_admin, has_authority
 from users.models import User
 from users.schemas import (
@@ -23,7 +23,7 @@ from users.schemas import (
     UserDetailOut,
     EmailSignupCheckIn,
     TestKakaoToken,
-    )
+)
 
 MB = 1024 * 1024
 
@@ -72,7 +72,7 @@ def check_bearer(request):
 def check_email(request, body: EmailSignupCheckIn):
     '''
     이메일 회원가입 시 이메일 중복 확인 
-    - 중복이면 400 에러("message": "email already exists")
+    - 이메일 중복이면 400 에러("message": "email already exists")
     '''
     if User.objects.filter(email=body.email, account_type=UserAccountType.EMAIL.value).exists():
         return 400, {"message": "email already exists"}
@@ -82,7 +82,7 @@ def check_email(request, body: EmailSignupCheckIn):
 def email_user_signup(request, body: EmailUserSignupIn):
     '''
     이메일 사용자 회원가입(application/json)
-    - 중복이면 400 에러("message": "email already exists")
+    - 이메일 중복이면 400 에러("message": "email already exists")
     - 이름이나 닉네임이 욕설이면 400 에러
     '''
     body_dict = body.dict()
@@ -102,7 +102,6 @@ def get_user_info(request, user_id: int):
     사용자 정보 조회, 로그인한 본인 계정 또는 관리자만 조회 가능
     '''
     has_authority(request, user_id, user_check=True, banned_check=False)
-    
     return get_object_or_404(User, id=user_id)
 
 @router.patch("/{user_id}", response={400: MessageOut}, auth=[AuthBearer()], summary="사용자 정보 수정")
@@ -119,7 +118,8 @@ def modify_user_info(request, user_id: int, body: ModifyUserIn = Form(...), file
 
     res = {}
     if validate_upload_file(file):
-        if user.thumbnail_url != settings.DEFAULT_USER_THUMBNAIL_URL:
+        if user.thumbnail_url != settings.DEFAULT_USER_THUMBNAIL_URL and \
+            settings.PROFILE_IMAGES_URL not in user.thumbnail_url:
             s3_client.delete_object(Bucket="user_thumbnail", Key=user.thumbnail_url.split("/")[-1])
         user.thumbnail_url = handle_upload_file(file, "user_thumbnail")
         res["user_thumbnail_url"] = user.thumbnail_url
@@ -155,90 +155,6 @@ def deactivate_user(request, user_id: int):
     user.save()
 
     return 200, {"message": "success"}
-
-# @router.get("/login/kakao")
-# def kakao_login_get_code(request):
-#     '''
-#     카카오 로그인 창 띄우고 인가코드 받기
-#     users/login/kakao
-#     '''
-#     api_key      = settings.KAKAO_REST_API_KEY
-#     redirect_uri = settings.KAKAO_REDIRECT_URI
-#     auth_api     = "https://kauth.kakao.com/oauth/authorize?response_type=code"
-#     return redirect(f'{auth_api}&client_id={api_key}&redirect_uri={redirect_uri}')
-
-# @router.get("/login/kakao/redirect")
-# def kakao_login_get_profile(request, code: str):
-#     '''
-#     카카오 인가코드로 토큰 받고 사용자 프로필 조회하고 회원가입 또는 로그인하고 JWT 발급, 리프레시 토큰을 httponly 쿠키로 저장
-#     '''
-#     try:
-#         kakao_api = KakaoLoginAPI(client_id=settings.KAKAO_REST_API_KEY)
-
-#         kakao_api.get_kakao_token(request.GET.get('code'))
-#         kakao_profile = kakao_api.get_kakao_profile()
-
-#         user, is_created  = User.objects.get_or_create(
-#             social_account_id = kakao_profile['id'],
-#             defaults = {
-#                 'email'        : kakao_profile['kakao_account']['email'],
-#                 'nickname'     : kakao_profile['kakao_account']['profile']['nickname'],
-#                 'thumbnail_url': kakao_profile['kakao_account']['profile']['thumbnail_image_url'],
-#                 'account_type' : UserAccountType.KAKAO.value,
-#             }
-#         )
-#         response = JsonResponse({'access_token': generate_jwt({"user": user.id}, "access")}, status=200)
-#         response.set_cookie('refresh_token', generate_jwt({"user": user.id}, "refresh"), httponly=True, samesite="lax")
-#         return response
-
-#     except KeyError:
-#         return JsonResponse({'message': 'key error'}, status=400)
-
-# @router.get("/login/google")
-# def google_login_get_code(request):
-#     '''
-#     구글 로그인 창 띄우고 인가코드 받기
-#     users/login/google
-#     '''
-#     auth_api      = "https://accounts.google.com/o/oauth2/v2/auth"
-#     client_id     = settings.GOOGLE_CLIENT_ID
-#     redirect_uri  = settings.GOOGLE_REDIRECT_URI
-#     response_type = settings.GOOGLE_RESPONSE_TYPE
-#     scopes        = settings.GOOGLE_SCOPE
-#     return redirect(f'{auth_api}?client_id={client_id}&redirect_uri={redirect_uri}&response_type={response_type}&scope={scopes}')
-
-# @router.get("/login/google/redirect")
-# def google_login_get_profile(request, code: str):
-#     '''
-#     구글 인가코드로 토큰 받고 사용자 프로필 조회하고 회원가입 또는 로그인하고 JWT 발급, 리프레시 토큰을 httponly 쿠키로 저장
-#     '''
-#     code = request.GET.get('code')
-#     google_token_api = "https://oauth2.googleapis.com/token"
-#     data = {
-#         "grant_type"   : "authorization_code",
-#         "code"         : code,
-#         "client_id"    : settings.GOOGLE_CLIENT_ID,
-#         "client_secret": settings.GOOGLE_CLIENT_SECRET,
-#         "redirect_uri" : settings.GOOGLE_REDIRECT_URI,
-#     }
-    
-#     access_token = requests.post(google_token_api, data=data, timeout=3).json()['access_token']
-#     req_uri      = 'https://www.googleapis.com/oauth2/v3/userinfo'
-#     headers      = {'Authorization': f'Bearer {access_token}'}
-#     user_info    = requests.get(req_uri, headers=headers, timeout=3).json()
-#     print(user_info)
-#     user, is_created = User.objects.get_or_create(
-#             social_account_id = user_info["sub"],
-#             defaults = {
-#                 "email"        : user_info["email"],
-#                 "nickname"     : user_info["given_name"],
-#                 "thumbnail_url": user_info["picture"],
-#                 "account_type" : UserAccountType.GOOGLE.value,
-#             }
-#         )
-#     response = JsonResponse({'access_token': generate_jwt({"user": user.id}, "access")}, status=200)
-#     response.set_cookie('refresh_token', generate_jwt({"user": user.id}, "refresh"), httponly=True, samesite="lax")
-#     return response
 
 @router.post("/login/email", response={200: MessageOut, 400: MessageOut, 404: MessageOut}, summary="이메일 사용자 로그인")
 def email_user_login(request, body: EmailUserSigninIn):

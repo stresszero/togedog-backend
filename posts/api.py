@@ -18,7 +18,8 @@ from posts.schemas import (
     AdminGetPostOut, 
     DeletePostIn,
     AdminGetDeletedPostOut,
-    AdminGetPostListOut
+    AdminGetPostListOut,
+    GetPostOut
     )
 from users.auth import AuthBearer, has_authority, is_admin
 
@@ -77,7 +78,7 @@ def get_deleted_post_by_admin(request, post_id: int):
 
     return 200, get_object_or_404(Post.objects.select_related('user'), id=post_id, is_deleted=True)
 
-@router.get("/{post_id}", summary="게시글 상세 조회")
+@router.get("/{post_id}", response=GetPostOut, summary="게시글 상세 조회")
 def get_post(request, post_id: int):
     '''
     게시글 상세 조회
@@ -86,25 +87,26 @@ def get_post(request, post_id: int):
     has_authority(request)
     post = get_object_or_404(Post.objects.select_related('user') \
         .prefetch_related('likes', 'comments'), id=post_id, is_deleted=False)
-        
-    return {
-        "id"              : post.id,
-        "user_id"         : post.user_id,
-        "user_nickname"   : post.user.nickname,
-        "user_thumbnail"  : post.user.thumbnail_url,
-        "subject"         : post.subject,
-        "content"         : post.content,
-        "image_url"       : post.image_url,
-        "created_at"      : post.created_at,
-        "post_likes_count": post.likes.count(),
-        "is_liked"        : True if post.likes.filter(like_user_id=request.auth.id).exists() else False,
-        "comments"        : [
-            comments for comments in post.comments.filter(is_deleted=False)
-            .values('id', 'content', 'created_at', 'user_id', \
-            user_nickname=F("user__nickname"), user_thumbnail_url=F("user__thumbnail_url"))
-            .order_by('created_at')
-        ],
-    }
+    post.is_liked = post.likes.filter(like_user_id=request.auth.id).exists()
+    return post
+    # return {
+    #     "id"              : post.id,
+    #     "user_id"         : post.user_id,
+    #     "user_nickname"   : post.user.nickname,
+    #     "user_thumbnail"  : post.user.thumbnail_url,
+    #     "subject"         : post.subject,
+    #     "content"         : post.content,
+    #     "image_url"       : post.image_url,
+    #     "created_at"      : post.created_at,
+    #     "post_likes_count": post.likes.count(),
+    #     "is_liked"        : post.likes.filter(like_user_id=request.auth.id).exists(),
+    #     "comments"        : [
+    #         comments for comments in post.comments.filter(is_deleted=False)
+    #         .values('id', 'content', 'created_at', 'user_id', \
+    #         user_nickname=F("user__nickname"), user_thumbnail_url=F("user__thumbnail_url"))
+    #         .order_by('created_at')
+    #     ],
+    # }
 
 @router.patch("/{post_id}", response={200: MessageOut, 400: MessageOut}, summary="게시글 수정")
 def modify_post(request, post_id: int, body: ModifyPostIn = Form(...), file: UploadedFile = None):

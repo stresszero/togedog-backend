@@ -25,11 +25,3 @@ class User(TimeStampedModel):
 
     def __str__(self):
         return self.nickname
-
-# class UserReport(TimeStampedModel):
-    # reporter_user = models.ForeignKey(User, related_name='reporter', on_delete=models.CASCADE)
-    # reported_user = models.ForeignKey(User, related_name='reported', on_delete=models.CASCADE)
-    # content       = models.CharField(max_length=500)
-
-#     class Meta:
-#         db_table = 'user_report'

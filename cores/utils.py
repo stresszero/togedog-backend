@@ -230,3 +230,15 @@ class SocialLogin:
         
         return response.json()
 
+def censor_text(text):
+    censored = False
+    censored_text = text
+    for bad_word in settings.BAD_WORDS_LIST:
+        bad_word_length = len(bad_word)
+        bad_word_index = text.find(bad_word)
+
+        while bad_word_index != -1:
+            censored_text = censored_text[0:bad_word_index] + '*'*bad_word_length + censored_text[bad_word_index+bad_word_length:]
+            censored = True
+            bad_word_index = text.find(bad_word, bad_word_index+1)
+    return censored_text

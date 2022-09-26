@@ -51,6 +51,23 @@ class DeletedPostOut(ModelSchema):
         model = Post
         model_fields = "__all__"
 
+class GetPostOut(Schema):
+    id: int
+    user_id: int = Field(..., alias="user.id")
+    user_nickname: str = Field(..., alias="user.nickname")
+    user_thumbnail: str = Field(..., alias="user.thumbnail_url")
+    subject: str 
+    content: str
+    image_url: str
+    created_at: datetime
+    post_likes_count: int = Field(..., alias='get_likes_count')
+    is_liked: bool
+    comments: List = Field(..., alias='get_comments_not_deleted')
+
+    class Config:
+        model = Post
+        model_exclude = ["is_deleted"]
+
 class AdminGetPostOut(Schema):
     id: int
     subject: str

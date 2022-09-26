@@ -18,6 +18,10 @@ class Post(TimeStampedModel):
         return self.subject
     
     @property
+    def get_likes_count(self):
+        return self.likes.count()
+
+    @property
     def get_delete_reason(self):
         return self.deletes.values_list('delete_reason', flat=True)
 
@@ -27,7 +31,6 @@ class Post(TimeStampedModel):
     
     @property
     def get_comments_not_deleted(self):
-        # return self.comments.filter(is_deleted=False).order_by('created_at')
         return self.comments.filter(is_deleted=False) \
         .values('id', 'created_at', 'content', 'user_id', user_nickname=F("user__nickname"), 
         user_thumbnail=F("user__thumbnail_url")).order_by('created_at')

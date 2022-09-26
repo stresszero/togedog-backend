@@ -23,7 +23,7 @@ class Post(TimeStampedModel):
 
     @property
     def get_delete_reason(self):
-        return self.deletes.values_list('delete_reason', flat=True)
+        return self.deletes.first().delete_reason
 
     @property
     def get_reports_count(self):

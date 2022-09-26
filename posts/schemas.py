@@ -78,10 +78,10 @@ class AdminGetPostOut(Schema):
     user_id: int
     user_name: Optional[str] = Field(..., alias="user.name")
     user_nickname: str = Field(..., alias="user.nickname")
-    user_email: str = Field(... ,alias="user.email")
+    user_email: str = Field(... , alias="user.email")
     user_mbti: str = Field(..., alias='user.mbti')
     user_created_at: Optional[datetime] = Field(..., alias='user.created_at')
-    comments: List = Field(..., alias='get_comments_not_deleted')
+    comments: Optional[List] = Field(..., alias='get_comments_not_deleted')
 
     class Config:
         model = Post
@@ -95,10 +95,10 @@ class AdminGetDeletedPostOut(Schema):
     user_id: int
     user_name: Optional[str] = Field(..., alias="user.name")
     user_nickname: str = Field(..., alias="user.nickname")
-    user_email: str = Field(... ,alias="user.email")
+    user_email: str = Field(... , alias="user.email")
     user_mbti: str = Field(..., alias='user.mbti')
     user_created_at: Optional[datetime] = Field(..., alias='user.created_at')
-    delete_reason: Optional[List] = Field(..., alias="get_delete_reason")
+    delete_reason: Optional[str] = Field(..., alias="get_delete_reason")
 
     class Config:
         model = Post

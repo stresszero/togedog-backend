@@ -134,7 +134,7 @@ def get_post_by_admin(request, post_id: int):
     is_admin(request)
 
     return 200, get_object_or_404(Post.objects.select_related('user')
-    .prefetch_related('comments'), id=post_id, is_deleted=False)
+    , id=post_id, is_deleted=False)
 
 @router.post("/{post_id}/delete/", response={200: MessageOut}, summary="게시글 삭제하기(soft delete)")
 def delete_post(request, post_id: int, body: DeletePostIn = Form(...)):

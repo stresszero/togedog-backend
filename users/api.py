@@ -159,7 +159,7 @@ def deactivate_user(request, user_id: int):
 @router.post("/login/check", response={400: MessageOut}, auth=AuthBearer(), summary="메인페이지에서 이미 로그인돼있는 상태인지 확인")
 def main_login_check(request):
     '''
-    메인페이지에서 이미 로그인돼있는 상태인지 확인
+    메인페이지에서 이미 로그인돼있는 상태인지 확인(쿠키 활용)
     '''
     if request.auth:
         data = {

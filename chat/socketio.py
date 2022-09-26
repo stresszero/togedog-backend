@@ -53,7 +53,8 @@ def disconnect(sid):
     leave_room_number = users[sid].get('room')
     sio.emit(
         'add_message', 
-        {"user_nickname": '함께하개 관리자', "text": f"{leave_username}님이 퇴장하셨어요."}, 
+        {"user_nickname": '함께하개 관리자', 
+        "text": f"{leave_username}님이 퇴장하셨어요."}, 
         to=leave_room_number
     )
     del users[sid]

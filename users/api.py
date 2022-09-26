@@ -78,7 +78,7 @@ def check_email(request, body: EmailSignupCheckIn):
         return 400, {"message": "email already exists"}
     return 200, {"message": "success"}
 
-@router.post("/signup", response={200: MessageOut, 201: MessageOut, 400: MessageOut}, summary="이메일 사용자 회원가입")
+@router.post("/signup", response={200: MessageOut, 400: MessageOut}, summary="이메일 사용자 회원가입")
 def email_user_signup(request, body: EmailUserSignupIn):
     '''
     이메일 사용자 회원가입(application/json)
@@ -94,7 +94,7 @@ def email_user_signup(request, body: EmailUserSignupIn):
 
     body_dict.update({"password": make_password(body_dict["password"], salt=settings.PASSWORD_SALT)})
     User.objects.create(**body_dict)
-    return 201, {"message": "success"}
+    return 200, {"message": "success"}
 
 @router.get("/{user_id}", response={200: UserDetailOut}, auth=[AuthBearer()], summary="사용자 정보 조회")    
 def get_user_info(request, user_id: int):

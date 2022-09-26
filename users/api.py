@@ -156,6 +156,26 @@ def deactivate_user(request, user_id: int):
 
     return 200, {"message": "success"}
 
+@router.post("/login/check", response={400: MessageOut}, auth=AuthBearer(), summary="메인페이지에서 이미 로그인돼있는 상태인지 확인")
+def main_login_check(request):
+    '''
+    메인페이지에서 이미 로그인돼있는 상태인지 확인
+    '''
+    if request.auth:
+        data = {
+            "id"           : request.auth.id,
+            "name"         : request.auth.name,
+            "nickname"     : request.auth.nickname,
+            "email"        : request.auth.email,
+            "user_type"    : request.auth.user_type,
+            "status"       : request.auth.status,
+            "account_type" : request.auth.account_type,
+            "thumbnail_url": request.auth.thumbnail_url,
+            "mbti"         : request.auth.mbti,
+        }
+        return JsonResponse(data, status=200)
+    return 400, {"message": "not logged in"}
+
 @router.post("/login/email", response={200: MessageOut, 400: MessageOut, 404: MessageOut}, summary="이메일 사용자 로그인")
 def email_user_login(request, body: EmailUserSigninIn):
     '''

@@ -238,7 +238,8 @@ def censor_text(text):
         bad_word_index = text.find(bad_word)
 
         while bad_word_index != -1:
-            censored_text = censored_text[0:bad_word_index] + '*'*bad_word_length + censored_text[bad_word_index+bad_word_length:]
+            censored_text = censored_text[0:bad_word_index] + '*' * bad_word_length \
+                + censored_text[bad_word_index+bad_word_length:]
             censored = True
             bad_word_index = text.find(bad_word, bad_word_index+1)
     return censored_text

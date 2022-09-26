@@ -18,8 +18,9 @@ def report_chat_message(request, body: ChatReportIn):
     - message_text: 신고하는 메시지의 내용(프론트엔드가 넘겨줌)
     - content: 입력한 신고 사유(프론트엔드가 넘겨줌)
     '''
-    has_authority(request)
-    if not get_message(body.message_id):
+    message_data = get_message(body.message_id)
+    if not message_data:
         return 400, {"message": "message not found"}
+    has_authority(request, user_id=message_data['sender_id'], self_check=True)
     ChatReport.objects.create(reporter_user_id=request.auth.id, **body.dict())
     return 200, {"message": "success"}

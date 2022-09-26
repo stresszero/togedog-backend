@@ -54,7 +54,7 @@ def get_user_list(request, search: str = None, reported: int = None, date: str= 
 
     return User.objects.annotate(
         reported_count = Count("post_reported", distinct=True) + Count("comment_reported", distinct=True)) \
-        .filter(q).prefetch_related('post_reported', 'comment_reported')
+        .filter(q)
 
 @router.get("/bearer", auth=AuthBearer(), summary="Bearer 토큰 확인")
 def check_bearer(request):
@@ -223,7 +223,7 @@ def get_banned_user_list(request, search: str = None, date: str = None):
 
     return User.objects.annotate(
         reported_count = Count("post_reported", distinct=True) + Count("comment_reported", distinct=True)
-        ).filter(q, status=UserStatus.BANNED).prefetch_related('post_reported', 'comment_reported')
+        ).filter(q, status=UserStatus.BANNED)
 
 @router.post("/test/kakaotoken/", summary="카카오 로그인")
 def kakao_token_test(request, token: TestKakaoToken):

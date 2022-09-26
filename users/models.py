@@ -25,3 +25,9 @@ class User(TimeStampedModel):
 
     def __str__(self):
         return self.nickname
+
+class UserTestCount(models.Model):
+    test_count = models.PositiveIntegerField()
+
+    class Meta:
+        db_table = 'user_test_count'

@@ -78,6 +78,7 @@ def report_comment(
     get_object_or_404(Post, id=post_id, is_deleted=False)
     comment = get_object_or_404(Comment, id=comment_id, post_id=post_id, is_deleted=False)
     has_authority(request, user_id=comment.user_id, self_check=True)
+
     CommentReport.objects.create(
             reporter_user_id=request.auth.id,
             reported_user_id=comment.user_id,

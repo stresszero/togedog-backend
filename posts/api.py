@@ -160,8 +160,8 @@ def report_post(request, post_id: int, body: ContentIn = Form(...)):
     '''
     게시글 신고하기
     '''
-    has_authority(request)
     post = get_object_or_404(Post, id=post_id, is_deleted=False)
+    has_authority(request, user_id=post.user_id, self_check=True)
     
     PostReport.objects.create(
         reporter_user_id=request.auth.id,

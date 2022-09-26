@@ -11,8 +11,6 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "togedog_dj.settings")
 sio = socketio.Server(async_mode='eventlet', cors_allowed_origins='*', logger=True)
 users = {}
 
-text = "테스트 이 씨발 개자식 fuck 테스트 욕설 필터링"
-
 @sio.event
 def connect(sid, environ, auth):
     print('connected ', sid)

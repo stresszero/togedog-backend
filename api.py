@@ -2,6 +2,7 @@ from datetime import datetime
 
 from ninja import NinjaAPI
 from django.http import JsonResponse
+from django.db.models import F
 
 from users.api import router as users_router
 from users.auth import AuthBearer, is_admin
@@ -12,6 +13,7 @@ from comments.api import router as comments_router
 from comments.models import CommentReport
 from cores.api import router as cores_router
 from cores.schemas import MessageOut, NoticeReportOut
+from users.models import UserTestCount
 
 
 api = NinjaAPI(title="함께하개 API 문서", version="0.8.0")
@@ -64,6 +66,18 @@ def check_notice(request, id: int, type: str):
 def test_cookie(request):
     print(request.COOKIES)
     return JsonResponse({'cookie_access_token': request.COOKIES['access_token']})
+
+@api.post("/test-count", summary="MBTI 검사 횟수 올리기")
+def add_test_count(request):
+    count_obj = UserTestCount.objects.get(id=1)
+    count_obj.test_count = F('test_count') + 1
+    count_obj.save()
+    count_obj.refresh_from_db()
+    return {"message": "success"}
+
+@api.get("/test-count", summary="MBTI 검사 횟수 확인")
+def get_test_count(request):
+    return {"userNum": UserTestCount.objects.get(id=1).test_count}
 
 # from users.auth import cookie_key
 

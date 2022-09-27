@@ -1,10 +1,14 @@
 import os
 import socketio
 
+import django
 from .mongodb import save_message
 from django.conf import settings
 
 from cores.utils import censor_text
+
+django.setup()
+
 from users.models import User
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "togedog_dj.settings")
@@ -16,10 +20,17 @@ users = {}
 def connect(sid, environ, auth):
     print('connected ', sid)
     print(auth)
+    if User.objects.get(id=auth['userId']).status == "banned":
+        sio.emit('connect_error', {'message': 'invalid user'})
     # auth['token']을 확인하고 유효하지 않은 JWT를 보낸 경우
+    # 차단유저가 들어온 경우
     # emit 'connect_error' 으로 전송한다
     # 클라이언트에서 on으로 받아서 socket.disconnect() 또는 close()를 실행한다
     # 클라이언트에서 모달창을 띄워주고 홈으로 리다이렉트 시킨다
+
+# @sio.on('connect_error')
+# def handle_connect_error(sid, data):
+#     sio.disconnect()
 
 @sio.on('join')
 def handle_join(sid, data):
@@ -33,7 +44,6 @@ def handle_join(sid, data):
         }, 
         to=data['room']
     )
-    # sio.emit('add_message', {"user": '함께하개 관리자', "text": f"{data['nickname']}님이 들어오셨습니다."}, to=data['room'], skip_sid=sid)
 
 @sio.on('send_message')
 def handle_send_message(sid, message, nickname, room, currentTime, userMbti, userImage, userId):

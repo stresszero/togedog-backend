@@ -1,22 +1,21 @@
-from datetime import datetime
-
-from ninja import NinjaAPI
-from django.http import JsonResponse
 from django.db.models import F
+from django.utils import timezone
+from ninja import NinjaAPI
 
-from users.api import router as users_router
-from users.auth import AuthBearer, is_admin
-from posts.api import router as posts_router
-from posts.models import PostReport
 from chat.api import router as chat_router
 from comments.api import router as comments_router
 from comments.models import CommentReport
 from cores.api import router as cores_router
 from cores.schemas import MessageOut, NoticeReportOut
+from posts.api import router as posts_router
+from posts.models import PostReport
+from users.api import router as users_router
+from users.auth import AuthBearer, is_admin
 from users.models import UserTestCount
 
 
-api = NinjaAPI(title="함께하개 API 문서", version="0.8.0")
+api = NinjaAPI(title="함께하개 API 문서", version="0.9.0", 
+description="함께하개 프로젝트 API 명세서와 테스트 제공")
 
 api.add_router("/users", users_router)
 api.add_router("/posts", posts_router)
@@ -46,26 +45,26 @@ def check_notice(request, id: int, type: str):
     게시글/댓글 신고 확인, 관리자만 가능
     - type이 post_report면 게시글 신고 확인 
     - type이 comment_report면 댓글 신고 확인 
-    - type이 all이면 모든 신고건 확인 처리
+    - type이 all이면 모든 신고건 확인 처리, all이면 id값은 무시됨
     - id: 해당되는 type의 id값
     """
     is_admin(request)
     if type == "post_report":
-        PostReport.objects.filter(id=id).update(is_checked=True, updated_at=datetime.utcnow())
+        PostReport.objects.filter(id=id).update(is_checked=True, updated_at=timezone.now())
 
     if type == "comment_report":
-        CommentReport.objects.filter(id=id).update(is_checked=True, updated_at=datetime.utcnow())
+        CommentReport.objects.filter(id=id).update(is_checked=True, updated_at=timezone.now())
 
     if type == "all":
-        PostReport.objects.filter(is_checked=False).update(is_checked=True, updated_at=datetime.utcnow())
-        CommentReport.objects.filter(is_checked=False).update(is_checked=True, updated_at=datetime.utcnow())
+        PostReport.objects.filter(is_checked=False).update(is_checked=True, updated_at=timezone.now())
+        CommentReport.objects.filter(is_checked=False).update(is_checked=True, updated_at=timezone.now())
           
     return {"message": "success"}
 
 @api.get("/cookie/test", summary="쿠키 테스트")
 def test_cookie(request):
     print(request.COOKIES)
-    return JsonResponse({'cookie_access_token': request.COOKIES['access_token']})
+    return {'cookie_access_token': request.COOKIES['access_token']}
 
 @api.post("/test-count", summary="MBTI 검사 횟수 올리기")
 def add_test_count(request):

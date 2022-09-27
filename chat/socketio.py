@@ -5,6 +5,7 @@ from .mongodb import save_message
 from django.conf import settings
 
 from cores.utils import censor_text
+from users.models import User
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "togedog_dj.settings")
 
@@ -26,8 +27,10 @@ def handle_join(sid, data):
     sio.enter_room(sid, room=data['room'])
     sio.emit(
         'add_message', 
-        {"user_nickname": '함께하개 관리자', 
-        "text": f"{data['nickname']}님이 들어왔어요."}, 
+        {
+            "user_nickname": '함께하개 관리자', 
+            "text": f"{data['nickname']}님이 들어왔어요."
+        }, 
         to=data['room']
     )
     # sio.emit('add_message', {"user": '함께하개 관리자', "text": f"{data['nickname']}님이 들어오셨습니다."}, to=data['room'], skip_sid=sid)
@@ -51,8 +54,10 @@ def disconnect(sid):
     leave_room_number = users[sid].get('room')
     sio.emit(
         'add_message', 
-        {"user_nickname": '함께하개 관리자', 
-        "text": f"{leave_username}님이 퇴장하셨어요."}, 
+        {
+            "user_nickname": '함께하개 관리자', 
+            "text": f"{leave_username}님이 퇴장하셨어요."
+        }, 
         to=leave_room_number
     )
     del users[sid]

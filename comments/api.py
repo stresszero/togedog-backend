@@ -80,10 +80,10 @@ def report_comment(
     has_authority(request, user_id=comment.user_id, self_check=True)
 
     CommentReport.objects.create(
-            reporter_user_id=request.auth.id,
-            reported_user_id=comment.user_id,
-            comment_id=comment_id,
-            content=body.content,
+        reporter_user_id=request.auth.id,
+        reported_user_id=comment.user_id,
+        comment_id=comment_id,
+        content=body.content,
     )
 
     return 200, {"message": "success"}

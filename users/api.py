@@ -174,7 +174,7 @@ def main_login_check(request):
             "mbti"         : request.auth.mbti,
         }
         return JsonResponse(data, status=200)
-    return 400, {"message": "not logged in"}
+    return 400, {"message": "user is not logged in"}
 
 @router.post("/login/email", response={200: MessageOut, 400: MessageOut, 404: MessageOut}, summary="이메일 사용자 로그인")
 def email_user_login(request, body: EmailUserSigninIn):
@@ -307,10 +307,10 @@ def google_token_test(request, token: TestKakaoToken):
     response.set_cookie('refresh_token', generate_jwt({"user": user.id}, "refresh"), httponly=True, samesite="None", secure=True)
     return response
 
-# @router.get("/test/deletecookies")
-# def delete_cookie(request):
+# @router.get("/logout", summary="로그아웃")
+# def logout(request):
 #     '''
-#     쿠키 삭제 테스트
+#     로그아웃 후 쿠키 삭제
 #     '''
 #     response = JsonResponse({'message': 'success'}, status=200)
 #     response.delete_cookie('access_token')

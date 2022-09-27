@@ -23,7 +23,9 @@ class Post(TimeStampedModel):
 
     @property
     def get_delete_reason(self):
-        return self.deletes.first().delete_reason
+        if self.deletes.exists():
+            return self.deletes.first().delete_reason
+        return "등록된 삭제사유 없음"
 
     @property
     def get_reports_count(self):
@@ -31,9 +33,7 @@ class Post(TimeStampedModel):
     
     @property
     def get_comments_not_deleted(self):
-        return self.comments.filter(is_deleted=False) \
-        .values('id', 'created_at', 'content', 'user_id', user_nickname=F("user__nickname"), 
-        user_thumbnail=F("user__thumbnail_url")).order_by('created_at')
+        return self.comments.filter(is_deleted=False).order_by('created_at')
 
 class PostLike(TimeStampedModel):
     like_user = models.ForeignKey('users.user', related_name="post_likes", on_delete=models.CASCADE)

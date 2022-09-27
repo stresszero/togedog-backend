@@ -12,12 +12,15 @@ class PostUser(Schema):
     created_at: datetime
 
 class GetCommentOut(ModelSchema):
+    user_id: int
+    post_id: int
+    user_thumbnail: str = Field(..., alias="user.thumbnail_url")
     class Config:
         model = Comment
-        model_exclude = ["is_deleted"]
+        model_exclude = ["is_deleted", "user", "post", "updated_at"]
 
 class GetPostListOut(ModelSchema):
-    user_id: int = Field(..., alias="user.id")
+    user_id: int
     user_nickname: str = Field(..., alias="user.nickname")
     user_thumbnail: str = Field(..., alias="user.thumbnail_url")
     post_likes_count: int = Field(..., alias='likes.count')
@@ -53,7 +56,7 @@ class DeletedPostOut(ModelSchema):
 
 class GetPostOut(Schema):
     id: int
-    user_id: int = Field(..., alias="user.id")
+    user_id: int
     user_nickname: str = Field(..., alias="user.nickname")
     user_thumbnail: str = Field(..., alias="user.thumbnail_url")
     subject: str 
@@ -62,7 +65,8 @@ class GetPostOut(Schema):
     created_at: datetime
     post_likes_count: int = Field(..., alias='get_likes_count')
     is_liked: bool
-    comments: List = Field(..., alias='get_comments_not_deleted')
+    comments_list: List[GetCommentOut]
+    # comments: List[GetCommentOut] = Field(..., alias='get_comments_not_deleted')
 
     class Config:
         model = Post
@@ -72,35 +76,38 @@ class AdminGetPostOut(Schema):
     id: int
     subject: str
     content: str
-    image_url: str
     created_at: datetime
-    updated_at: datetime
+    image_url: str
     user_id: int
     user_name: Optional[str] = Field(..., alias="user.name")
     user_nickname: str = Field(..., alias="user.nickname")
     user_email: str = Field(... , alias="user.email")
     user_mbti: str = Field(..., alias='user.mbti')
+    user_address: str = Field(..., alias='user.address')
+    user_thumbnail: str = Field(..., alias="user.thumbnail_url")
     user_created_at: Optional[datetime] = Field(..., alias='user.created_at')
-    comments: Optional[List] = Field(..., alias='get_comments_not_deleted')
+    comments_list: List[GetCommentOut]
+    # comments: Optional[List] = Field(..., alias='get_comments_not_deleted')
 
     class Config:
         model = Post
-        model_exclude = ["is_deleted"]
 
 class AdminGetDeletedPostOut(Schema):
     id: int
     subject: str
     content: str
+    created_at: datetime
     image_url: str
     user_id: int
     user_name: Optional[str] = Field(..., alias="user.name")
     user_nickname: str = Field(..., alias="user.nickname")
     user_email: str = Field(... , alias="user.email")
     user_mbti: str = Field(..., alias='user.mbti')
+    user_address: str = Field(..., alias='user.address')
+    user_thumbnail: str = Field(..., alias="user.thumbnail_url")
     user_created_at: Optional[datetime] = Field(..., alias='user.created_at')
     delete_reason: Optional[str] = Field(..., alias="get_delete_reason")
 
     class Config:
         model = Post
-        model_exclude = ["is_deleted"]
 

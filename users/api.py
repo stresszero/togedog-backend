@@ -56,6 +56,17 @@ def get_user_list(request, search: str = None, reported: int = None, date: str= 
         reported_count = Count("post_reported", distinct=True) + Count("comment_reported", distinct=True)) \
         .filter(q)
 
+@router.get("/logout", summary="로그아웃")
+def logout(request):
+    '''
+    로그아웃 후 쿠키 삭제
+    '''
+    response = JsonResponse({'message': 'success'}, status=200)
+    response.delete_cookie('mycookie')
+    response.delete_cookie('access_token')
+    response.delete_cookie('refresh_token')
+    return response
+
 @router.get("/bearer", auth=AuthBearer(), summary="Bearer 토큰 확인")
 def check_bearer(request):
     '''
@@ -307,12 +318,3 @@ def google_token_test(request, token: TestKakaoToken):
     response.set_cookie('refresh_token', generate_jwt({"user": user.id}, "refresh"), httponly=True, samesite="None", secure=True)
     return response
 
-# @router.get("/logout", summary="로그아웃")
-# def logout(request):
-#     '''
-#     로그아웃 후 쿠키 삭제
-#     '''
-#     response = JsonResponse({'message': 'success'}, status=200)
-#     response.delete_cookie('access_token')
-#     response.delete_cookie('refresh_token')
-#     return response

@@ -13,6 +13,8 @@ client = MongoClient(settings.MONGODB_ADDRESS)
 
 chat_db = client.get_database("mbtichat")
 messages_collection = chat_db.get_collection("messages")
+room_members_collection = chat_db.get_collection("room_members")
+
 
 def save_message(message, nickname, sender_id, room_id):
     return str(messages_collection
@@ -30,3 +32,15 @@ def get_message(message_id):
     except InvalidId:
         return False
     return message_data
+
+def add_room_member(room_id, user_id):
+    room_members_collection.insert_one(
+        {
+            '_id': {'room_id': room_id, 'user_id': user_id},
+            'created_at': datetime.utcnow()
+        })
+
+def remove_room_member(room_id, user_id):
+    room_members_collection.delete_one({
+        '_id': {'room_id': room_id, 'user_id': user_id},
+    })

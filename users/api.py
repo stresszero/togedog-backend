@@ -183,7 +183,7 @@ def email_user_login(request, body: EmailUserSigninIn):
     - 로그인 후 JWT 액세스 토큰 또는 리프레시 토큰을 httponly 쿠키로 저장
     '''
     body_dict = body.dict()
-    user = get_object_or_404(User, email=body_dict['email'], account_type=UserAccountType.EMAIL)
+    user = get_object_or_404(User, email=body_dict['email'], account_type=UserAccountType.EMAIL.value)
         
     if check_password(body_dict["password"], user.password):
         data = {

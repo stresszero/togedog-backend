@@ -1,3 +1,5 @@
+from typing import Union
+
 from django.db.models import F
 from django.utils import timezone
 from ninja import NinjaAPI
@@ -39,27 +41,30 @@ def get_notices(request):
         "count": comment_reports.count() + post_reports.count(),
     }
 
-@api.post("/admin/notices", response=MessageOut, auth=AuthBearer(), summary="신고 건 확인 처리")
-def check_notice(request, id: int, type: str):
+@api.post("/admin/notices", response={200: MessageOut, 400: MessageOut}, auth=AuthBearer(), summary="신고 건 확인 처리")
+def check_notice(request, id: Union[str, int], type: str):
     """
     게시글/댓글 신고 확인, 관리자만 가능
-    - type이 post_report면 게시글 신고 확인 
-    - type이 comment_report면 댓글 신고 확인 
-    - type이 all이면 모든 신고건 확인 처리, all이면 id값은 무시됨
-    - id: 해당되는 type의 id값
+    - type이 post_report이고 id값이 정수이면 해당 게시글 신고 확인 처리
+    - type이 comment_report이고 id값이 정수이면 해당 댓글 신고 확인 
+    - id가 all이면 모든 신고건(글/댓글) 확인 처리
     """
     is_admin(request)
     if type == "post_report":
-        PostReport.objects.filter(id=id).update(is_checked=True, updated_at=timezone.now())
-
-    if type == "comment_report":
-        CommentReport.objects.filter(id=id).update(is_checked=True, updated_at=timezone.now())
-
-    if type == "all":
-        PostReport.objects.filter(is_checked=False).update(is_checked=True, updated_at=timezone.now())
-        CommentReport.objects.filter(is_checked=False).update(is_checked=True, updated_at=timezone.now())
+        if id == "all":
+            PostReport.objects.filter(is_checked=False).update(is_checked=True, updated_at=timezone.now())
+        else:
+            PostReport.objects.filter(id=id).update(is_checked=True, updated_at=timezone.now())
+    
+    elif type == "comment_report":
+        if id == "all":
+            CommentReport.objects.filter(is_checked=False).update(is_checked=True, updated_at=timezone.now())
+        else:
+            CommentReport.objects.filter(id=id).update(is_checked=True, updated_at=timezone.now())
+    else:
+        return 400, {"message": "bad request"}
           
-    return {"message": "success"}
+    return 200, {"message": "success"}
 
 @api.get("/cookie/test", summary="쿠키 테스트")
 def test_cookie(request):

@@ -62,7 +62,6 @@ def logout(request):
     로그아웃 후 쿠키 삭제
     '''
     response = JsonResponse({'message': 'success'}, status=200)
-    response.delete_cookie('mycookie')
     response.delete_cookie('access_token')
     response.delete_cookie('refresh_token')
     return response

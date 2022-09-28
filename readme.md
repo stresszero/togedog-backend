@@ -6,6 +6,9 @@ Development
 - MongoDB for chat app
 
 Deployment
+- AWS S3, RDS, EC2
 - Heroku
 - MongoDB Cloud
-- AWS S3, RDS, EC2
+- Docker
+- NGINX
+- Gunicorn with Eventlet

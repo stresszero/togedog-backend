@@ -97,7 +97,7 @@ def email_user_signup(request, body: EmailUserSignupIn):
     '''
     body_dict = body.dict()
     if body_dict['name'] in settings.BAD_WORDS_LIST or body_dict['nickname'] in settings.BAD_WORDS_LIST:
-        return 400, {"message": "bad words in name or nickname"}
+        return 400, {"message": "invalid name or nickname"}
 
     if User.objects.filter(email=body_dict["email"], account_type=UserAccountType.EMAIL.value).exists():
         return 400, {"message": "user already exists"}

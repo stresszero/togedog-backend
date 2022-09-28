@@ -46,6 +46,17 @@ ALLOWED_HOSTS = ["*"]
 
 APPEND_SLASH = False
 
+
+# for Django debug toolbar and Django Ninja
+# INTERNAL_IPS = ["127.0.0.1"]
+# RENDER_PANELS = True
+
+# If using Docker the following will set your INTERNAL_IPS correctly in Debug mode:
+# if DEBUG:
+#     import socket
+#     hostname, _, ips = socket.gethostbyname_ex(socket.gethostname())
+#     INTERNAL_IPS = [ip[: ip.rfind(".")] + ".1" for ip in ips] + ["127.0.0.1", "10.0.2.2"]
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -56,6 +67,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     # "ninja",
+    # "debug_toolbar",
     "corsheaders",
     "django_extensions",
     "django.contrib.postgres",
@@ -68,6 +80,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    # "debug_toolbar.middleware.DebugToolbarMiddleware",
     'corsheaders.middleware.CorsMiddleware',
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -195,22 +208,3 @@ GOOGLE_SCOPE         = GOOGLE_SCOPE
 
 # MongoDB
 MONGODB_ADDRESS = MONGODB_ADDRESS
-
-# runserver logging
-# LOGGING = {
-#     'disable_existing_loggers': False,
-#     'version': 1,
-#     'handlers': {
-#         'console': {
-#             'class': 'logging.StreamHandler',
-#             'level': 'DEBUG',
-#         },
-#     },
-#     'loggers': {
-#         'django.db.backends': {
-#             'handlers': ['console'],
-#             'level': 'DEBUG',
-#             'propagate': False,
-#         },
-#     },
-# }

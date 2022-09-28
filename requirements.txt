@@ -32,6 +32,7 @@ defusedxml==0.7.1
 distlib==0.3.4
 Django==4.1
 django-cors-headers==3.13.0
+django-debug-toolbar==3.7.0
 django-extensions==3.2.1
 django-ninja==0.19.1
 dnspython==1.16.0

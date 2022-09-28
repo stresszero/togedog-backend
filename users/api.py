@@ -114,7 +114,7 @@ def get_user_info(request, user_id: int):
     has_authority(request, user_id, user_check=True, banned_check=False)
     return get_object_or_404(User, id=user_id)
 
-@router.patch("/{user_id}", response={400: MessageOut}, auth=[AuthBearer()], summary="사용자 정보 수정")
+@router.patch("/{user_id}", response={200: MessageOut, 400: MessageOut}, auth=[AuthBearer()], summary="사용자 정보 수정")
 def modify_user_info(request, user_id: int, body: ModifyUserIn = Form(...), file: UploadedFile = None):
     '''
     사용자 정보 수정, 로그인한 본인 계정 또는 관리자만 수정 가능
@@ -253,12 +253,19 @@ def kakao_token_test(request, token: TestKakaoToken):
         if len(kakao_profile['kakao_account']['profile']['nickname']) <= 10 \
             else kakao_profile['kakao_account']['profile']['nickname'][:10]
 
+    try:
+        kakao_email = kakao_profile['kakao_account']['email']
+        kakao_thumbnail = kakao_profile['kakao_account']['profile']['thumbnail_image_url']
+    except KeyError:
+        kakao_email = "kakaouser@kakao.com"
+        kakao_thumbnail = settings.DEFAULT_USER_THUMBNAIL_URL
+
     user, is_created  = User.objects.get_or_create(
         social_account_id = kakao_profile['id'],
         defaults = {
-            'email'        : kakao_profile['kakao_account']['email'],
+            'email'        : kakao_email,
             'nickname'     : kakao_nickname,
-            # 'thumbnail_url': kakao_profile['kakao_account']['profile']['thumbnail_image_url'],
+            'thumbnail_url': kakao_thumbnail,
             'account_type' : UserAccountType.KAKAO.value,
         }
     )
@@ -288,13 +295,14 @@ def google_token_test(request, token: TestKakaoToken):
     req_uri     = 'https://www.googleapis.com/oauth2/v3/userinfo'
     headers     = {'Authorization': f'Bearer {token.token}'}
     user_info   = requests.get(req_uri, headers=headers, timeout=3).json()
-    google_name = user_info["given_name"] if len(user_info["given_name"]) <= 10 else user_info["name"][:10]
+    google_name = user_info["given_name"]
+    username    = google_name if len(google_name) <= 10 else google_name[:10]
 
     user, is_created = User.objects.get_or_create(
         social_account_id = user_info["sub"],
         defaults = {
             "email"        : user_info["email"],
-            "nickname"     : google_name,
+            "nickname"     : username,
             "thumbnail_url": user_info["picture"],
             "account_type" : UserAccountType.GOOGLE.value,
         }

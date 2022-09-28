@@ -1,8 +1,8 @@
 from typing import Union
 
-from django.db.models import F
+from django.db.models import F, Q
 from django.utils import timezone
-from ninja import NinjaAPI
+from ninja import NinjaAPI, Path
 
 from chat.api import router as chat_router
 from comments.api import router as comments_router
@@ -42,7 +42,7 @@ def get_notices(request):
     }
 
 @api.post("/admin/notices", response={200: MessageOut, 400: MessageOut}, auth=AuthBearer(), summary="신고 건 확인 처리")
-def check_notice(request, id: Union[str, int], type: str):
+def check_notice(request, type: str, id: Union[str, int]):
     """
     게시글/댓글 신고 확인, 관리자만 가능
     - type이 post_report이고 id값이 정수이면 해당 게시글 신고 확인 처리
@@ -50,17 +50,27 @@ def check_notice(request, id: Union[str, int], type: str):
     - id가 all이면 모든 신고건(글/댓글) 확인 처리
     """
     is_admin(request)
+
+    q = Q()
+    # if id == "all":
+    #     q &= Q(is_checked=False)
+
+
     if type == "post_report":
         if id == "all":
             PostReport.objects.filter(is_checked=False).update(is_checked=True, updated_at=timezone.now())
-        else:
+        elif int(id):
             PostReport.objects.filter(id=id).update(is_checked=True, updated_at=timezone.now())
+        else:
+            return 400, {"message": "bad request"}
     
     elif type == "comment_report":
         if id == "all":
             CommentReport.objects.filter(is_checked=False).update(is_checked=True, updated_at=timezone.now())
-        else:
+        elif int(id):
             CommentReport.objects.filter(id=id).update(is_checked=True, updated_at=timezone.now())
+        else:
+            return 400, {"message": "bad request"}
     else:
         return 400, {"message": "bad request"}
           
@@ -91,3 +101,9 @@ def get_test_count(request):
 #     쿠키 인가 테스트
 #     '''
 #     return f"Token = {request.auth}, {request.auth.id}, {request.auth.user_type}"
+
+'''
+사용자 MBTI 바로저장
+- 사용자가 로그인한 상태에서 MBTI 검사결과가 나오면 바로 사용자 MBTI를 DB에 저장
+- MBTI값 저장되면 리덕스에 저장?
+'''

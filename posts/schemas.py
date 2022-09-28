@@ -34,7 +34,7 @@ class AdminGetPostListOut(GetPostListOut):
     user_mbti: str = Field(..., alias='user.mbti')
     user_nickname: str = Field(..., alias="user.nickname")
     user_signup_time: datetime = Field(..., alias='user.created_at')
-    reported_count: int = Field(..., alias='reports.count')
+    reported_count: int 
 
 class CreatePostIn(Schema):
     subject: str

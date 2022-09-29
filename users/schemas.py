@@ -32,6 +32,7 @@ class EmailUserSigninIn(Schema):
 
 class UserListOut(Schema):
     id: int
+    created_at: datetime
     name: Optional[str]
     nickname: str
     email: EmailStr

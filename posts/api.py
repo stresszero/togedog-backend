@@ -46,7 +46,7 @@ def get_posts_by_admin(request, search: str = None, reported: int = None, date: 
     if reported:
         q &= Q(reported_count__gte=reported)
     if date:
-        q &= Q(created_at__range=[date.split('~')[0], date.split('~')[1]])
+        q &= Q(created_at__date__range=[date.split('~')[0], date.split('~')[1]])
 
     return Post.objects.annotate(reported_count=Count('reports', distinct=True)) \
         .select_related('user').filter(q, is_deleted=False)\
@@ -65,7 +65,7 @@ def get_deleted_posts(request, search: str = None, date: str = None):
     if search:
         q &= Q(user__nickname__icontains=search)
     if date:
-        q &= Q(created_at__range=[date.split('~')[0], date.split('~')[1]])
+        q &= Q(created_at__date__range=[date.split('~')[0], date.split('~')[1]])
 
     return Post.objects.select_related('user').filter(q, is_deleted=True).order_by("-updated_at")
 

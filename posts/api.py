@@ -67,7 +67,7 @@ def get_deleted_posts(request, search: str = None, date: str = None):
     if date:
         q &= Q(created_at__range=[date.split('~')[0], date.split('~')[1]])
 
-    return Post.objects.select_related('user').filter(q, is_deleted=True)
+    return Post.objects.select_related('user').filter(q, is_deleted=True).order_by("-updated_at")
 
 @router.get("/deleted/{post_id}/", response={200: AdminGetDeletedPostOut}, summary="삭제된 게시글 상세조회")
 def get_deleted_post_by_admin(request, post_id: int):

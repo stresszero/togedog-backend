@@ -49,11 +49,11 @@ def get_user_list(request, search: str = None, reported: int = None, date: str= 
     if reported:
         q &= Q(reported_count__gte=reported)
     if date:
-        q &= Q(created_at__range=[date.split('~')[0], date.split('~')[1]])
+        q &= Q(created_at__date__range=[date.split('~')[0], date.split('~')[1]])
 
     return User.objects.annotate(
         reported_count = Count("post_reported", distinct=True) + Count("comment_reported", distinct=True)) \
-        .filter(q)
+        .filter(q).order_by("-created_at")
 
 @router.get("/logout", summary="로그아웃")
 def logout(request):
@@ -232,7 +232,7 @@ def get_banned_user_list(request, search: str = None, date: str = None):
 
     return User.objects.annotate(
         reported_count = Count("post_reported", distinct=True) + Count("comment_reported", distinct=True)
-        ).filter(q, status=UserStatus.BANNED)
+        ).filter(q, status=UserStatus.BANNED).order_by("-created_at")
 
 @router.post("/test/kakaotoken/", summary="카카오 로그인")
 def kakao_token_test(request, token: TestKakaoToken):

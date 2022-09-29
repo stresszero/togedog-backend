@@ -12,7 +12,7 @@ from ninja.pagination import paginate, PageNumberPagination
 
 from cores.models import UserAccountType, UserStatus
 from cores.schemas import MessageOut
-from cores.utils import generate_jwt, s3_client, validate_upload_file, handle_upload_file
+from cores.utils import s3_client, generate_jwt, validate_upload_file, handle_upload_file
 from users.auth import AuthBearer, is_admin, has_authority
 from users.models import User
 from users.schemas import (
@@ -42,8 +42,7 @@ def get_user_list(request, search: str = None, reported: int = None, date: str= 
         - count: 응답으로 나온 사용자의 전체 갯수
     '''
     is_admin(request)
-    # for key, value in request.GET.items():
-    #     print(key, value)
+
     q = Q()
     if search:
         q &= Q(nickname__icontains=search)

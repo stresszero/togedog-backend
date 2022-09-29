@@ -15,10 +15,6 @@ class User(TimeStampedModel):
     thumbnail_url     = models.CharField(max_length=500, default=settings.DEFAULT_USER_THUMBNAIL_URL)
     address           = models.CharField(max_length=20, null=True)
     mbti              = models.CharField(max_length=4, default="none")
-    
-    # @property
-    # def reported_count(self):
-    #     return self.post_reported.count() + self.comment_reported.count()
 
     class Meta:
         db_table = 'user'

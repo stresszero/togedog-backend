@@ -3,7 +3,7 @@ from bson.errors import InvalidId
 from datetime import datetime
 
 from bson import ObjectId
-from pymongo import MongoClient
+from pymongo import MongoClient, DESCENDING
 
 from django.conf import settings
 
@@ -44,3 +44,11 @@ def remove_room_member(room_id, user_id):
     room_members_collection.delete_one({
         '_id': {'room_id': room_id, 'user_id': user_id},
     })
+
+def get_messages(room_id, page_size=10, page=0):
+    offset = page * page_size
+    messages = list(
+        messages_collection.find({'room_id': room_id}).sort('_id', DESCENDING).limit(page_size).skip(offset))
+    for message in messages:
+        message['created_at'] = message['created_at'].strftime("%d %b, %H:%M")
+    return messages[::-1]

@@ -186,7 +186,7 @@ def create_post_like(request, post_id: int):
 def get_posts(request, offset: int = 0, limit: int = 9, sort: str = "-created_at"):
     '''
     게시글 목록 조회, 한 페이지에 9개씩 
-    - 정렬(sort) 기본값 최신순(-created_at), 인기순(likes)
+    - 정렬(sort) 기본값 최신순(-created_at), 좋아요순(likes)
     - DB상에서 is_deleted=False인 게시글만 나옴
     '''
     has_authority(request)

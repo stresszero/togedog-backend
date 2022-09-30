@@ -4,6 +4,7 @@ from django.shortcuts import get_object_or_404
 
 from cores.schemas import MessageOut, ContentIn
 from comments.models import Comment, CommentReport
+from comments.schemas import GetCommentOut
 from posts.models import Post
 from users.auth import AuthBearer, has_authority, is_admin
 
@@ -12,20 +13,19 @@ router = Router(tags=["댓글 관련 API"], auth=AuthBearer())
 
 @router.post(
     "/{post_id}/comments",
-    response={200: MessageOut},
+    response={200: GetCommentOut},
     summary="댓글 작성"
 )
 def create_comment(request, post_id: int, body: ContentIn = Form(...)):
     """
-    댓글 작성
+    댓글 작성 후 댓글 내용 반환
     """
     has_authority(request)
     get_object_or_404(Post, id=post_id)
-    Comment.objects.create(
+    comment = Comment.objects.create(
             user_id=request.auth.id, post_id=post_id, content=body.content
     )
-
-    return 200, {"message": "success"}
+    return 200, comment
 
 @router.delete(
     "/{post_id}/comments/{comment_id}",

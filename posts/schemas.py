@@ -84,7 +84,7 @@ class AdminGetPostOut(Schema):
     user_nickname: str = Field(..., alias="user.nickname")
     user_email: str = Field(... , alias="user.email")
     user_mbti: str = Field(..., alias='user.mbti')
-    user_address: str = Field(..., alias='user.address')
+    user_address: Optional[str] = Field(..., alias='user.address')
     user_thumbnail: str = Field(..., alias="user.thumbnail_url")
     user_created_at: Optional[datetime] = Field(..., alias='user.created_at')
     comments_list: List[GetCommentOut]
@@ -104,7 +104,7 @@ class AdminGetDeletedPostOut(Schema):
     user_nickname: str = Field(..., alias="user.nickname")
     user_email: str = Field(... , alias="user.email")
     user_mbti: str = Field(..., alias='user.mbti')
-    user_address: str = Field(..., alias='user.address')
+    user_address: Optional[str] = Field(..., alias='user.address')
     user_thumbnail: str = Field(..., alias="user.thumbnail_url")
     user_created_at: Optional[datetime] = Field(..., alias='user.created_at')
     delete_reason: Optional[str] = Field(..., alias="get_delete_reason")

@@ -13,7 +13,7 @@ class User(TimeStampedModel):
     status            = EnumField(enum=UserStatus, default=UserStatus.ACTIVE.value, max_length=10)
     account_type      = EnumField(enum=UserAccountType, max_length=20)
     thumbnail_url     = models.CharField(max_length=500, default=settings.DEFAULT_USER_THUMBNAIL_URL)
-    address           = models.CharField(max_length=20, null=True)
+    address           = models.CharField(max_length=20, blank=True)
     mbti              = models.CharField(max_length=4, default="none")
 
     class Meta:

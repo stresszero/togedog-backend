@@ -3,12 +3,15 @@ from typing import List
 from django.conf import settings
 from django.db.models import F, Q, Count
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
+
 from ninja import Router, Form
 from ninja.files import UploadedFile
 from ninja.pagination import paginate, PageNumberPagination
 
 from cores.utils import s3_client, validate_upload_file, handle_upload_file
 from cores.schemas import MessageOut, ContentIn
+from comments.models import Comment, CommentDelete
 from posts.models import Post, PostLike, PostDelete, PostReport
 from posts.schemas import (
     GetPostListOut, 
@@ -135,6 +138,7 @@ def delete_post(request, post_id: int, body: DeletePostIn = Form(...)):
         post_id=post_id, 
         delete_reason="글쓴이 본인이 삭제" if post.user_id == request.auth.id else body.delete_reason
     )
+    Comment.objects.filter(post_id=post_id).update(is_deleted=True, updated_at=timezone.now())
 
     return 200, {"message": "success"}
 

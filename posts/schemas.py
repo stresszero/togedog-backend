@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from ninja import Schema, ModelSchema, Field
 
-from posts.models import Post, PostReport
+from posts.models import Post
 from comments.models import Comment
 
 class PostUser(Schema):

@@ -138,6 +138,15 @@ def delete_post(request, post_id: int, body: DeletePostIn = Form(...)):
         post_id=post_id, 
         delete_reason="글쓴이 본인이 삭제" if post.user_id == request.auth.id else body.delete_reason
     )
+    objs = [
+        CommentDelete(
+            user_id=item['user_id'],
+            comment_id=item['id'],
+            delete_reason="게시글 삭제로 인한 자동삭제"
+        )
+        for item in post.comments.filter(is_deleted=False).values('user_id', 'id')
+    ]
+    CommentDelete.objects.bulk_create(objs)
     Comment.objects.filter(post_id=post_id).update(is_deleted=True, updated_at=timezone.now())
 
     return 200, {"message": "success"}

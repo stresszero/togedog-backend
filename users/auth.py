@@ -7,9 +7,6 @@ from cores.models import UserStatus
 from users.models import User
 from django.conf import settings
 
-def is_admin(request):
-    if request.auth.user_type != "admin":
-        raise HttpError(403, "forbidden")
 
 def has_authority(request, user_id=None, user_check=False, banned_check=True, self_check=False):
     '''
@@ -29,8 +26,8 @@ def has_authority(request, user_id=None, user_check=False, banned_check=True, se
         if request.auth.user_type != "admin" and request.auth.id != user_id:
             raise HttpError(403, "forbidden")
 
-def is_banned(request):
-    if request.auth.status == UserStatus.BANNED.value:
+def is_admin(request):
+    if request.auth.user_type != "admin":
         raise HttpError(403, "forbidden")
 
 class AuthBearer(HttpBearer):

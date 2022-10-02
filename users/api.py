@@ -25,8 +25,6 @@ from users.schemas import (
     TestKakaoToken,
 )
 
-MB = 1024 * 1024
-
 router = Router(tags=["사용자 관련 API"])
 
 @router.get("", response=List[UserListOut], auth=[AuthBearer()], summary="관리자페이지 사용자 목록 조회")

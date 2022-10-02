@@ -50,8 +50,8 @@ def handle_join(sid, data):
 @sio.on('send_message')
 def handle_send_message(sid, message, nickname, room, currentTime, userMbti, userImage, userId):
     '''
-    send_message 이벤트로 받은 데이터를 욕설 필터링과 MongoDB에 저장하고 add_message로 emit
-    censor_text(): 욕설 필터링 함수, 욕설 부분이 있으면 *으로 수정한 문자열을 반환함
+    send_message 이벤트로 받은 데이터를 MongoDB에 저장하고 add_message로 emit
+    censor_text(): 욕설 필터링 함수, 채팅 메시지에 욕설이 있으면 그 부분만 *으로 수정한 문자열을 반환함
     save_message(): MongoDB에 메시지 데이터를 저장하고 고유한 ObjectId(24자리 문자열)반환
     필요한 데이터 처리가 완료되면 데이터를 add_message로 emit
     '''

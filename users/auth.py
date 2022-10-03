@@ -35,7 +35,6 @@ class AuthBearer(HttpBearer):
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=settings.ALGORITHM) 
             user = User.objects.get(id=payload["user"])
-            # user = User.objects.only('id', 'status','user_type').get(id=payload["user"])
 
         except User.DoesNotExist:
             return HttpError(400, "user does not exist")

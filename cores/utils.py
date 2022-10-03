@@ -40,7 +40,7 @@ s3_client = boto3.client(
     region_name=settings.AWS_S3_REGION_NAME
 )
 
-def validate_upload_file(file: UploadedFile):
+def validate_upload_file(file: UploadedFile) -> bool:
     if not file:
         return False
     if file.name.split(".")[-1].lower() not in IMAGE_EXTENSIONS_LIST:
@@ -49,7 +49,7 @@ def validate_upload_file(file: UploadedFile):
         raise HttpError(400, "file size is too large")
     return True
 
-def handle_upload_file(file: UploadedFile, type: str):
+def handle_upload_file(file: UploadedFile, type: str) -> str:
     upload_filename = f'{str(uuid.uuid4())}.{file.name.split(".")[-1]}'
     if type == "user_thumbnail":
         url = f'{settings.PROFILE_IMAGES_URL}{upload_filename}'
@@ -62,6 +62,10 @@ def handle_upload_file(file: UploadedFile, type: str):
     return url
 
 def censor_text(text):
+    '''
+    욕설 목록에서 모든 단어를 text.find()로 검색
+    욕설 단어가 포함된 경우 해당 단어를 *로 치환
+    '''
     censored = False
     censored_text = text
     for bad_word in settings.BAD_WORDS_LIST:

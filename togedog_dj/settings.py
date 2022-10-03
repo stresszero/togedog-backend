@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from .admin_settings import (
+    ALLOWED_HOSTS,
     SECRET_KEY, 
     DATABASES, 
     PASSWORD_HASHERS, 
@@ -36,16 +37,17 @@ SECRET_KEY = SECRET_KEY
 DATABASES = DATABASES
 
 # SECURITY WARNING: don't run with debug turned on in production!
+# Production setting
+# ALLOWED_HOSTS = ALLOWED_HOSTS
+# DEBUG = False
 DEBUG = True
+ALLOWED_HOSTS = ["*"]
 
 PASSWORD_SALT = PASSWORD_SALT
 PASSWORD_HASHERS = PASSWORD_HASHERS 
 ALGORITHM = ALGORITHM
 
-ALLOWED_HOSTS = ["*"]
-
 APPEND_SLASH = False
-
 
 # for Django debug toolbar and Django Ninja
 # INTERNAL_IPS = ["127.0.0.1"]

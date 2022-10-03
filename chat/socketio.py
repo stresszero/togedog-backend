@@ -35,11 +35,12 @@ def handle_join(sid, data):
     data에는 방 번호와 사용자 닉네임이 포함됨
     채팅방에 접속한 사용자의 sid값을 key로 하고, data를 value로 users 딕셔너리에 저장    
     '''
+    global users
     users[sid] = data
     sio.enter_room(sid, room=data['room'])
     
     sio.emit(
-        'add_message', 
+        'add_message',
         {
             "user_nickname": '함께하개 관리자', 
             "text": f"{data['nickname']}님이 들어왔어요."
@@ -75,10 +76,11 @@ def disconnect(sid):
     퇴장한 사용자 정보를 담아 add_message로 emit
     users 딕셔너리에서 해당 sid값의 데이터 삭제
     '''
+    global users
     leave_username = users[sid].get('nickname')
     leave_room_number = users[sid].get('room')
     sio.emit(
-        'add_message', 
+        'add_message',
         {
             "user_nickname": '함께하개 관리자', 
             "text": f"{leave_username}님이 퇴장하셨어요."

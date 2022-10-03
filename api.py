@@ -1,3 +1,4 @@
+from multiprocessing.sharedctypes import Value
 from typing import Union
 
 from django.db.models import F, Q
@@ -56,13 +57,14 @@ def check_notice(request, type: str, id: Union[str, int]):
         q &= Q(is_checked=False)
     elif int(id):
         q &= Q(id=id)
+    else:
+        return 400, {"message": "bad request"}
 
     if type == "post_report":
         PostReport.objects.filter(q).update(is_checked=True, updated_at=timezone.now())
 
     elif type == "comment_report":
         CommentReport.objects.filter(q).update(is_checked=True, updated_at=timezone.now())
-
     else:
         return 400, {"message": "bad request"}
           

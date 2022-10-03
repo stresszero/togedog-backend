@@ -48,7 +48,9 @@ def remove_room_member(room_id, user_id):
 def get_messages(room_id, page_size=10, page=0):
     offset = page * page_size
     messages = list(
-        messages_collection.find({'room_id': room_id}).sort('_id', DESCENDING).limit(page_size).skip(offset))
+        messages_collection.find({'room_id': room_id}).sort('_id', DESCENDING)
+        .limit(page_size).skip(offset)
+    )
     for message in messages:
         message['created_at'] = message['created_at'].strftime("%d %b, %H:%M")
     return messages[::-1]

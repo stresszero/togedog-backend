@@ -127,6 +127,7 @@ def delete_post(request, post_id: int, body: DeletePostIn = Form(...)):
     '''
     게시글 삭제
     - DB에서 삭제하는게 아니라 해당 게시글의 is_deleted 값만 True로 바꿈(soft delete)
+    - 게시글 삭제시 댓글도 모두 삭제 처리(is_deleted 값만 True로)
     - 관리자가 삭제하는 경우 삭제 사유 입력
     '''
     post = get_object_or_404(Post, id=post_id, is_deleted=False)

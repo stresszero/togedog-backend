@@ -56,7 +56,7 @@ def modify_comment(request, post_id: int, comment_id: int, body: ContentIn):
     댓글 수정
     """
     get_object_or_404(Post, id=post_id, is_deleted=False)
-    comment = get_object_or_404(Comment, id=comment_id, post_id=post_id , is_deleted=False)
+    comment = get_object_or_404(Comment, id=comment_id, post_id=post_id, is_deleted=False)
     has_authority(request, user_id=comment.user_id, user_check=True)
     comment.content = body.content
     comment.save()

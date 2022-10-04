@@ -6,13 +6,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('posts', '0008_alter_post_content'),
+        ("posts", "0008_alter_post_content"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='post',
-            name='image_url',
-            field=models.CharField(blank=True, default='https://togedog.s3.ap-northeast-2.amazonaws.com/post_images/default_post_image.jpg', max_length=500),
+            model_name="post",
+            name="image_url",
+            field=models.CharField(
+                blank=True,
+                default="https://togedog.s3.ap-northeast-2.amazonaws.com/post_images/default_post_image.jpg",
+                max_length=500,
+            ),
         ),
     ]

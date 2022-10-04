@@ -7,26 +7,29 @@ from django.db.models import CharField
 class TimeStampedModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         abstract = True
+
 
 class UserType(Enum):
     ADMIN   = "admin"
     NORMAL  = "normal"
     MANAGER = "manager"
 
+
 class UserStatus(Enum):
     ACTIVE = "active"
     BANNED = "banned"
+
 
 class UserAccountType(Enum):
     EMAIL  = "email"
     KAKAO  = "kakao"
     GOOGLE = "google"
 
-class EnumField(CharField):
 
+class EnumField(CharField):
     def __init__(self, enum, *args, **kwargs):
         self.enum = enum
         super().__init__(*args, **kwargs)
@@ -44,7 +47,7 @@ class EnumField(CharField):
 
     def deconstruct(self):
         name, path, args, kwargs = super().deconstruct()
-        kwargs['enum'] = self.enum
+        kwargs["enum"] = self.enum
         return name, path, args, kwargs
 
     def validate_enum(self, value):
@@ -53,4 +56,4 @@ class EnumField(CharField):
                 return value.value
             if member.value == value:
                 return value
-        raise AttributeError('Not Found Enum Member')
+        raise AttributeError("Not Found Enum Member")

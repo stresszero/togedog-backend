@@ -2,10 +2,10 @@ from pathlib import Path
 
 from .admin_settings import (
     ALLOWED_HOSTS,
-    SECRET_KEY, 
-    DATABASES, 
-    PASSWORD_HASHERS, 
-    PASSWORD_SALT, 
+    SECRET_KEY,
+    DATABASES,
+    PASSWORD_HASHERS,
+    PASSWORD_SALT,
     ALGORITHM,
     AWS_ACCESS_KEY_ID,
     AWS_SECRET_ACCESS_KEY,
@@ -22,8 +22,8 @@ from .admin_settings import (
     PROFILE_IMAGES_URL,
     DEFAULT_USER_THUMBNAIL_URL,
     DEFAULT_POST_IMAGE_URL,
-    MONGODB_ADDRESS
-    )
+    MONGODB_ADDRESS,
+)
 from .bad_words import BAD_WORDS_LIST
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -44,7 +44,7 @@ DEBUG = True
 ALLOWED_HOSTS = ["*"]
 
 PASSWORD_SALT = PASSWORD_SALT
-PASSWORD_HASHERS = PASSWORD_HASHERS 
+PASSWORD_HASHERS = PASSWORD_HASHERS
 ALGORITHM = ALGORITHM
 
 APPEND_SLASH = False
@@ -83,7 +83,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     # "debug_toolbar.middleware.DebugToolbarMiddleware",
-    'corsheaders.middleware.CorsMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -97,31 +97,34 @@ MIDDLEWARE = [
 # CORS
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
+# Production setting
 # CORS_ORIGIN_WHITELIST = [
 #     'http://127.0.0.1:3000',
 #     'http://localhost:3000'
-#     ]
+#     'http://withdog.me',
+#     'https://withdog.me',
+# ]
 
 CORS_ALLOW_METHODS = (
-    'DELETE',
-    'GET',
-    'OPTIONS',
-    'PATCH',
-    'POST',
-    'PUT',
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
 )
 
 CORS_ALLOW_HEADERS = (
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-requested-with',
-    'Access-Control-Allow-Headers',
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+    "Access-Control-Allow-Headers",
 )
 
 ROOT_URLCONF = "togedog_dj.urls"
@@ -185,28 +188,28 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-POST_IMAGES_URL            = POST_IMAGES_URL
-PROFILE_IMAGES_URL         = PROFILE_IMAGES_URL
+POST_IMAGES_URL = POST_IMAGES_URL
+PROFILE_IMAGES_URL = PROFILE_IMAGES_URL
 DEFAULT_USER_THUMBNAIL_URL = DEFAULT_USER_THUMBNAIL_URL
-DEFAULT_POST_IMAGE_URL     = DEFAULT_POST_IMAGE_URL
+DEFAULT_POST_IMAGE_URL = DEFAULT_POST_IMAGE_URL
 
 BAD_WORDS_LIST = BAD_WORDS_LIST
 
 # AWS S3
-AWS_ACCESS_KEY_ID     = AWS_ACCESS_KEY_ID
+AWS_ACCESS_KEY_ID = AWS_ACCESS_KEY_ID
 AWS_SECRET_ACCESS_KEY = AWS_SECRET_ACCESS_KEY
-AWS_S3_REGION_NAME    = AWS_S3_REGION_NAME
-AWS_S3_ENDPOINT_URL   = AWS_S3_ENDPOINT_URL
+AWS_S3_REGION_NAME = AWS_S3_REGION_NAME
+AWS_S3_ENDPOINT_URL = AWS_S3_ENDPOINT_URL
 
 # Social Login
 KAKAO_REDIRECT_URI = KAKAO_REDIRECT_URI
 KAKAO_REST_API_KEY = KAKAO_REST_API_KEY
 
-GOOGLE_CLIENT_ID     = GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_ID = GOOGLE_CLIENT_ID
 GOOGLE_CLIENT_SECRET = GOOGLE_CLIENT_SECRET
-GOOGLE_REDIRECT_URI  = GOOGLE_REDIRECT_URI
+GOOGLE_REDIRECT_URI = GOOGLE_REDIRECT_URI
 GOOGLE_RESPONSE_TYPE = GOOGLE_RESPONSE_TYPE
-GOOGLE_SCOPE         = GOOGLE_SCOPE
+GOOGLE_SCOPE = GOOGLE_SCOPE
 
 # MongoDB
 MONGODB_ADDRESS = MONGODB_ADDRESS

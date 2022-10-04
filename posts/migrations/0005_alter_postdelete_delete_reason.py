@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('posts', '0004_rename_admin_postdelete_user'),
+        ("posts", "0004_rename_admin_postdelete_user"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='postdelete',
-            name='delete_reason',
+            model_name="postdelete",
+            name="delete_reason",
             field=models.CharField(blank=True, max_length=200, null=True),
         ),
     ]

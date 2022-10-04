@@ -4,10 +4,12 @@ from ninja import Schema, ModelSchema, Field
 
 from comments.models import Comment
 
+
 class CommentUser(Schema):
     id: int
     nickname: str
     created_at: datetime
+
 
 class GetCommentOut(ModelSchema):
     user_id: int

@@ -7,23 +7,45 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0002_alter_user_address'),
-        ('posts', '0002_alter_post_image_url'),
+        ("users", "0002_alter_user_address"),
+        ("posts", "0002_alter_post_image_url"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='PostDelete',
+            name="PostDelete",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('delete_reason', models.CharField(blank=True, max_length=200)),
-                ('admin', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='post_deletes', to='users.user')),
-                ('post', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='deletes', to='posts.post')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("delete_reason", models.CharField(blank=True, max_length=200)),
+                (
+                    "admin",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="post_deletes",
+                        to="users.user",
+                    ),
+                ),
+                (
+                    "post",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="deletes",
+                        to="posts.post",
+                    ),
+                ),
             ],
             options={
-                'db_table': 'post_delete',
+                "db_table": "post_delete",
             },
         ),
     ]

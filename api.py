@@ -1,9 +1,8 @@
-from multiprocessing.sharedctypes import Value
 from typing import Union
 
 from django.db.models import F, Q
 from django.utils import timezone
-from ninja import NinjaAPI, Path
+from ninja import NinjaAPI
 
 from chat.api import router as chat_router
 from comments.api import router as comments_router
@@ -17,8 +16,11 @@ from users.auth import AuthBearer, is_admin
 from users.models import UserTestCount
 
 
-api = NinjaAPI(title="함께하개 API 문서", version="0.9.0", 
-description="함께하개 프로젝트 API 명세서와 테스트 제공")
+api = NinjaAPI(
+    title="함께하개 API 문서", 
+    version="0.9.0", 
+    description="함께하개 프로젝트 API 명세서와 테스트 제공"
+)
 
 api.add_router("/users", users_router)
 api.add_router("/posts", posts_router)
@@ -27,7 +29,12 @@ api.add_router("/cores", cores_router)
 api.add_router("/chat", chat_router)
 
 
-@api.get("/admin/notices", response=NoticeReportOut, auth=AuthBearer(), summary="신고 알람 건수와 목록 확인")
+@api.get(
+    "/admin/notices",
+    response=NoticeReportOut,
+    auth=AuthBearer(),
+    summary="신고 알람 건수와 목록 확인",
+)
 def get_notices(request):
     """
     게시글/댓글 신고 미확인 건수(알람 숫자)와 목록 확인, 관리자만 가능
@@ -42,50 +49,67 @@ def get_notices(request):
         "count": comment_reports.count() + post_reports.count(),
     }
 
-@api.post("/admin/notices", response={200: MessageOut, 400: MessageOut}, auth=AuthBearer(), summary="신고 건 확인 처리")
+
+@api.post(
+    "/admin/notices",
+    response={200: MessageOut, 400: MessageOut},
+    auth=AuthBearer(),
+    summary="신고 건 확인 처리",
+)
 def check_notice(request, type: str, id: Union[str, int]):
     """
     게시글/댓글 신고 확인, 관리자만 가능
     - type이 post_report이고 id값이 정수이면 해당 게시글 신고 확인 처리
-    - type이 comment_report이고 id값이 정수이면 해당 댓글 신고 확인 
+    - type이 comment_report이고 id값이 정수이면 해당 댓글 신고 확인
     - id가 all이면 모든 신고건(글/댓글) 확인 처리
     """
     is_admin(request)
-
-    q = Q()
-    if id == "all":
+    try:
+        q = Q()
         q &= Q(is_checked=False)
-    elif int(id):
-        q &= Q(id=id)
-    else:
+        if id == "all":
+            pass
+        elif int(id):
+            q &= Q(id=id)
+        else:
+            return 400, {"message": "bad request"}
+
+        if type == "post_report":
+            PostReport.objects.filter(q).update(
+                is_checked=True, updated_at=timezone.now()
+            )
+        elif type == "comment_report":
+            CommentReport.objects.filter(q).update(
+                is_checked=True, updated_at=timezone.now()
+            )
+        else:
+            return 400, {"message": "bad request"}
+
+    except ValueError:
         return 400, {"message": "bad request"}
 
-    if type == "post_report":
-        PostReport.objects.filter(q).update(is_checked=True, updated_at=timezone.now())
-
-    elif type == "comment_report":
-        CommentReport.objects.filter(q).update(is_checked=True, updated_at=timezone.now())
-    else:
-        return 400, {"message": "bad request"}
-          
     return 200, {"message": "success"}
+
 
 @api.get("/cookie/test", summary="쿠키 테스트")
 def test_cookie(request):
     print(request.COOKIES)
-    return {'cookie_access_token': request.COOKIES['access_token']}
+    return {"cookie_access_token": request.COOKIES["access_token"]}
+
 
 @api.post("/test-count", summary="MBTI 검사 횟수 올리기")
 def add_test_count(request):
     count_obj = UserTestCount.objects.get(id=1)
-    count_obj.test_count = F('test_count') + 1
+    count_obj.test_count = F("test_count") + 1
     count_obj.save()
     count_obj.refresh_from_db()
     return {"message": "success"}
 
+
 @api.get("/test-count", summary="MBTI 검사 횟수 확인")
 def get_test_count(request):
     return {"userNum": UserTestCount.objects.get(id=1).test_count}
+
 
 # from users.auth import cookie_key
 

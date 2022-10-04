@@ -11,11 +11,7 @@ from users.auth import AuthBearer, has_authority, is_admin
 router = Router(tags=["댓글 관련 API"], auth=AuthBearer())
 
 
-@router.post(
-    "/{post_id}/comments",
-    response={200: GetCommentOut},
-    summary="댓글 작성"
-)
+@router.post("/{post_id}/comments", response={200: GetCommentOut}, summary="댓글 작성")
 def create_comment(request, post_id: int, body: ContentIn = Form(...)):
     """
     댓글 작성 후 댓글 내용 반환
@@ -23,14 +19,15 @@ def create_comment(request, post_id: int, body: ContentIn = Form(...)):
     has_authority(request)
     get_object_or_404(Post, id=post_id)
     comment = Comment.objects.create(
-            user_id=request.auth.id, post_id=post_id, content=body.content
+        user_id=request.auth.id, post_id=post_id, content=body.content
     )
     return 200, comment
+
 
 @router.delete(
     "/{post_id}/comments/{comment_id}",
     response={200: MessageOut},
-    summary="댓글 삭제(soft delete)"
+    summary="댓글 삭제(soft delete)",
 )
 def delete_comment(request, post_id: int, comment_id: int):
     """
@@ -47,16 +44,16 @@ def delete_comment(request, post_id: int, comment_id: int):
 
 
 @router.patch(
-    "/{post_id}/comments/{comment_id}",
-    response={200: MessageOut},
-    summary="댓글 수정"
+    "/{post_id}/comments/{comment_id}", response={200: MessageOut}, summary="댓글 수정"
 )
 def modify_comment(request, post_id: int, comment_id: int, body: ContentIn):
     """
     댓글 수정
     """
     get_object_or_404(Post, id=post_id, is_deleted=False)
-    comment = get_object_or_404(Comment, id=comment_id, post_id=post_id, is_deleted=False)
+    comment = get_object_or_404(
+        Comment, id=comment_id, post_id=post_id, is_deleted=False
+    )
     has_authority(request, user_id=comment.user_id, user_check=True)
     comment.content = body.content
     comment.save()
@@ -67,16 +64,16 @@ def modify_comment(request, post_id: int, comment_id: int, body: ContentIn):
 @router.post(
     "/{post_id}/comments/{comment_id}/report/",
     response={200: MessageOut},
-    summary="댓글 신고하기"
+    summary="댓글 신고하기",
 )
-def report_comment(
-    request, post_id: int, comment_id: int, body: ContentIn = Form(...)
-):
+def report_comment(request, post_id: int, comment_id: int, body: ContentIn = Form(...)):
     """
     댓글 신고
     """
     get_object_or_404(Post, id=post_id, is_deleted=False)
-    comment = get_object_or_404(Comment, id=comment_id, post_id=post_id, is_deleted=False)
+    comment = get_object_or_404(
+        Comment, id=comment_id, post_id=post_id, is_deleted=False
+    )
     has_authority(request, user_id=comment.user_id, self_check=True)
 
     CommentReport.objects.create(
@@ -92,7 +89,7 @@ def report_comment(
 @router.delete(
     "/{post_id}/comments/{comment_id}/delete/",
     response={200: MessageOut},
-    summary="댓글을 DB에서 삭제하기(hard delete)"
+    summary="댓글을 DB에서 삭제하기(hard delete)",
 )
 def delete_comment_from_db(request, post_id: int, comment_id: int):
     """

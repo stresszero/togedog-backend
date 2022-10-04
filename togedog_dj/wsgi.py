@@ -13,6 +13,5 @@ application = get_wsgi_application()
 # wrap with socketio's middleware
 application = socketio.WSGIApp(sio, application)
 
-# eventlet를 직접 실행하는 코드, gunicorn with eventlet 사용시 주석처리
+# eventlet를 직접 실행하는 코드, gunicorn with eventlet 사용시 주석처리 할 것
 # eventlet.wsgi.server(eventlet.listen(("", 8000)), application)
-

@@ -6,11 +6,11 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('posts', '0005_alter_postdelete_delete_reason'),
+        ("posts", "0005_alter_postdelete_delete_reason"),
     ]
 
     operations = [
         migrations.DeleteModel(
-            name='PostReport',
+            name="PostReport",
         ),
     ]

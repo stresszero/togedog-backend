@@ -9,8 +9,10 @@ from users.models import User
 
 REGEX_PASSWORD = "^(?=.*[A-Za-z])(?=.*\d)(?=.*[$@$!%*#?&])[A-Za-z\d$@$!%*#?&]{8,16}$"
 
+
 class EmailSignupCheckIn(Schema):
     email: EmailStr
+
 
 class EmailUserSignupIn(Schema):
     name: str
@@ -18,17 +20,19 @@ class EmailUserSignupIn(Schema):
     email: EmailStr
     password: str
     account_type: str = "email"
-    address: Optional[str] 
+    address: Optional[str]
 
-    @validator('password')
+    @validator("password")
     def validate_password(cls, value):
         if re.match(REGEX_PASSWORD, value):
             return value
         raise ValueError("invalid password")
 
+
 class EmailUserSigninIn(Schema):
     email: EmailStr
     password: str
+
 
 class UserListOut(Schema):
     id: int
@@ -41,10 +45,11 @@ class UserListOut(Schema):
     account_type: str
     thumbnail_url: str
     mbti: str
-    reported_count: int 
+    reported_count: int
 
     class Config:
         model = User
+
 
 class UserDetailOut(Schema):
     id: int
@@ -59,10 +64,12 @@ class UserDetailOut(Schema):
     address: Optional[str]
     created_at: datetime
 
+
 class ModifyUserIn(Schema):
     name: Optional[str]
     nickname: Optional[str]
     mbti: Optional[str]
+
 
 class TestKakaoToken(Schema):
     token: str

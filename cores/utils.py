@@ -17,21 +17,17 @@ IMAGE_EXTENSIONS_LIST = ["jpg", "jpeg", "jfif", "png", "webp", "avif", "svg"]
 
 def generate_jwt(payload, type):
     if type == "access":
-        exp_days = 1
-        exp = datetime.utcnow() + timedelta(days=exp_days)
+        exp = datetime.utcnow() + timedelta(days=1)
 
     elif type == "refresh":
-        exp_weeks = 2
-        exp = datetime.utcnow() + timedelta(weeks=exp_weeks)
+        exp = datetime.utcnow() + timedelta(weeks=2)
 
     else:
         raise Exception("invalid token type")
 
     payload["exp"] = exp
     payload["iat"] = datetime.utcnow()
-    encoded_jwt = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
-
-    return encoded_jwt
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
 s3_client = boto3.client(
@@ -77,17 +73,16 @@ def censor_text(text: str) -> str:
     """
     censored = False
     censored_text = text
+    censored = True
     for bad_word in settings.BAD_WORDS_LIST:
         bad_word_length = len(bad_word)
         bad_word_index = text.find(bad_word)
 
         while bad_word_index != -1:
             censored_text = (
-                censored_text[0:bad_word_index]
-                + "*" * bad_word_length
-                + censored_text[bad_word_index + bad_word_length :]
-            )
-            censored = True
+                censored_text[:bad_word_index] + "*" * bad_word_length
+            ) + censored_text[bad_word_index + bad_word_length :]
+
             bad_word_index = text.find(bad_word, bad_word_index + 1)
     return censored_text
 

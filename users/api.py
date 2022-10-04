@@ -341,7 +341,7 @@ def kakao_token_test(request, token: TestKakaoToken):
         headers={"Authorization": f"Bearer {token.token}"},
         timeout=3,
     )
-    if not kakao_response.status_code == 200:
+    if kakao_response.status_code != 200:
         return JsonResponse(
             {"message": "invalid response"}, status=kakao_response.status_code
         )

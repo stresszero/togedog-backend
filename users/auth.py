@@ -24,9 +24,13 @@ def has_authority(
     if self_check and request.auth.id == user_id:
         raise HttpError(403, "You can't report yourself")
 
-    if user_check and user_id:
-        if request.auth.user_type != "admin" and request.auth.id != user_id:
-            raise HttpError(403, "forbidden")
+    if (
+        user_check
+        and user_id
+        and request.auth.user_type != "admin"
+        and request.auth.id != user_id
+    ):
+        raise HttpError(403, "forbidden")
 
 
 def is_admin(request):

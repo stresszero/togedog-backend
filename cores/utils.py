@@ -49,6 +49,21 @@ def validate_upload_file(file: UploadedFile) -> bool:
     return True
 
 
+def delete_existing_image(url: str, type: str):
+    if (
+        type == "user_thumbnail" 
+        and url != settings.DEFAULT_USER_THUMBNAIL_URL 
+        and url.startswith(settings.PROFILE_IMAGES_URL)
+    ):
+        s3_client.delete_object(Bucket="user_thumbnail", Key=url.split("/")[-1])
+        
+    if (
+        type == "post_image" 
+        and url != settings.DEFAULT_POST_IMAGE_URL
+    ):
+        s3_client.delete_object(Bucket="post_images", Key=url.split("/")[-1])
+    
+
 def handle_upload_file(file: UploadedFile, type: str) -> str:
     upload_filename = f'{str(uuid.uuid4())}.{file.name.split(".")[-1]}'
     if type == "user_thumbnail":
@@ -85,12 +100,16 @@ def censor_text(text: str) -> str:
             bad_word_index = text.find(bad_word, bad_word_index + 1)
     return censored_text
     
+
 def limit_name(name: str, limit: int=10) -> str:
     if not name:
-        raise ValueError("invalid nickname")        
+        raise ValueError("invalid name")        
     return name if len(name) <= limit else name[:limit]
 
+
 def get_user_info_dict(user: User) -> dict:
+    if type(user) != User or not user:
+        raise ValueError("invalid user")
     return {
         "id"           : user.id,
         "name"         : user.name,

@@ -1,7 +1,6 @@
 from typing import List
 
-from django.conf import settings
-from django.db.models import F, Q, Count
+from django.db.models import Q, Count
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
@@ -9,7 +8,11 @@ from ninja import Router, Form
 from ninja.files import UploadedFile
 from ninja.pagination import paginate, PageNumberPagination
 
-from cores.utils import s3_client, validate_upload_file, handle_upload_file
+from cores.utils import (
+    validate_upload_file, 
+    handle_upload_file,
+    delete_existing_image
+)
 from cores.schemas import MessageOut, ContentIn
 from comments.models import Comment, CommentDelete
 from posts.models import Post, PostLike, PostDelete, PostReport
@@ -129,10 +132,7 @@ def modify_post(
     has_authority(request, user_id=post.user_id, user_check=True)
 
     if validate_upload_file(file):
-        if post.image_url != settings.DEFAULT_POST_IMAGE_URL:
-            s3_client.delete_object(
-                Bucket="post_images", Key=post.image_url.split("/")[-1]
-            )
+        delete_existing_image(post.image_url, type="post_image")
         post.image_url = handle_upload_file(file, "post_images")
 
     post.subject = body.subject
@@ -227,8 +227,7 @@ def delete_post_from_db(request, post_id: int):
     """
     is_admin(request)
     post = get_object_or_404(Post, id=post_id)
-    if post.image_url != settings.DEFAULT_POST_IMAGE_URL:
-        s3_client.delete_object(Bucket="post_images", Key=post.image_url.split("/")[-1])
+    delete_existing_image(post.image_url, type="post_image")
     post.delete()
 
     return 200, {"message": "success"}

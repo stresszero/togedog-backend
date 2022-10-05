@@ -49,11 +49,11 @@ class AuthBearer(HttpBearer):
         except User.DoesNotExist:
             return HttpError(400, "user does not exist")
 
-        except jwt.ExpiredSignatureError:
-            raise HttpError(401, "token expired")
+        except jwt.ExpiredSignatureError as e:
+            raise HttpError(401, "token expired") from e
 
-        except jwt.DecodeError:
-            raise HttpError(400, "invalid token")
+        except jwt.DecodeError as e:
+            raise HttpError(400, "invalid token") from e
 
         return self.user
 

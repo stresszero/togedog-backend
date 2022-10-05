@@ -6,7 +6,7 @@ from django.conf import settings
 from ninja.errors import HttpError
 from ninja.files import UploadedFile
 
-from users.models import User
+from users.models import User, NAME_AND_NICKNAME_MAX_LENGTH
 
 MB = 1024 * 1024
 IMAGE_EXTENSIONS_LIST = ["jpg", "jpeg", "jfif", "png", "webp", "avif", "svg"]
@@ -56,7 +56,7 @@ def delete_existing_image(url: str, type: str):
         and url.startswith(settings.PROFILE_IMAGES_URL)
     ):
         s3_client.delete_object(Bucket="user_thumbnail", Key=url.split("/")[-1])
-        
+
     if (
         type == "post_image" 
         and url != settings.DEFAULT_POST_IMAGE_URL
@@ -101,7 +101,7 @@ def censor_text(text: str) -> str:
     return censored_text
     
 
-def limit_name(name: str, limit: int=10) -> str:
+def limit_name(name: str, limit: int=NAME_AND_NICKNAME_MAX_LENGTH) -> str:
     if not name:
         raise ValueError("invalid name")        
     return name if len(name) <= limit else name[:limit]

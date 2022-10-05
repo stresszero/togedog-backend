@@ -39,10 +39,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = SECRET_KEY
 DATABASES = DATABASES
 
-# SECURITY WARNING: don't run with debug turned on in production!
 # Production setting
 # ALLOWED_HOSTS = ALLOWED_HOSTS
 # DEBUG = False
+
+# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 ALLOWED_HOSTS = ["*"]
 

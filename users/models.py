@@ -9,10 +9,11 @@ from cores.models import (
     UserAccountType,
 )
 
+NAME_AND_NICKNAME_MAX_LENGTH = 10
 
 class User(TimeStampedModel):
-    name = models.CharField(max_length=10, null=True)
-    nickname = models.CharField(max_length=10)
+    name = models.CharField(max_length=NAME_AND_NICKNAME_MAX_LENGTH, null=True)
+    nickname = models.CharField(max_length=NAME_AND_NICKNAME_MAX_LENGTH)
     email = models.CharField(max_length=100)
     password = models.CharField(max_length=600, null=True)
     social_account_id = models.CharField(max_length=100, null=True, unique=True)

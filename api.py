@@ -93,7 +93,6 @@ def check_notice(request, type: str, id: Union[str, int]):
 
 @api.get("/cookie/test", summary="쿠키 테스트")
 def test_cookie(request):
-    print(request.COOKIES)
     return {"cookie_access_token": request.COOKIES["access_token"]}
 
 

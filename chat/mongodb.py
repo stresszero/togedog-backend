@@ -1,6 +1,6 @@
 import os
 from bson.errors import InvalidId
-from datetime import datetime
+from datetime import datetime, timezone
 
 from bson import ObjectId
 from pymongo import MongoClient, DESCENDING
@@ -24,7 +24,7 @@ def save_message(message, nickname, sender_id, room_id):
                 "sender_nickname": nickname,
                 "sender_id": sender_id,
                 "room_id": room_id,
-                "created_at": datetime.utcnow(),
+                "created_at": datetime.now(timezone.utc),
             }
         ).inserted_id
     )
@@ -42,7 +42,7 @@ def add_room_member(room_id, user_id):
     room_members_collection.insert_one(
         {
             "_id": {"room_id": room_id, "user_id": user_id},
-            "created_at": datetime.utcnow(),
+            "created_at": datetime.now(timezone.utc),
         }
     )
 

@@ -157,7 +157,7 @@ def get_user_info(request, user_id: int):
     summary="사용자 정보 수정",
 )
 def modify_user_info(
-    request, user_id: int, body: ModifyUserIn = Form(...), file: UploadedFile = None
+    request, user_id: int, body: ModifyUserIn = Form(...), file: UploadedFile = None,
 ):
     """
     사용자 정보 수정, 로그인한 본인 계정 또는 관리자만 수정 가능
@@ -341,7 +341,7 @@ def kakao_token_test(request, token: TestKakaoToken):
         headers={"Authorization": f"Bearer {token.token}"},
         timeout=3,
     )
-    if not kakao_response.status_code == 200:
+    if kakao_response.status_code != 200:
         return JsonResponse(
             {"message": "invalid response"}, status=kakao_response.status_code
         )

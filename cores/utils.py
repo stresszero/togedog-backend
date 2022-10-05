@@ -1,11 +1,7 @@
-import logging
 import jwt, requests, uuid
 import boto3
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
-from botocore.exceptions import ClientError
-
-from django.http import JsonResponse
 from django.conf import settings
 from ninja.errors import HttpError
 from ninja.files import UploadedFile
@@ -14,24 +10,23 @@ from ninja.files import UploadedFile
 MB = 1024 * 1024
 IMAGE_EXTENSIONS_LIST = ["jpg", "jpeg", "jfif", "png", "webp", "avif", "svg"]
 
+EXP_DAYS = 1
+EXP_WEEKS = 2
 
-def generate_jwt(payload, type):
+def generate_jwt(payload: dict, type):
     if type == "access":
-        exp_days = 1
-        exp = datetime.utcnow() + timedelta(days=exp_days)
+        exp = datetime.now(timezone.utc) + timedelta(days=EXP_DAYS)
 
     elif type == "refresh":
-        exp_weeks = 2
-        exp = datetime.utcnow() + timedelta(weeks=exp_weeks)
+        exp = datetime.now(timezone.utc) + timedelta(weeks=EXP_WEEKS)
 
     else:
-        raise Exception("invalid token type")
+        raise ValueError("invalid token type")
 
     payload["exp"] = exp
-    payload["iat"] = datetime.utcnow()
-    encoded_jwt = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    payload["iat"] = datetime.now(timezone.utc)
 
-    return encoded_jwt
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
 s3_client = boto3.client(
@@ -75,7 +70,6 @@ def censor_text(text: str) -> str:
     욕설 목록에 있는 모든 욕설을 text에 있는지 확인하기 위해 text.find()로 검색
     욕설이 포함된 경우 해당 단어를 *로 치환
     """
-    censored = False
     censored_text = text
     for bad_word in settings.BAD_WORDS_LIST:
         bad_word_length = len(bad_word)
@@ -83,11 +77,10 @@ def censor_text(text: str) -> str:
 
         while bad_word_index != -1:
             censored_text = (
-                censored_text[0:bad_word_index]
+                censored_text[:bad_word_index]
                 + "*" * bad_word_length
-                + censored_text[bad_word_index + bad_word_length :]
+                + censored_text[bad_word_index + bad_word_length:]
             )
-            censored = True
             bad_word_index = text.find(bad_word, bad_word_index + 1)
     return censored_text
 

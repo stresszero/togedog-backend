@@ -24,9 +24,13 @@ def has_authority(
     if self_check and request.auth.id == user_id:
         raise HttpError(403, "You can't report yourself")
 
-    if user_check and user_id:
-        if request.auth.user_type != "admin" and request.auth.id != user_id:
-            raise HttpError(403, "forbidden")
+    if (
+        user_check
+        and user_id
+        and request.auth.user_type != "admin"
+        and request.auth.id != user_id
+    ):
+        raise HttpError(403, "forbidden")
 
 
 def is_admin(request):
@@ -67,11 +71,11 @@ class CookieKey(APIKeyCookie):
         except User.DoesNotExist:
             return HttpError(400, "user does not exist")
 
-        except jwt.ExpiredSignatureError:
-            raise HttpError(401, "token expired")
+        except jwt.ExpiredSignatureError as e:
+            raise HttpError(401, "token expired") from e
 
-        except jwt.DecodeError:
-            raise HttpError(400, "invalid token")
+        except jwt.DecodeError as e:
+            raise HttpError(400, "invalid token") from e
 
         return user
 

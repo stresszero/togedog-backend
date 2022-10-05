@@ -6,6 +6,7 @@ from django.conf import settings
 from ninja.errors import HttpError
 from ninja.files import UploadedFile
 
+from users.models import User
 
 MB = 1024 * 1024
 IMAGE_EXTENSIONS_LIST = ["jpg", "jpeg", "jfif", "png", "webp", "avif", "svg"]
@@ -83,29 +84,55 @@ def censor_text(text: str) -> str:
             )
             bad_word_index = text.find(bad_word, bad_word_index + 1)
     return censored_text
+    
+def limit_name(name: str, limit: int=10) -> str:
+    if not name:
+        raise ValueError("invalid nickname")        
+    return name if len(name) <= limit else name[:limit]
+
+def get_user_info_dict(user: User) -> dict:
+    return {
+        "id"           : user.id,
+        "name"         : user.name,
+        "nickname"     : user.nickname,
+        "email"        : user.email,
+        "user_type"    : user.user_type,
+        "status"       : user.status,
+        "account_type" : user.account_type,
+        "thumbnail_url": user.thumbnail_url,
+        "mbti"         : user.mbti,
+    }
 
 
-# google oauth class, get google auth code by client
-class GoogleOAuth:
-    def __init__(self, client_id, client_secret, redirect_uri):
-        self.client_id = client_id
-        self.client_secret = client_secret
-        self.redirect_uri = redirect_uri
+class SocialLoginUserProfile():
+    def __init__(self, code, type):
+        self.kakao_profile_uri  = settings.KAKAO_PROFILE_URI
+        self.google_profile_uri = settings.GOOGLE_PROFILE_URI
+        self._user_profile      = None
 
-    def get_access_token(self, code):
-        url = "https://oauth2.googleapis.com/token"
-        data = {
-            "code": code,
-            "client_id": self.client_id,
-            "client_secret": self.client_secret,
-            "redirect_uri": self.redirect_uri,
-            "grant_type": "authorization_code",
-        }
-        response = requests.post(url, data=data)
-        return response.json()
+        if type == "kakao":
+            self.get_kakao_profile(code)
+        elif type == "google":
+            self.get_google_profile(code)
+        else:
+            raise ValueError("invalid social login type")        
 
-    def get_user_info(self, access_token):
-        url = "https://www.googleapis.com/oauth2/v2/userinfo"
-        headers = {"Authorization": f"Bearer {access_token}"}
-        response = requests.get(url, headers=headers)
-        return response.json()
+    def get_kakao_profile(self, code):
+        response = requests.post(
+            self.kakao_profile_uri,
+            headers={"Authorization": f"Bearer {code}"},
+            timeout=3,
+        )
+        if response.status_code != 200:
+            raise HttpError(400, "invalid kakao access token")
+        self._user_profile = response.json()
+
+    def get_google_profile(self, code): 
+        response = requests.get(
+            self.google_profile_uri,
+            headers={"Authorization": f"Bearer {code}"},
+            timeout=3,
+        )
+        if response.status_code != 200:
+            raise HttpError(400, "invalid google access token")
+        self._user_profile = response.json()

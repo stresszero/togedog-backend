@@ -22,6 +22,12 @@ class EmailUserSignupIn(Schema):
     account_type: str = "email"
     address: Optional[str]
 
+    @validator("nickname")
+    def valiadate_nickname(cls, value):
+        if len(value) > 10:
+            raise ValueError("nickname is too long")
+        return value
+
     @validator("password")
     def validate_password(cls, value):
         if re.match(REGEX_PASSWORD, value):

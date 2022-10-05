@@ -5,7 +5,7 @@ from django.conf import settings
 from django.contrib.auth.hashers import make_password, check_password
 from django.db.models import Q, Count
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from ninja import Router, Form
 from ninja.files import UploadedFile
 from ninja.pagination import paginate, PageNumberPagination
@@ -17,6 +17,9 @@ from cores.utils import (
     generate_jwt,
     validate_upload_file,
     handle_upload_file,
+    limit_name,
+    get_user_info_dict,
+    SocialLoginUserProfile
 )
 from users.auth import AuthBearer, is_admin, has_authority
 from users.models import User
@@ -220,7 +223,7 @@ def deactivate_user(request, user_id: int):
     """
     is_admin(request)
     user = get_object_or_404(User, id=user_id)
-    user.status = UserStatus.BANNED
+    user.status = UserStatus.BANNED.value
     user.save()
 
     return 200, {"message": "success"}
@@ -237,18 +240,7 @@ def main_login_check(request):
     메인페이지에서 이미 로그인돼있는 상태인지 확인(쿠키 활용)
     """
     if request.auth:
-        data = {
-            "id"           : request.auth.id,
-            "name"         : request.auth.name,
-            "nickname"     : request.auth.nickname,
-            "email"        : request.auth.email,
-            "user_type"    : request.auth.user_type,
-            "status"       : request.auth.status,
-            "account_type" : request.auth.account_type,
-            "thumbnail_url": request.auth.thumbnail_url,
-            "mbti"         : request.auth.mbti,
-        }
-        return JsonResponse(data, status=200)
+        return JsonResponse(get_user_info_dict(request.auth), status=200)
     return 400, {"message": "user is not logged in"}
 
 
@@ -270,17 +262,7 @@ def email_user_login(request, body: EmailUserSigninIn):
     if check_password(body_dict["password"], user.password):
         data = {
             "access_token": generate_jwt({"user": user.id}, "access"),
-            "user": {
-                "id"           : user.id,
-                "name"         : user.name,
-                "nickname"     : user.nickname,
-                "email"        : user.email,
-                "user_type"    : user.user_type,
-                "status"       : user.status,
-                "account_type" : user.account_type,
-                "thumbnail_url": user.thumbnail_url,
-                "mbti"         : user.mbti,
-            },
+            "user": get_user_info_dict(user),
         }
         response = JsonResponse(data, status=200)
         response.set_cookie(
@@ -336,53 +318,39 @@ def kakao_token_test(request, token: TestKakaoToken):
     """
     카카오 토큰 받아서 회원가입 또는 로그인
     """
-    kakao_response = requests.post(
-        "https://kapi.kakao.com/v2/user/me",
-        headers={"Authorization": f"Bearer {token.token}"},
-        timeout=3,
-    )
-    if kakao_response.status_code != 200:
-        return JsonResponse(
-            {"message": "invalid response"}, status=kakao_response.status_code
-        )
+    # kakao_response = requests.post(
+    #     "https://kapi.kakao.com/v2/user/me",
+    #     headers={"Authorization": f"Bearer {token.token}"},
+    #     timeout=3,
+    # )
+    # if kakao_response.status_code != 200:
+    #     return JsonResponse(
+    #         {"message": "invalid response"}, status=kakao_response.status_code
+    #     )
 
-    kakao_profile = kakao_response.json()
-    kakao_nickname = (
-        kakao_profile["kakao_account"]["profile"]["nickname"]
-        if len(kakao_profile["kakao_account"]["profile"]["nickname"]) <= 10
-        else kakao_profile["kakao_account"]["profile"]["nickname"][:10]
-    )
-
-    try:
-        kakao_email = kakao_profile["kakao_account"]["email"]
-        kakao_thumbnail = kakao_profile["kakao_account"]["profile"][
-            "thumbnail_image_url"
-        ]
-    except KeyError:
-        kakao_email = "kakaouser@kakao.com"
-        kakao_thumbnail = settings.DEFAULT_USER_THUMBNAIL_URL
+    # kakao_profile = kakao_response.json()
+    
+    kakao_api = SocialLoginUserProfile(code=token.token, type="kakao")
+    kakao_profile = kakao_api._user_profile
 
     user, is_created = User.objects.get_or_create(
         social_account_id=kakao_profile["id"],
         defaults={
-            "email"        : kakao_email,
-            "nickname"     : kakao_nickname,
-            "thumbnail_url": kakao_thumbnail,
-            "account_type" : UserAccountType.KAKAO.value,
+            "email": kakao_profile["kakao_account"].get(
+                "email", settings.KAKAO_DEFAULT_EMAIL
+            ),
+            "nickname": limit_name(
+                kakao_profile["kakao_account"]["profile"]["nickname"]
+            ),
+            "thumbnail_url": kakao_profile["kakao_account"]["profile"].get(
+                "thumbnail_image_url", settings.DEFAULT_USER_THUMBNAIL_URL
+            ),
+            "account_type": UserAccountType.KAKAO.value,
         },
     )
     data = {
         "access_token": generate_jwt({"user": user.id}, "access"),
-        "user": {
-            "name"         : user.name,
-            "nickname"     : user.nickname,
-            "email"        : user.email,
-            "user_type"    : user.user_type,
-            "status"       : user.status,
-            "account_type" : user.account_type,
-            "thumbnail_url": user.thumbnail_url,
-            "mbti"         : user.mbti,
-        },
+        "user": get_user_info_dict(user),
     }
     response = JsonResponse(data, status=200)
     response.set_cookie(
@@ -407,33 +375,25 @@ def google_token_test(request, token: TestKakaoToken):
     """
     구글 토큰 받아서 회원가입 또는 로그인
     """
-    req_uri = "https://www.googleapis.com/oauth2/v3/userinfo"
-    headers = {"Authorization": f"Bearer {token.token}"}
-    user_info = requests.get(req_uri, headers=headers, timeout=3).json()
-    google_name = user_info["given_name"]
-    username = google_name if len(google_name) <= 10 else google_name[:10]
+    # req_uri = "https://www.googleapis.com/oauth2/v3/userinfo"
+    # headers = {"Authorization": f"Bearer {token.token}"}
+    # user_info = requests.get(req_uri, headers=headers, timeout=3).json()
+
+    google_api = SocialLoginUserProfile(code=token.token, type="google")
+    google_profile = google_api._user_profile
 
     user, is_created = User.objects.get_or_create(
-        social_account_id=user_info["sub"],
+        social_account_id=google_profile["sub"],
         defaults={
-            "email"        : user_info["email"],
-            "nickname"     : username,
-            "thumbnail_url": user_info["picture"],
+            "email"        : google_profile["email"],
+            "nickname"     : limit_name(google_profile["given_name"]),
+            "thumbnail_url": google_profile["picture"],
             "account_type" : UserAccountType.GOOGLE.value,
         },
     )
     data = {
         "access_token": generate_jwt({"user": user.id}, "access"),
-        "user": {
-            "name"         : user.name,
-            "nickname"     : user.nickname,
-            "email"        : user.email,
-            "user_type"    : user.user_type,
-            "status"       : user.status,
-            "account_type" : user.account_type,
-            "thumbnail_url": user.thumbnail_url,
-            "mbti"         : user.mbti,
-        },
+        "user": get_user_info_dict(user),
     }
     response = JsonResponse(data, status=200)
     response.set_cookie(
@@ -451,3 +411,77 @@ def google_token_test(request, token: TestKakaoToken):
         secure=True,
     )
     return response
+
+
+# @router.get("/login/test/kakao")
+# def kakao_login_get_code(request):
+#     '''
+#     카카오 로그인 창 띄우고 인가코드 받기
+#     users/login/kakao
+#     '''
+#     api_key      = settings.KAKAO_REST_API_KEY
+#     redirect_uri = settings.KAKAO_REDIRECT_URI
+#     auth_api     = "https://kauth.kakao.com/oauth/authorize?response_type=code"
+#     return redirect(f'{auth_api}&client_id={api_key}&redirect_uri={redirect_uri}')
+
+# class KakaoLoginAPI:
+#     def __init__(self, client_id):
+#         self.client_id       = client_id
+#         self.kakao_token_uri = "https://kauth.kakao.com/oauth/token"
+#         self.kakao_user_uri  = "https://kapi.kakao.com/v2/user/me"
+#         self._access_token   = None
+
+#     def get_kakao_token(self, code):
+#         body = {
+#             "grant_type"  : "authorization_code",
+#             "client_id"   : self.client_id,
+#             "redirect_uri": settings.KAKAO_REDIRECT_URI,
+#             "code"        : code,
+#         }
+        
+#         response = requests.post(self.kakao_token_uri, data=body, timeout=3)
+
+#         if response.status_code != 200:
+#             return JsonResponse({'message': 'INVALID_RESPONSE'}, status=response.status_code)
+
+#         self._access_token = response.json()["access_token"]
+        
+#     def get_kakao_profile(self):
+#         response = requests.post(
+#             self.kakao_user_uri,
+#             headers = {
+#                 "Authorization": f"Bearer {self._access_token}"
+#             }, timeout=3
+#         )
+        
+#         if response.status_code != 200:
+#             return JsonResponse({'message': 'INVALID_RESPONSE'}, status=response.status_code)
+        
+#         return response.json()
+
+# @router.get("/login/kakao/redirect")
+# def kakao_login_get_profile(request, code: str):
+#     '''
+#     카카오 인가코드로 토큰 받고 사용자 프로필 조회하고 회원가입 또는 로그인하고 JWT 발급, 리프레시 토큰을 httponly 쿠키로 저장
+#     '''
+#     try:
+#         kakao_api = KakaoLoginAPI(client_id=settings.KAKAO_REST_API_KEY)
+
+#         kakao_api.get_kakao_token(request.GET.get('code'))
+#         kakao_profile = kakao_api.get_kakao_profile()
+#         print(kakao_profile)
+#         user, is_created  = User.objects.get_or_create(
+#             social_account_id = kakao_profile['id'],
+#             defaults = {
+#                 'email'        : kakao_profile['kakao_account']['email'],
+#                 'nickname'     : kakao_profile['kakao_account']['profile']['nickname'],
+#                 'thumbnail_url': kakao_profile['kakao_account']['profile']['thumbnail_image_url'],
+#                 'account_type' : UserAccountType.KAKAO.value,
+#             }
+#         )
+#         response = JsonResponse({'access_token': generate_jwt({"user": user.id}, "access")}, status=200)
+#         response.set_cookie('refresh_token', generate_jwt({"user": user.id}, "refresh"), httponly=True, samesite="lax")
+#         return response
+
+#     except KeyError:
+#         return JsonResponse({'message': 'key error'}, status=400)

@@ -269,7 +269,7 @@ def get_posts(request, offset: int = 0, limit: int = 9, sort: str = "-created_at
         Post.objects.filter(is_deleted=False)
         .select_related("user")
         .prefetch_related("likes")
-        .order_by(sort)[offset : offset + limit],
+        .order_by(sort)[offset:offset+limit],
     )
 
 

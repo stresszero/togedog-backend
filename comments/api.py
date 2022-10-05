@@ -15,6 +15,7 @@ router = Router(tags=["댓글 관련 API"], auth=AuthBearer())
 def create_comment(request, post_id: int, body: ContentIn = Form(...)):
     """
     댓글 작성 후 댓글 내용 반환
+    - content: 댓글 내용 입력
     """
     has_authority(request)
     get_object_or_404(Post, id=post_id)
@@ -49,6 +50,7 @@ def delete_comment(request, post_id: int, comment_id: int):
 def modify_comment(request, post_id: int, comment_id: int, body: ContentIn):
     """
     댓글 수정
+    - content: 댓글 내용 입력
     """
     get_object_or_404(Post, id=post_id, is_deleted=False)
     comment = get_object_or_404(
@@ -69,6 +71,7 @@ def modify_comment(request, post_id: int, comment_id: int, body: ContentIn):
 def report_comment(request, post_id: int, comment_id: int, body: ContentIn = Form(...)):
     """
     댓글 신고
+    - content: 댓글 신고 내용 입력
     """
     get_object_or_404(Post, id=post_id, is_deleted=False)
     comment = get_object_or_404(

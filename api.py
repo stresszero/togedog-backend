@@ -21,14 +21,14 @@ api = NinjaAPI(
     title="함께하개 API 문서", 
     version="1.0.0", 
     description="함께하개 프로젝트 API 명세서와 테스트 제공",
-    docs_url=None,
+    # docs_url=None,
 )
 
-api.add_router("/users", users_router)
-api.add_router("/posts", posts_router)
-api.add_router("/posts", comments_router)
-api.add_router("/cores", cores_router)
-api.add_router("/chat", chat_router)
+api.add_router("/api/users", users_router)
+api.add_router("/api/posts", posts_router)
+api.add_router("/api/posts", comments_router)
+api.add_router("/api/cores", cores_router)
+api.add_router("/api/chat", chat_router)
 
 
 @api.get(

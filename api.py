@@ -16,11 +16,12 @@ from users.auth import AuthBearer, is_admin
 from users.models import UserTestCount
 
 # hiding docs
-# api = NinjaAPI(docs_url=None)
+# NinjaAPI(docs_url=None)
 api = NinjaAPI(
     title="함께하개 API 문서", 
     version="1.0.0", 
-    description="함께하개 프로젝트 API 명세서와 테스트 제공"
+    description="함께하개 프로젝트 API 명세서와 테스트 제공",
+    docs_url=None,
 )
 
 api.add_router("/users", users_router)

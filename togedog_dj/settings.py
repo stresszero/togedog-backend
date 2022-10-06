@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from .admin_settings import (
@@ -40,12 +41,12 @@ SECRET_KEY = SECRET_KEY
 DATABASES = DATABASES
 
 # production setting
-# ALLOWED_HOSTS = ALLOWED_HOSTS
-# DEBUG = False
+ALLOWED_HOSTS = ALLOWED_HOSTS
+DEBUG = False
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-ALLOWED_HOSTS = ["*"]
+# DEBUG = True
+# ALLOWED_HOSTS = ["*"]
 
 PASSWORD_SALT = PASSWORD_SALT
 PASSWORD_HASHERS = PASSWORD_HASHERS
@@ -72,8 +73,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # "ninja",
     # "debug_toolbar",
+    # 'sslserver',
     "corsheaders",
     "django_extensions",
     "django.contrib.postgres",
@@ -100,16 +101,16 @@ MIDDLEWARE = [
 
 # CORS
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ALLOW_ALL_ORIGINS = True
 
 # production setting
-# CORS_ALLOW_ALL_ORIGINS = False
-# CORS_ORIGIN_WHITELIST = [
-#     'http://127.0.0.1:3000',
-#     'http://localhost:3000'
-#     'http://withdog.me',
-#     'https://withdog.me',
-# ]
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ORIGIN_WHITELIST = [
+    'http://127.0.0.1:3000',
+    'http://localhost:3000'
+    'http://withdog.me',
+    'https://withdog.me',
+]
 
 CORS_ALLOW_METHODS = (
     "DELETE",
@@ -188,7 +189,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
 STATIC_URL = "static/"
-
+STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 

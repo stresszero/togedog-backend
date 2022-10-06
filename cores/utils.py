@@ -6,7 +6,7 @@ from django.conf import settings
 from ninja.errors import HttpError
 from ninja.files import UploadedFile
 
-from users.models import User, NAME_AND_NICKNAME_MAX_LENGTH
+from users.models import NAME_AND_NICKNAME_MAX_LENGTH
 
 MB = 1024 * 1024
 IMAGE_EXTENSIONS_LIST = ["jpg", "jpeg", "jfif", "png", "webp", "avif", "svg"]
@@ -32,10 +32,10 @@ def generate_jwt(payload: dict, type):
 
 s3_client = boto3.client(
     "s3",
-    endpoint_url=settings.AWS_S3_ENDPOINT_URL,
-    aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-    aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-    region_name=settings.AWS_S3_REGION_NAME,
+    endpoint_url          = settings.AWS_S3_ENDPOINT_URL,
+    aws_access_key_id     = settings.AWS_ACCESS_KEY_ID,
+    aws_secret_access_key = settings.AWS_SECRET_ACCESS_KEY,
+    region_name           = settings.AWS_S3_REGION_NAME,
 )
 
 
@@ -105,22 +105,6 @@ def limit_name(name: str, limit: int=NAME_AND_NICKNAME_MAX_LENGTH) -> str:
     if not name:
         raise ValueError("invalid name")        
     return name if len(name) <= limit else name[:limit]
-
-
-def get_user_info_dict(user: User) -> dict:
-    if type(user) != User or not user:
-        raise ValueError("invalid user")
-    return {
-        "id"           : user.id,
-        "name"         : user.name,
-        "nickname"     : user.nickname,
-        "email"        : user.email,
-        "user_type"    : user.user_type,
-        "status"       : user.status,
-        "account_type" : user.account_type,
-        "thumbnail_url": user.thumbnail_url,
-        "mbti"         : user.mbti,
-    }
 
 
 class SocialLoginUserProfile():

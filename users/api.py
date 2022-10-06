@@ -17,8 +17,7 @@ from cores.utils import (
     delete_existing_image,
     handle_upload_file,
     limit_name,
-    get_user_info_dict,
-    SocialLoginUserProfile
+    SocialLoginUserProfile,
 )
 from users.auth import AuthBearer, is_admin, has_authority
 from users.models import User
@@ -233,7 +232,7 @@ def main_login_check(request):
     메인페이지에서 이미 로그인돼있는 상태인지 확인(쿠키 활용)
     """
     if request.auth:
-        return JsonResponse(get_user_info_dict(request.auth), status=200)
+        return JsonResponse(request.auth.get_user_info_dict, status=200)
     return 400, {"message": "user is not logged in"}
 
 
@@ -255,7 +254,7 @@ def email_user_login(request, body: EmailUserSigninIn):
     if check_password(body_dict["password"], user.password):
         data = {
             "access_token": generate_jwt({"user": user.id}, "access"),
-            "user": get_user_info_dict(user),
+            "user": user.get_user_info_dict,
         }
         response = JsonResponse(data, status=200)
         response.set_cookie(
@@ -331,7 +330,7 @@ def kakao_token_test(request, token: TestKakaoToken):
     )
     data = {
         "access_token": generate_jwt({"user": user.id}, "access"),
-        "user": get_user_info_dict(user),
+        "user": user.get_user_info_dict,
     }
     response = JsonResponse(data, status=200)
     response.set_cookie(
@@ -370,7 +369,7 @@ def google_token_test(request, token: TestKakaoToken):
     )
     data = {
         "access_token": generate_jwt({"user": user.id}, "access"),
-        "user": get_user_info_dict(user),
+        "user": user.get_user_info_dict,
     }
     response = JsonResponse(data, status=200)
     response.set_cookie(

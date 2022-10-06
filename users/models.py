@@ -28,7 +28,21 @@ class User(TimeStampedModel):
 
     class Meta:
         db_table = "user"
-
+    
+    @property
+    def get_user_info_dict(self):
+        return {
+            "id"           : self.id,
+            "name"         : self.name,
+            "nickname"     : self.nickname,
+            "email"        : self.email,
+            "user_type"    : self.user_type,
+            "status"       : self.status,
+            "account_type" : self.account_type,
+            "thumbnail_url": self.thumbnail_url,
+            "mbti"         : self.mbti,
+        }
+    
     def __str__(self):
         return self.nickname
 

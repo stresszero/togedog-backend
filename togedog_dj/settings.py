@@ -39,7 +39,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = SECRET_KEY
 DATABASES = DATABASES
 
-# Production setting
+# production setting
 # ALLOWED_HOSTS = ALLOWED_HOSTS
 # DEBUG = False
 
@@ -99,9 +99,11 @@ MIDDLEWARE = [
 ]
 
 # CORS
-CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
-# Production setting
+CORS_ALLOW_ALL_ORIGINS = True
+
+# production setting
+# CORS_ALLOW_ALL_ORIGINS = False
 # CORS_ORIGIN_WHITELIST = [
 #     'http://127.0.0.1:3000',
 #     'http://localhost:3000'

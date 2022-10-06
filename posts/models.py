@@ -1,5 +1,4 @@
 from django.db import models
-from django.db.models import F
 from django.conf import settings
 
 from cores.models import TimeStampedModel

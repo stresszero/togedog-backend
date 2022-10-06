@@ -8,7 +8,7 @@ Development
 Deployment
 - AWS S3, RDS, EC2
 - Heroku
-- MongoDB Cloud
+- MongoDB Cloud for chat app
 - Docker
 - NGINX
-- Gunicorn with Eventlet
+- Gunicorn with Eventlet worker

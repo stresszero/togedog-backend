@@ -3,6 +3,7 @@ from pathlib import Path
 
 from .admin_settings import (
     ALLOWED_HOSTS,
+    CORS_ALLOWED_ORIGINS,
     SECRET_KEY,
     DATABASES,
     PASSWORD_HASHERS,
@@ -33,20 +34,26 @@ from .bad_words import BAD_WORDS_LIST
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
+# use a secure cookie for the CSRF cookie
+CSRF_COOKIE_SECURE = True
+
+# ssl settings
+# SECURE_SSL_REDIRECT = True
+SECURE_HSTS_SECONDS = 60 # 1 minute
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = SECRET_KEY
 DATABASES = DATABASES
 
 # production setting
-# ALLOWED_HOSTS = ALLOWED_HOSTS
-# DEBUG = False
+ALLOWED_HOSTS = ALLOWED_HOSTS
+DEBUG = False
 
 # SECURITY WARNING: don't run with debug turned on in production!
-ALLOWED_HOSTS = ["*"]
-DEBUG = True
+# ALLOWED_HOSTS = ["*"]
+# DEBUG = True
 
 PASSWORD_SALT = PASSWORD_SALT
 PASSWORD_HASHERS = PASSWORD_HASHERS
@@ -92,7 +99,7 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
-    # "django.middleware.csrf.CsrfViewMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -101,16 +108,11 @@ MIDDLEWARE = [
 
 # CORS
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ALLOW_ALL_ORIGINS = True
 
 # production setting
-# CORS_ALLOW_ALL_ORIGINS = False
-CORS_ORIGIN_WHITELIST = [
-    'http://127.0.0.1:3000',
-    'http://localhost:3000',
-    'http://withdog.me',
-    'https://withdog.me',
-]
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = CORS_ALLOWED_ORIGINS
 
 CORS_ALLOW_METHODS = (
     "DELETE",
@@ -189,7 +191,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
 STATIC_URL = "static/"
-STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
+# STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 

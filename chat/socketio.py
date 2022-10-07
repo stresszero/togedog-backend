@@ -6,12 +6,18 @@ import django
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "togedog_dj.settings")
 django.setup()
 
+from django.conf import settings
+
 from .mongodb import save_message
 from cores.models import UserStatus
 from cores.utils import censor_text
 from users.models import User
 
-sio = socketio.Server(async_mode="eventlet", cors_allowed_origins="*", logger=True)
+sio = socketio.Server(
+    async_mode="eventlet", 
+    cors_allowed_origins=settings.CORS_ALLOWED_ORIGINS, 
+    # logger=True
+)
 
 users = {}
 

@@ -12,11 +12,11 @@ def has_authority(
     request, user_id=None, user_check=False, banned_check=True, self_check=False
 ):
     """
-    banned_check: 차단된 유저인지 확인할 경우 True, 아니면 False
-    user_check: user_id가 있는 경우에 해당 유저가 로그인한 유저(request.auth)와
-    같은지 확인, 관리자는 일치하지 않아도 통과
-    인자로 request만 넣으면 차단된 유저 인지만 확인함
-    self_check=True면 로그인한 유저가 자신의 댓글이나 글을 신고하는지 확인
+    - banned_check: 차단된 유저를 확인하면 True(기본값), 아니면 False
+    - 인자로 request만 넣으면 차단된 유저 인지만 확인함
+    - user_check: user_id가 있는 경우에 해당 유저가 로그인한 유저(request.auth)와
+    같은지 확인하면 True, 확인 안하면 False, 관리자는 일치하지 않아도 통과
+    - self_check=True면 로그인한 유저가 자신의 댓글이나 글을 신고하는지 확인
     """
     if banned_check and request.auth.status == UserStatus.BANNED.value:
         raise HttpError(403, "forbidden")
@@ -66,7 +66,7 @@ class CookieKey(APIKeyCookie):
             payload = jwt.decode(
                 key, settings.SECRET_KEY, algorithms=settings.ALGORITHM
             )
-            user = User.objects.get(id=payload["user"])
+            self.user = User.objects.get(id=payload["user"])
 
         except User.DoesNotExist:
             return HttpError(400, "user does not exist")
@@ -77,7 +77,7 @@ class CookieKey(APIKeyCookie):
         except jwt.DecodeError as e:
             raise HttpError(400, "invalid token") from e
 
-        return user
-
+        return self.user
+    
 
 cookie_key = CookieKey()

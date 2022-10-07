@@ -12,16 +12,16 @@ from cores.schemas import MessageOut, NoticeReportOut
 from posts.api import router as posts_router
 from posts.models import PostReport
 from users.api import router as users_router
-from users.auth import AuthBearer, is_admin
+from users.auth import AuthBearer, is_admin, cookie_key
 from users.models import UserTestCount
 
-# hiding docs
-# NinjaAPI(docs_url=None)
+
 api = NinjaAPI(
     title="함께하개 API 문서", 
     version="1.0.0", 
     description="함께하개 프로젝트 API 명세서와 테스트 제공",
-    # docs_url=None,
+    csrf=True,
+    docs_url="/api/docs",
 )
 
 api.add_router("/api/users", users_router)
@@ -32,7 +32,7 @@ api.add_router("/api/chat", chat_router)
 
 
 @api.get(
-    "/admin/notices",
+    "/api/admin/notices",
     response=NoticeReportOut,
     auth=AuthBearer(),
     summary="신고 알람 건수와 목록 확인",
@@ -53,7 +53,7 @@ def get_notices(request):
 
 
 @api.post(
-    "/admin/notices",
+    "/api/admin/notices",
     response={200: MessageOut, 400: MessageOut},
     auth=AuthBearer(),
     summary="신고 건 확인 처리",
@@ -93,12 +93,12 @@ def check_notice(request, type: str, id: Union[str, int]):
     return 200, {"message": "success"}
 
 
-@api.get("/cookie/test", summary="쿠키 테스트")
+@api.get("/api/cookie/test", summary="쿠키 테스트")
 def test_cookie(request):
     return {"cookie_access_token": request.COOKIES["access_token"]}
 
 
-@api.post("/test-count", summary="MBTI 검사 횟수 올리기")
+@api.post("/api/test-count", summary="MBTI 검사 횟수 올리기")
 def add_test_count(request):
     count_obj = UserTestCount.objects.get(id=1)
     count_obj.test_count = F("test_count") + 1
@@ -107,16 +107,16 @@ def add_test_count(request):
     return {"message": "success"}
 
 
-@api.get("/test-count", summary="MBTI 검사 횟수 확인")
+@api.get("/api/test-count", summary="MBTI 검사 횟수 확인")
 def get_test_count(request):
     return {"userNum": UserTestCount.objects.get(id=1).test_count}
 
 
 # from users.auth import cookie_key
 
-# @api.get("/cookiekey", auth=cookie_key)
-# def cookie_test(request):
-#     '''
-#     쿠키 인가 테스트
-#     '''
-#     return f"Token = {request.auth}, {request.auth.id}, {request.auth.user_type}"
+@api.get("/api/cookiekey", auth=cookie_key)
+def cookie_test(request):
+    '''
+    쿠키 인가 테스트
+    '''
+    return f"cookie_auth: {request.auth}, {request.auth.id}, {request.auth.user_type}"

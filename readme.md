@@ -1,9 +1,11 @@
+# [함께하게 웹사이트](https://withdog.me)
+
 ## Development
 - Python
 - Django web framework
 - Django Ninja
 - Postgresql
-- MongoDB for chat app
+- MongoDB(pymongo) for chat app
 
 ## Deployment
 - AWS S3, RDS, EC2
@@ -12,4 +14,4 @@
 - NGINX
 - Gunicorn and Eventlet worker for chat app
 
-## [프론트엔드 저장소](https://github.com/kseul/with_dog)
+## [프론트엔드 저장소 바로가기](https://github.com/kseul/with_dog)

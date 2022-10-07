@@ -81,3 +81,11 @@ class CookieKey(APIKeyCookie):
     
 
 cookie_key = CookieKey()
+
+def auth_cookie(request):
+    cookie_type = "access_token"
+    jwt_cookie = request.COOKIES.get(cookie_type)
+    payload = jwt.decode(
+                jwt_cookie, settings.SECRET_KEY, algorithms=settings.ALGORITHM
+    )
+    return User.objects.get(id=payload["user"])

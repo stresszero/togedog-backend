@@ -12,7 +12,7 @@ from cores.schemas import MessageOut, NoticeReportOut
 from posts.api import router as posts_router
 from posts.models import PostReport
 from users.api import router as users_router
-from users.auth import AuthBearer, is_admin, cookie_key
+from users.auth import AuthBearer, is_admin, cookie_key, auth_cookie
 from users.models import UserTestCount
 
 
@@ -21,7 +21,7 @@ api = NinjaAPI(
     version="1.0.0", 
     description="함께하개 프로젝트 API 명세서와 테스트 제공",
     # csrf=True,
-    docs_url=None,
+    docs_url="/api/docs",
 )
 
 api.add_router("/api/users", users_router)
@@ -112,9 +112,9 @@ def get_test_count(request):
     return {"userNum": UserTestCount.objects.get(id=1).test_count}
 
 
-# @api.get("/api/cookiekey", auth=cookie_key)
-# def cookie_test(request):
-#     '''
-#     쿠키 인가 테스트
-#     '''
-#     return f"cookie_auth: {request.auth}, {request.auth.id}, {request.auth.user_type}"
+@api.get("/api/cookiekey", auth=auth_cookie)
+def cookie_test(request):
+    '''
+    쿠키 인가 테스트
+    '''
+    return f"cookie_auth: {request.auth}, {request.auth.id}, {request.auth.user_type}"

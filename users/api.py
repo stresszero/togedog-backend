@@ -261,14 +261,14 @@ def email_user_login(request, body: EmailUserSigninIn):
             "access_token",
             data["access_token"],
             httponly=True,
-            samesite="None",
+            samesite="Lax",
             secure=True,
         )
         response.set_cookie(
             "refresh_token",
             generate_jwt({"user": user.id}, "refresh"),
             httponly=True,
-            samesite="None",
+            samesite="Lax",
             secure=True,
         )
         return response
@@ -337,14 +337,14 @@ def kakao_token_test(request, token: TestKakaoToken):
         "access_token",
         data["access_token"],
         httponly=True,
-        samesite="None",
+        samesite="Lax",
         secure=True,
     )
     response.set_cookie(
         "refresh_token",
         generate_jwt({"user": user.id}, "refresh"),
         httponly=True,
-        samesite="None",
+        samesite="Lax",
         secure=True,
     )
     return response
@@ -376,14 +376,14 @@ def google_token_test(request, token: TestKakaoToken):
         "access_token",
         data["access_token"],
         httponly=True,
-        samesite="None",
+        samesite="Lax",
         secure=True,
     )
     response.set_cookie(
         "refresh_token",
         generate_jwt({"user": user.id}, "refresh"),
         httponly=True,
-        samesite="None",
+        samesite="Lax",
         secure=True,
     )
     return response

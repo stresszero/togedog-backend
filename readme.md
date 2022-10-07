@@ -7,9 +7,9 @@
 
 ## Deployment
 - AWS S3, RDS, EC2
-- Heroku
 - MongoDB Cloud for chat app
+- Heroku
 - NGINX
-- Gunicorn with Eventlet worker
+- Gunicorn and Eventlet worker for chat app
 
 ## [프론트엔드 저장소](https://github.com/kseul/with_dog)

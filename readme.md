@@ -1,4 +1,4 @@
-# [함께하게 웹사이트](https://withdog.me)
+# [함께하개 웹사이트](https://withdog.me)
 
 ## Development
 - Python

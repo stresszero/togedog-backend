@@ -20,7 +20,7 @@ api = NinjaAPI(
     title="함께하개 API 문서", 
     version="1.0.0", 
     description="함께하개 프로젝트 API 명세서와 테스트 제공",
-    csrf=True,
+    # csrf=True,
     docs_url=None,
 )
 
@@ -112,9 +112,9 @@ def get_test_count(request):
     return {"userNum": UserTestCount.objects.get(id=1).test_count}
 
 
-@api.get("/api/cookiekey", auth=cookie_key)
-def cookie_test(request):
-    '''
-    쿠키 인가 테스트
-    '''
-    return f"cookie_auth: {request.auth}, {request.auth.id}, {request.auth.user_type}"
+# @api.get("/api/cookiekey", auth=cookie_key)
+# def cookie_test(request):
+#     '''
+#     쿠키 인가 테스트
+#     '''
+#     return f"cookie_auth: {request.auth}, {request.auth.id}, {request.auth.user_type}"

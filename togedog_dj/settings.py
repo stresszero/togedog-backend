@@ -34,7 +34,7 @@ from .bad_words import BAD_WORDS_LIST
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# use a secure cookie for the CSRF cookie
+# use a secure cookie for the CSRF token cookie
 # CSRF_COOKIE_SECURE = True
 # CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
 

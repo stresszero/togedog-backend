@@ -21,7 +21,7 @@ api = NinjaAPI(
     version="1.0.0", 
     description="함께하개 프로젝트 API 명세서와 테스트 제공",
     # csrf=True,
-    docs_url="/api/docs",
+    # docs_url="/api/docs",
 )
 
 api.add_router("/api/users", users_router)

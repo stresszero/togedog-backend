@@ -3,16 +3,18 @@ import boto3
 from datetime import datetime, timedelta, timezone
 
 from django.conf import settings
+from django.http import JsonResponse
 from ninja.errors import HttpError
 from ninja.files import UploadedFile
 
-from users.models import NAME_AND_NICKNAME_MAX_LENGTH
+from users.models import NAME_AND_NICKNAME_MAX_LENGTH, User
 
 MB = 1024 * 1024
 IMAGE_EXTENSIONS_LIST = ["jpg", "jpeg", "jfif", "png", "webp", "avif", "svg"]
 
 EXP_DAYS = 1
 EXP_WEEKS = 2
+COOKIE_MAX_AGE_HOUR = 8
 
 def generate_jwt(payload: dict, type):
     if type == "access":
@@ -139,3 +141,34 @@ class SocialLoginUserProfile():
         if response.status_code != 200:
             raise HttpError(400, "invalid google access token")
         self._user_profile = response.json()
+
+
+def create_user_login_response(
+    user: User, 
+    httponly=True, 
+    samesite="Lax", 
+    secure=True,
+    max_age=timedelta(hours=COOKIE_MAX_AGE_HOUR),
+):
+    data = {
+        "access_token": generate_jwt({"user": user.id}, "access"),
+        "user": user.get_user_info_dict,    
+    }
+    response = JsonResponse(data, status=200)
+    response.set_cookie(
+        "access_token",
+        data["access_token"],
+        httponly=httponly,
+        samesite=samesite,
+        secure=secure,
+        max_age=max_age
+    )
+    response.set_cookie(
+        "refresh_token",
+        generate_jwt({"user": user.id}, "refresh"),
+        httponly=httponly,
+        samesite=samesite,
+        secure=secure,
+        max_age=max_age
+    )
+    return response

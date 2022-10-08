@@ -18,6 +18,7 @@ from cores.utils import (
     handle_upload_file,
     limit_name,
     SocialLoginUserProfile,
+    create_user_login_response,
 )
 from users.auth import AuthBearer, is_admin, has_authority
 from users.models import User
@@ -252,26 +253,7 @@ def email_user_login(request, body: EmailUserSigninIn):
     )
 
     if check_password(body_dict["password"], user.password):
-        data = {
-            "access_token": generate_jwt({"user": user.id}, "access"),
-            "user": user.get_user_info_dict,
-        }
-        response = JsonResponse(data, status=200)
-        response.set_cookie(
-            "access_token",
-            data["access_token"],
-            httponly=True,
-            samesite="Lax",
-            secure=True,
-        )
-        response.set_cookie(
-            "refresh_token",
-            generate_jwt({"user": user.id}, "refresh"),
-            httponly=True,
-            samesite="Lax",
-            secure=True,
-        )
-        return response
+        return create_user_login_response(user)
 
     return 400, {"message": "invalid user"}
 
@@ -312,42 +294,26 @@ def kakao_token_test(request, token: TestKakaoToken):
     """
     kakao_api = SocialLoginUserProfile(code=token.token, type="kakao")
     kakao_profile = kakao_api._user_profile
-
-    user, is_created = User.objects.get_or_create(
-        social_account_id=kakao_profile["id"],
-        defaults={
-            "email": kakao_profile["kakao_account"].get(
-                "email", settings.KAKAO_DEFAULT_EMAIL
-            ),
-            "nickname": limit_name(
-                kakao_profile["kakao_account"]["profile"]["nickname"]
-            ),
-            "thumbnail_url": kakao_profile["kakao_account"]["profile"].get(
-                "thumbnail_image_url", settings.DEFAULT_USER_THUMBNAIL_URL
-            ),
-            "account_type": UserAccountType.KAKAO.value,
-        },
-    )
-    data = {
-        "access_token": generate_jwt({"user": user.id}, "access"),
-        "user": user.get_user_info_dict,
-    }
-    response = JsonResponse(data, status=200)
-    response.set_cookie(
-        "access_token",
-        data["access_token"],
-        httponly=True,
-        samesite="Lax",
-        secure=True,
-    )
-    response.set_cookie(
-        "refresh_token",
-        generate_jwt({"user": user.id}, "refresh"),
-        httponly=True,
-        samesite="Lax",
-        secure=True,
-    )
-    return response
+    try:
+        user, is_created = User.objects.get_or_create(
+            social_account_id=kakao_profile["id"],
+            defaults={
+                "email": kakao_profile["kakao_account"].get(
+                    "email", settings.KAKAO_DEFAULT_EMAIL
+                ),
+                "nickname": limit_name(
+                    kakao_profile["kakao_account"]["profile"]["nickname"]
+                ),
+                "thumbnail_url": kakao_profile["kakao_account"]["profile"].get(
+                    "thumbnail_image_url", settings.DEFAULT_USER_THUMBNAIL_URL
+                ),
+                "account_type": UserAccountType.KAKAO.value,
+            },
+        )
+        return create_user_login_response(user)
+        
+    except KeyError:
+        return JsonResponse({'message': 'key error'}, status=400)
 
 
 @router.post("/test/googletoken/", summary="구글 로그인")
@@ -357,36 +323,21 @@ def google_token_test(request, token: TestKakaoToken):
     """
     google_api = SocialLoginUserProfile(code=token.token, type="google")
     google_profile = google_api._user_profile
+    try:
+        user, is_created = User.objects.get_or_create(
+            social_account_id=google_profile["sub"],
+            defaults={
+                "email"        : google_profile["email"],
+                "nickname"     : limit_name(google_profile["given_name"]),
+                "thumbnail_url": google_profile["picture"],
+                "account_type" : UserAccountType.GOOGLE.value,
+            },
+        )
+        return create_user_login_response(user)
 
-    user, is_created = User.objects.get_or_create(
-        social_account_id=google_profile["sub"],
-        defaults={
-            "email"        : google_profile["email"],
-            "nickname"     : limit_name(google_profile["given_name"]),
-            "thumbnail_url": google_profile["picture"],
-            "account_type" : UserAccountType.GOOGLE.value,
-        },
-    )
-    data = {
-        "access_token": generate_jwt({"user": user.id}, "access"),
-        "user": user.get_user_info_dict,
-    }
-    response = JsonResponse(data, status=200)
-    response.set_cookie(
-        "access_token",
-        data["access_token"],
-        httponly=True,
-        samesite="Lax",
-        secure=True,
-    )
-    response.set_cookie(
-        "refresh_token",
-        generate_jwt({"user": user.id}, "refresh"),
-        httponly=True,
-        samesite="Lax",
-        secure=True,
-    )
-    return response
+    except KeyError:
+        return JsonResponse({'message': 'key error'}, status=400)
+
 
 
 

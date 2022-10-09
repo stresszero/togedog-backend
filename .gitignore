@@ -401,3 +401,4 @@ admin_settings.py
 bad_words.py
 password.txt
 private/
+settings.json

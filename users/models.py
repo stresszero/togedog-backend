@@ -11,6 +11,7 @@ from cores.models import (
 
 NAME_AND_NICKNAME_MAX_LENGTH = 10
 
+
 class User(TimeStampedModel):
     name = models.CharField(max_length=NAME_AND_NICKNAME_MAX_LENGTH, null=True)
     nickname = models.CharField(max_length=NAME_AND_NICKNAME_MAX_LENGTH)
@@ -28,7 +29,7 @@ class User(TimeStampedModel):
 
     class Meta:
         db_table = "user"
-    
+
     @property
     def get_user_info_dict(self):
         return {
@@ -42,7 +43,7 @@ class User(TimeStampedModel):
             "thumbnail_url": self.thumbnail_url,
             "mbti"         : self.mbti,
         }
-    
+
     def __str__(self):
         return self.nickname
 

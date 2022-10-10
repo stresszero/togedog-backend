@@ -11,9 +11,7 @@ router = Router(tags=["채팅 관련 API"], auth=AuthBearer())
 
 
 @router.post(
-    "/report", 
-    response={200: MessageOut, 400: MessageOut}, 
-    summary="채팅 메시지 신고하기"
+    "/report", response={200: MessageOut, 400: MessageOut}, summary="채팅 메시지 신고하기"
 )
 def report_chat_message(request, body: ChatReportIn):
     """

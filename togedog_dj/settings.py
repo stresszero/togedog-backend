@@ -40,7 +40,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ssl settings
 # SECURE_SSL_REDIRECT = True
-SECURE_HSTS_SECONDS = 60 # 1 minute
+SECURE_HSTS_SECONDS = 60  # 1 minute
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 

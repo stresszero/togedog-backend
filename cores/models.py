@@ -13,8 +13,8 @@ class TimeStampedModel(models.Model):
 
 
 class UserType(Enum):
-    ADMIN   = "admin"
-    NORMAL  = "normal"
+    ADMIN = "admin"
+    NORMAL = "normal"
     MANAGER = "manager"
 
 
@@ -24,8 +24,8 @@ class UserStatus(Enum):
 
 
 class UserAccountType(Enum):
-    EMAIL  = "email"
-    KAKAO  = "kakao"
+    EMAIL = "email"
+    KAKAO = "kakao"
     GOOGLE = "google"
 
 

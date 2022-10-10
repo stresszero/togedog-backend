@@ -50,7 +50,7 @@ class PostLike(TimeStampedModel):
         db_table = "post_like"
         constraints = [
             models.UniqueConstraint(
-                fields=['like_user_id', 'post_id'], name="unique_post_like"
+                fields=["like_user_id", "post_id"], name="unique_post_like"
             )
         ]
 

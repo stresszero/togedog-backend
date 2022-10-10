@@ -4,7 +4,10 @@ from django.utils.deprecation import MiddlewareMixin
 
 class PutPatchWithFileFormMiddleware(MiddlewareMixin):
     def process_request(self, request):
-        if request.method not in ("PUT", "PATCH") or request.content_type == "application/json":
+        if (
+            request.method not in ("PUT", "PATCH")
+            or request.content_type == "application/json"
+        ):
             return None
         if hasattr(request, "_post"):
             del request._post
@@ -19,4 +22,3 @@ class PutPatchWithFileFormMiddleware(MiddlewareMixin):
         request._load_post_and_files()
         request.META["REQUEST_METHOD"] = initial_method
         request.method = initial_method
-

@@ -16,7 +16,8 @@ EXP_DAYS = 1
 EXP_WEEKS = 2
 COOKIE_MAX_AGE_HOUR = 8
 
-def generate_jwt(payload: dict, type):
+
+def generate_jwt(payload: dict, type: str):
     if type == "access":
         exp = datetime.now(timezone.utc) + timedelta(days=EXP_DAYS)
 
@@ -34,10 +35,10 @@ def generate_jwt(payload: dict, type):
 
 s3_client = boto3.client(
     "s3",
-    endpoint_url          = settings.AWS_S3_ENDPOINT_URL,
-    aws_access_key_id     = settings.AWS_ACCESS_KEY_ID,
-    aws_secret_access_key = settings.AWS_SECRET_ACCESS_KEY,
-    region_name           = settings.AWS_S3_REGION_NAME,
+    endpoint_url=settings.AWS_S3_ENDPOINT_URL,
+    aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+    aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+    region_name=settings.AWS_S3_REGION_NAME,
 )
 
 
@@ -53,18 +54,15 @@ def validate_upload_file(file: UploadedFile) -> bool:
 
 def delete_existing_image(url: str, type: str):
     if (
-        type == "user_thumbnail" 
-        and url != settings.DEFAULT_USER_THUMBNAIL_URL 
+        type == "user_thumbnail"
+        and url != settings.DEFAULT_USER_THUMBNAIL_URL
         and url.startswith(settings.PROFILE_IMAGES_URL)
     ):
         s3_client.delete_object(Bucket="user_thumbnail", Key=url.split("/")[-1])
 
-    if (
-        type == "post_image" 
-        and url != settings.DEFAULT_POST_IMAGE_URL
-    ):
+    if type == "post_image" and url != settings.DEFAULT_POST_IMAGE_URL:
         s3_client.delete_object(Bucket="post_images", Key=url.split("/")[-1])
-    
+
 
 def handle_upload_file(file: UploadedFile, type: str) -> str:
     upload_filename = f'{str(uuid.uuid4())}.{file.name.split(".")[-1]}'
@@ -86,7 +84,7 @@ def handle_upload_file(file: UploadedFile, type: str) -> str:
 def censor_text(text: str) -> str:
     """
     욕설 목록에 있는 모든 욕설을 text에 있는지 확인하기 위해 text.find()로 검색
-    욕설이 포함된 경우 해당 단어를 *로 치환
+    욕설이 포함된 경우 그 부분만 *로 바꿈
     """
     censored_text = text
     for bad_word in settings.BAD_WORDS_LIST:
@@ -97,32 +95,32 @@ def censor_text(text: str) -> str:
             censored_text = (
                 censored_text[:bad_word_index]
                 + "*" * bad_word_length
-                + censored_text[bad_word_index + bad_word_length:]
+                + censored_text[bad_word_index + bad_word_length :]
             )
             bad_word_index = text.find(bad_word, bad_word_index + 1)
     return censored_text
-    
 
-def limit_name(name: str, limit: int=NAME_AND_NICKNAME_MAX_LENGTH) -> str:
+
+def limit_name(name: str, limit: int = NAME_AND_NICKNAME_MAX_LENGTH) -> str:
     if not name:
-        raise ValueError("invalid name")        
+        raise ValueError("invalid name")
     return name if len(name) <= limit else name[:limit]
 
 
-class SocialLoginUserProfile():
-    def __init__(self, code, type):
-        self.kakao_profile_uri  = settings.KAKAO_PROFILE_URI
+class SocialLoginUserProfile:
+    def __init__(self, code, type: str):
+        self.kakao_profile_uri = settings.KAKAO_PROFILE_URI
         self.google_profile_uri = settings.GOOGLE_PROFILE_URI
-        self._user_profile      = None
+        self._user_profile = None
 
         if type == "kakao":
             self.get_kakao_profile(code)
         elif type == "google":
             self.get_google_profile(code)
         else:
-            raise ValueError("invalid social login type")        
+            raise ValueError("invalid social login type")
 
-    def get_kakao_profile(self, code):
+    def get_kakao_profile(self, code: str):
         response = requests.post(
             self.kakao_profile_uri,
             headers={"Authorization": f"Bearer {code}"},
@@ -132,7 +130,7 @@ class SocialLoginUserProfile():
             raise HttpError(400, "invalid kakao access token")
         self._user_profile = response.json()
 
-    def get_google_profile(self, code): 
+    def get_google_profile(self, code: str):
         response = requests.get(
             self.google_profile_uri,
             headers={"Authorization": f"Bearer {code}"},
@@ -144,15 +142,15 @@ class SocialLoginUserProfile():
 
 
 def create_user_login_response(
-    user: User, 
-    httponly=True, 
-    samesite="Lax", 
-    secure=True,
+    user: User,
+    httponly: bool = True,
+    samesite: str = "Lax",
+    secure: bool = True,
     max_age=timedelta(hours=COOKIE_MAX_AGE_HOUR),
-):
+) -> JsonResponse:
     data = {
         "access_token": generate_jwt({"user": user.id}, "access"),
-        "user": user.get_user_info_dict,    
+        "user": user.get_user_info_dict,
     }
     response = JsonResponse(data, status=200)
     response.set_cookie(
@@ -161,7 +159,7 @@ def create_user_login_response(
         httponly=httponly,
         samesite=samesite,
         secure=secure,
-        max_age=max_age
+        max_age=max_age,
     )
     response.set_cookie(
         "refresh_token",
@@ -169,6 +167,6 @@ def create_user_login_response(
         httponly=httponly,
         samesite=samesite,
         secure=secure,
-        max_age=max_age
+        max_age=max_age,
     )
     return response

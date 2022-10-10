@@ -4,7 +4,7 @@ from django.conf import settings
 from django.contrib.auth.hashers import make_password, check_password
 from django.db.models import Q, Count
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404
 from ninja import Router, Form
 from ninja.files import UploadedFile
 from ninja.pagination import paginate, PageNumberPagination
@@ -12,13 +12,12 @@ from ninja.pagination import paginate, PageNumberPagination
 from cores.models import UserAccountType, UserStatus
 from cores.schemas import MessageOut
 from cores.utils import (
-    generate_jwt,
     validate_upload_file,
     delete_existing_image,
     handle_upload_file,
     limit_name,
-    SocialLoginUserProfile,
     create_user_login_response,
+    SocialLoginUserProfile,
 )
 from users.auth import AuthBearer, is_admin, has_authority
 from users.models import User
@@ -159,7 +158,10 @@ def get_user_info(request, user_id: int):
     summary="사용자 정보 수정",
 )
 def modify_user_info(
-    request, user_id: int, body: ModifyUserIn = Form(...), file: UploadedFile = None,
+    request,
+    user_id: int,
+    body: ModifyUserIn = Form(...),
+    file: UploadedFile = None,
 ):
     """
     사용자 정보 수정, 로그인한 본인 계정 또는 관리자만 수정 가능
@@ -311,9 +313,9 @@ def kakao_token_test(request, token: TestKakaoToken):
             },
         )
         return create_user_login_response(user)
-        
+
     except KeyError:
-        return JsonResponse({'message': 'key error'}, status=400)
+        return JsonResponse({"message": "key error"}, status=400)
 
 
 @router.post("/test/googletoken/", summary="구글 로그인")
@@ -336,8 +338,4 @@ def google_token_test(request, token: TestKakaoToken):
         return create_user_login_response(user)
 
     except KeyError:
-        return JsonResponse({'message': 'key error'}, status=400)
-
-
-
-
+        return JsonResponse({"message": "key error"}, status=400)

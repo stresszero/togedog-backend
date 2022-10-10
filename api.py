@@ -17,12 +17,12 @@ from users.models import UserTestCount
 
 
 api = NinjaAPI(
-    title="함께하개 API 문서", 
-    version="1.0.0", 
+    title="함께하개 API 문서",
+    version="1.0.0",
     description="함께하개 프로젝트 API 명세서와 테스트 제공",
     # csrf=True,
-    # docs_url="/api/docs",
-    docs_url=None,
+    docs_url="/api/docs",
+    # docs_url=None,
 )
 
 api.add_router("/api/users", users_router)
@@ -115,7 +115,7 @@ def get_test_count(request):
 
 @api.get("/api/cookiekey", auth=auth_cookie)
 def cookie_test(request):
-    '''
+    """
     쿠키 인가 테스트
-    '''
+    """
     return f"cookie_auth: {request.auth}, {request.auth.id}, {request.auth.user_type}"

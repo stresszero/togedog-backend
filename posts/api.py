@@ -8,11 +8,7 @@ from ninja import Router, Form
 from ninja.files import UploadedFile
 from ninja.pagination import paginate, PageNumberPagination
 
-from cores.utils import (
-    validate_upload_file, 
-    handle_upload_file,
-    delete_existing_image
-)
+from cores.utils import validate_upload_file, handle_upload_file, delete_existing_image
 from cores.schemas import MessageOut, ContentIn
 from comments.models import Comment, CommentDelete
 from posts.models import Post, PostLike, PostDelete, PostReport
@@ -195,11 +191,7 @@ def delete_post(request, post_id: int, body: DeletePostIn = Form(...)):
     return 200, {"message": "success"}
 
 
-@router.post(
-    "/{post_id}/report/", 
-    response={200: MessageOut}, 
-    summary="게시글 신고하기"
-)
+@router.post("/{post_id}/report/", response={200: MessageOut}, summary="게시글 신고하기")
 def report_post(request, post_id: int, body: ContentIn = Form(...)):
     """
     게시글 신고하기
@@ -268,7 +260,7 @@ def get_posts(request, offset: int = 0, limit: int = 9, sort: str = "-created_at
         Post.objects.filter(is_deleted=False)
         .select_related("user")
         .prefetch_related("likes")
-        .order_by(sort)[offset:offset+limit],
+        .order_by(sort)[offset : offset + limit],
     )
 
 

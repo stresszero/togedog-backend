@@ -1,9 +1,9 @@
 # [함께하개 웹사이트](https://withdog.me)
 
 ## Development
-- Python
-- Django web framework
-- Django Ninja
+- Python 3.9.13
+- Django web framework 4.1
+- Django Ninja 0.19.1
 - Postgresql
 - python-socketio for chat app
 - MongoDB(pymongo) for chat app

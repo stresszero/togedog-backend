@@ -178,7 +178,7 @@ def modify_user_info(
 
     res = {}
     if validate_upload_file(file):
-        delete_existing_image(user.thumbnail_url, type="user_thumbnail")
+        delete_existing_image(user.thumbnail_url, "user_thumbnail")
         user.thumbnail_url = handle_upload_file(file, "user_thumbnail")
         res["user_thumbnail_url"] = user.thumbnail_url
 
@@ -289,10 +289,10 @@ def get_banned_user_list(request, search: str = None, date: str = None):
     )
 
 
-@router.post("/test/kakaotoken/", summary="카카오 로그인")
+@router.post("/test/kakaotoken/", summary="카카오 소셜 로그인")
 def kakao_token_test(request, token: TestKakaoToken):
     """
-    카카오 토큰 받아서 회원가입 또는 로그인
+    카카오 소셜 로그인 후 카카오 토큰 받아서 회원가입 또는 로그인
     """
     kakao_api = SocialLoginUserProfile(code=token.token, type="kakao")
     kakao_profile = kakao_api._user_profile
@@ -318,10 +318,10 @@ def kakao_token_test(request, token: TestKakaoToken):
         return JsonResponse({"message": "key error"}, status=400)
 
 
-@router.post("/test/googletoken/", summary="구글 로그인")
+@router.post("/test/googletoken/", summary="구글 소셜 로그인")
 def google_token_test(request, token: TestKakaoToken):
     """
-    구글 토큰 받아서 회원가입 또는 로그인
+    구글 소셜 로그인 후 구글 토큰 받아서 회원가입 또는 로그인
     """
     google_api = SocialLoginUserProfile(code=token.token, type="google")
     google_profile = google_api._user_profile

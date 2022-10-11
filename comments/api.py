@@ -35,7 +35,6 @@ def delete_comment(request, post_id: int, comment_id: int):
     댓글 삭제, DB삭제가 아니라 해당 댓글의 is_deleted 값만 True로 바꿈
     """
     get_object_or_404(Post, id=post_id)
-
     comment = get_object_or_404(Comment, id=comment_id, is_deleted=False)
     has_authority(request, user_id=comment.user_id, user_check=True)
     comment.is_deleted = True

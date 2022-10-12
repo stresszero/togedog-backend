@@ -184,10 +184,13 @@ def modify_user_info(
 
     for attr, value in body_dict.items():
         if value:
-            setattr(user, attr, value)
-            res[f"{attr}_input"] = value
+            if hasattr(user, attr):
+                setattr(user, attr, value)
+                res[f"{attr}_input"] = value
+            else:
+                return JsonResponse({'message': 'invalid input'}, status=400)
+                
     user.save()
-
     return JsonResponse(res)
 
 

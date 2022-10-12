@@ -146,7 +146,7 @@ def create_user_login_response(
     httponly: bool = True,
     samesite: str = "Lax",
     secure: bool = True,
-    max_age=timedelta(hours=COOKIE_MAX_AGE_HOUR),
+    max_age: timedelta = timedelta(hours=COOKIE_MAX_AGE_HOUR),
 ) -> JsonResponse:
     data = {
         "access_token": generate_jwt({"user": user.id}, "access"),

@@ -5,6 +5,7 @@ from typing import Optional
 from ninja import Schema
 from pydantic import EmailStr, validator
 
+from django.conf import settings
 from users.models import User
 
 REGEX_PASSWORD = "^(?=.*[A-Za-z])(?=.*\d)(?=.*[$@$!%*#?&])[A-Za-z\d$@$!%*#?&]{8,16}$"
@@ -26,6 +27,8 @@ class EmailUserSignupIn(Schema):
     def validate_name(cls, value):
         if len(value) > 10:
             raise ValueError("name or nickname is too long")
+        if value in settings.BAD_WORDS_LIST:
+            raise ValueError("name or nickname is not allowed")
         return value
 
     @validator("password")
@@ -76,6 +79,13 @@ class ModifyUserIn(Schema):
     nickname: Optional[str]
     mbti: Optional[str]
 
+    @validator("name", "nickname")
+    def validate_name(cls, value):
+        if len(value) > 10:
+            raise ValueError("name or nickname is too long")
+        if value in settings.BAD_WORDS_LIST:
+            raise ValueError("name or nickname is not allowed")
+        return value
 
 class TestKakaoToken(Schema):
     token: str

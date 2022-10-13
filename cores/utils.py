@@ -101,12 +101,6 @@ def censor_text(text: str) -> str:
     return censored_text
 
 
-def limit_name(name: str, limit: int = NAME_AND_NICKNAME_MAX_LENGTH) -> str:
-    if not name:
-        raise ValueError("invalid name")
-    return name if len(name) <= limit else name[:limit]
-
-
 class SocialLoginUserProfile:
     def __init__(self, code, type: str):
         self.kakao_profile_uri = settings.KAKAO_PROFILE_URI

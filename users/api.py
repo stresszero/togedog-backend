@@ -15,12 +15,11 @@ from cores.utils import (
     validate_upload_file,
     delete_existing_image,
     handle_upload_file,
-    limit_name,
     create_user_login_response,
     SocialLoginUserProfile,
 )
 from users.auth import AuthBearer, is_admin, has_authority
-from users.models import User
+from users.models import User, NAME_AND_NICKNAME_MAX_LENGTH
 from users.schemas import (
     EmailUserSignupIn,
     EmailUserSigninIn,
@@ -119,19 +118,17 @@ def email_user_signup(request, body: EmailUserSignupIn):
     - 이름이나 닉네임이 욕설이면 400 에러
     """
     body_dict = body.dict()
-    if (
-        body_dict["name"] in settings.BAD_WORDS_LIST
-        or body_dict["nickname"] in settings.BAD_WORDS_LIST
-    ):
-        return 400, {"message": "invalid name or nickname"}
-
     if User.objects.filter(
         email=body_dict["email"], account_type=UserAccountType.EMAIL.value
     ).exists():
         return 400, {"message": "user already exists"}
 
     body_dict.update(
-        {"password": make_password(body_dict["password"], salt=settings.PASSWORD_SALT)}
+        {
+            "password": make_password(body_dict["password"], salt=settings.PASSWORD_SALT),
+            "name": body_dict["name"][:NAME_AND_NICKNAME_MAX_LENGTH],
+            "nickname": body_dict["nickname"][:NAME_AND_NICKNAME_MAX_LENGTH],
+        }
     )
     User.objects.create(**body_dict)
     return 200, {"message": "success"}
@@ -168,14 +165,8 @@ def modify_user_info(
     """
     has_authority(request, user_id, user_check=True, banned_check=False)
     user = get_object_or_404(User, id=user_id)
-
+    
     body_dict = body.dict()
-    if (
-        body_dict["name"] in settings.BAD_WORDS_LIST
-        or body_dict["nickname"] in settings.BAD_WORDS_LIST
-    ):
-        return 400, {"message": "bad words in name or nickname"}
-
     res = {}
     if validate_upload_file(file):
         delete_existing_image(user.thumbnail_url, "user_thumbnail")
@@ -189,7 +180,7 @@ def modify_user_info(
                 res[f"{attr}_input"] = value
             else:
                 return JsonResponse({'message': 'invalid input'}, status=400)
-                
+
     user.save()
     return JsonResponse(res)
 
@@ -295,7 +286,7 @@ def get_banned_user_list(request, search: str = None, date: str = None):
 @router.post("/test/kakaotoken/", summary="카카오 소셜 로그인")
 def kakao_token_test(request, token: TestKakaoToken):
     """
-    카카오 소셜 로그인 후 카카오 토큰 받아서 회원가입 또는 로그인
+    클라이언트에서 카카오 소셜 로그인 후 액세스 토큰 받아서 회원가입 또는 로그인
     """
     kakao_api = SocialLoginUserProfile(code=token.token, type="kakao")
     kakao_profile = kakao_api._user_profile
@@ -306,9 +297,8 @@ def kakao_token_test(request, token: TestKakaoToken):
                 "email": kakao_profile["kakao_account"].get(
                     "email", settings.KAKAO_DEFAULT_EMAIL
                 ),
-                "nickname": limit_name(
-                    kakao_profile["kakao_account"]["profile"]["nickname"]
-                ),
+                "nickname": kakao_profile["kakao_account"]["profile"]["nickname"]\
+                    [:NAME_AND_NICKNAME_MAX_LENGTH],
                 "thumbnail_url": kakao_profile["kakao_account"]["profile"].get(
                     "thumbnail_image_url", settings.DEFAULT_USER_THUMBNAIL_URL
                 ),
@@ -324,7 +314,7 @@ def kakao_token_test(request, token: TestKakaoToken):
 @router.post("/test/googletoken/", summary="구글 소셜 로그인")
 def google_token_test(request, token: TestKakaoToken):
     """
-    구글 소셜 로그인 후 구글 토큰 받아서 회원가입 또는 로그인
+    클라이언트에서 구글 소셜 로그인 후 액세스 토큰 받아서 회원가입 또는 로그인
     """
     google_api = SocialLoginUserProfile(code=token.token, type="google")
     google_profile = google_api._user_profile
@@ -333,7 +323,8 @@ def google_token_test(request, token: TestKakaoToken):
             social_account_id=google_profile["sub"],
             defaults={
                 "email"        : google_profile["email"],
-                "nickname"     : limit_name(google_profile["given_name"]),
+                "nickname"     : google_profile["given_name"]\
+                    [:NAME_AND_NICKNAME_MAX_LENGTH],
                 "thumbnail_url": google_profile["picture"],
                 "account_type" : UserAccountType.GOOGLE.value,
             },

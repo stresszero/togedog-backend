@@ -43,9 +43,9 @@ def get_user_list(request, search: str = None, reported: int = None, date: str =
     - 관리자 계정만 조회 가능, 한페이지에 10개씩 조회
     - 쿼리 파라미터 search: 사용자 닉네임으로 검색
     - reported: 정수값을 넣으면 해당 정수값 이상 신고받은 사용자 검색
-    - 리스폰스 객체
+    - 리스폰스
         - items: 유저정보 목록(배열)
-        - count: 응답으로 나온 사용자의 전체 갯수
+        - count: 유저정보 전체 개수
     """
     is_admin(request)
 
@@ -165,7 +165,7 @@ def modify_user_info(
     """
     has_authority(request, user_id, user_check=True, banned_check=False)
     user = get_object_or_404(User, id=user_id)
-    
+
     body_dict = body.dict()
     res = {}
     if validate_upload_file(file):

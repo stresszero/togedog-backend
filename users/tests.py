@@ -65,7 +65,7 @@ class UserTest(TestCase):
             "account_type": "email",
             "address": "",
         }
-        self.client.post(
+        user_signup = self.client.post(
             "/api/users/signup", 
             json.dumps(body), 
             content_type="application/json"
@@ -85,7 +85,7 @@ class UserTest(TestCase):
             "items": [
                 {
                     "id": user.id,
-                    "created_at": user.created_at.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z",
+                    "created_at": f"{user.created_at.isoformat()[:-9]}Z",
                     "name": user.name,
                     "nickname": user.nickname,
                     "email": user.email,
@@ -98,7 +98,7 @@ class UserTest(TestCase):
                 },
                 {
                     "id": self.test_user_1.id,
-                    "created_at": self.test_user_1.created_at.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z",
+                    "created_at": f"{self.test_user_1.created_at.isoformat()[:-9]}Z",
                     "name": self.test_user_1.name,
                     "nickname": self.test_user_1.nickname,
                     "email": self.test_user_1.email,

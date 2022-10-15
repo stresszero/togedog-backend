@@ -6,9 +6,14 @@ from ninja import Schema
 from pydantic import EmailStr, validator
 
 from django.conf import settings
-from users.models import User
+from users.models import User, NAME_AND_NICKNAME_MAX_LENGTH
 
 REGEX_PASSWORD = "^(?=.*[A-Za-z])(?=.*\d)(?=.*[$@$!%*#?&])[A-Za-z\d$@$!%*#?&]{8,16}$"
+
+def validate_name(value: str):
+    if value in settings.BAD_WORDS_LIST:
+        raise ValueError("name or nickname is not allowed")
+    return value if len(value) <= NAME_AND_NICKNAME_MAX_LENGTH else value[:NAME_AND_NICKNAME_MAX_LENGTH]
 
 
 class EmailSignupCheckIn(Schema):
@@ -20,16 +25,9 @@ class EmailUserSignupIn(Schema):
     nickname: str
     email: EmailStr
     password: str
-    account_type: str = "email"
     address: Optional[str]
-
-    @validator("name", "nickname")
-    def validate_name(cls, value):
-        if len(value) > 10:
-            raise ValueError("name or nickname is too long")
-        if value in settings.BAD_WORDS_LIST:
-            raise ValueError("name or nickname is not allowed")
-        return value
+    _validated_name = validator("name", allow_reuse=True)(validate_name)
+    _validated_nickname = validator("nickname", allow_reuse=True)(validate_name)
 
     @validator("password")
     def validate_password(cls, value):
@@ -78,14 +76,9 @@ class ModifyUserIn(Schema):
     name: Optional[str]
     nickname: Optional[str]
     mbti: Optional[str]
+    _validated_name = validator("name", allow_reuse=True)(validate_name)
+    _validated_nickname = validator("nickname", allow_reuse=True)(validate_name)
 
-    @validator("name", "nickname")
-    def validate_name(cls, value):
-        if len(value) > 10:
-            raise ValueError("name or nickname is too long")
-        if value in settings.BAD_WORDS_LIST:
-            raise ValueError("name or nickname is not allowed")
-        return value
 
 class TestKakaoToken(Schema):
     token: str

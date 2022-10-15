@@ -72,7 +72,7 @@ def logout(request):
     """
     로그아웃 후 쿠키 삭제
     """
-    response = JsonResponse({"message": "success"}, status=200)
+    response = JsonResponse({"message": "cookie deleted"}, status=200)
     response.delete_cookie("access_token")
     response.delete_cookie("refresh_token")
     return response
@@ -96,7 +96,7 @@ def check_bearer(request):
     response={200: MessageOut, 400: MessageOut},
     summary="이메일 회원가입 시 이메일 중복 확인",
 )
-def check_email(request, body: EmailSignupCheckIn):
+def check_duplicate_email(request, body: EmailSignupCheckIn):
     """
     이메일 회원가입 시 이메일 중복 확인
     - 이메일 중복이면 400 에러("message": "email already exists")
@@ -115,7 +115,7 @@ def email_user_signup(request, body: EmailUserSignupIn):
     """
     이메일 사용자 회원가입(application/json)
     - 이메일 중복이면 400 에러("message": "email already exists")
-    - 이름이나 닉네임이 욕설이면 400 에러
+    - 이름이나 닉네임이 욕설이면 422 에러
     """
     body_dict = body.dict()
     if User.objects.filter(
@@ -126,8 +126,9 @@ def email_user_signup(request, body: EmailUserSignupIn):
     body_dict.update(
         {
             "password": make_password(body_dict["password"], salt=settings.PASSWORD_SALT),
-            "name": body_dict["name"][:NAME_AND_NICKNAME_MAX_LENGTH],
-            "nickname": body_dict["nickname"][:NAME_AND_NICKNAME_MAX_LENGTH],
+            "name": body_dict["name"],
+            "nickname": body_dict["nickname"],
+            "account_type": "email",
         }
     )
     User.objects.create(**body_dict)
@@ -150,7 +151,7 @@ def get_user_info(request, user_id: int):
 
 @router.patch(
     "/{user_id}",
-    response={200: MessageOut, 400: MessageOut},
+    response={400: MessageOut},
     auth=[AuthBearer()],
     summary="사용자 정보 수정",
 )
@@ -168,18 +169,16 @@ def modify_user_info(
 
     body_dict = body.dict()
     res = {}
+    
     if validate_upload_file(file):
         delete_existing_image(user.thumbnail_url, "user_thumbnail")
         user.thumbnail_url = handle_upload_file(file, "user_thumbnail")
         res["user_thumbnail_url"] = user.thumbnail_url
 
     for attr, value in body_dict.items():
-        if value:
-            if hasattr(user, attr):
-                setattr(user, attr, value)
-                res[f"{attr}_input"] = value
-            else:
-                return JsonResponse({'message': 'invalid input'}, status=400)
+        if value and hasattr(user, attr):
+            setattr(user, attr, value)
+            res[f"{attr}_input"] = value
 
     user.save()
     return JsonResponse(res)
@@ -220,7 +219,7 @@ def deactivate_user(request, user_id: int):
 
 @router.post(
     "/login/check",
-    response={400: MessageOut},
+    response={200: UserDetailOut, 400: MessageOut},
     auth=AuthBearer(),
     summary="메인페이지에서 이미 로그인돼있는 상태인지 확인",
 )
@@ -229,7 +228,7 @@ def main_login_check(request):
     메인페이지에서 이미 로그인돼있는 상태인지 확인(쿠키 활용)
     """
     if request.auth:
-        return JsonResponse(request.auth.get_user_info_dict, status=200)
+        return 200, request.auth
     return 400, {"message": "user is not logged in"}
 
 

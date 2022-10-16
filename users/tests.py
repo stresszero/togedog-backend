@@ -202,5 +202,27 @@ class UserTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
 
-    def test_fail_404_get_user_info(self):
-        pass
+    def test_fail_403_get_user_info(self):
+        body = {
+            "name": "QWER",
+            "nickname": "QWER",
+            "email": "qwer@test.com",
+            "password": "test1234!!",
+            "account_type": "email",
+            "address": "",
+        }
+        self.client.post(
+            "/api/users/signup", 
+            json.dumps(body), 
+            content_type="application/json"
+        )
+        user_login_response = self.client.post(
+            "/api/users/login/email", 
+            json.dumps({"email": body['email'], "password": body['password']}),
+            content_type="application/json"
+        ).json()
+        user = User.objects.get(id=user_login_response['user']['id'])
+        user_jwt = user_login_response['access_token']
+        response = self.client.get("/api/users/1", HTTP_AUTHORIZATION=f'Bearer {user_jwt}')
+
+        self.assertEqual(response.status_code, 403)

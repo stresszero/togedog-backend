@@ -41,17 +41,16 @@
 
 ## 구현 영상
 - 로그인 후 사용자 정보 수정
-<img src="https://velog.velcdn.com/images/stresszero/post/a8566260-312a-4c40-97ac-1c044b5ee812/image.gif" width="600">
+![](https://velog.velcdn.com/images/stresszero/post/8e756cba-6196-4aba-aa0e-25a664950fb0/image.gif)
 
 - 게시판 글 쓰기
-<img src="https://velog.velcdn.com/images/stresszero/post/2603e64d-dc45-4fb0-b252-091b410b334b/image.gif" width="600">
-
+![](https://velog.velcdn.com/images/stresszero/post/e4c3b4d4-ab7d-4a11-883c-b8527da6a0c7/image.gif)
 
 - 게시판 댓글 입력, 좋아요
-<img src="https://velog.velcdn.com/images/stresszero/post/0ef83d5b-2626-4363-9275-becd81015a39/image.gif" width="600">
+![](https://velog.velcdn.com/images/stresszero/post/7bcbf920-f3d3-44d5-9f54-b4670cd1fd3d/image.gif)
 
 - 관리자 페이지
-<img src="https://velog.velcdn.com/images/stresszero/post/779323e8-dcde-413f-8a7e-bcdc12ec451c/image.gif" width="600">
+![](https://velog.velcdn.com/images/stresszero/post/835c69e6-c0b3-4408-8668-8bff6815794a/image.gif)
 
 - 채팅 기능
 ![](https://velog.velcdn.com/images/stresszero/post/5f62cfb4-b623-4b24-b207-cd4d20ac44fa/image.gif)

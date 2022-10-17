@@ -47,7 +47,7 @@
 ![](https://velog.velcdn.com/images/stresszero/post/e4c3b4d4-ab7d-4a11-883c-b8527da6a0c7/image.gif)
 
 - 게시판 댓글 입력, 좋아요
-![](https://velog.velcdn.com/images/stresszero/post/7bcbf920-f3d3-44d5-9f54-b4670cd1fd3d/image.gif)
+![](https://velog.velcdn.com/images/stresszero/post/5931cfda-a8e7-41f0-8855-e4a18a642d81/image.gif)
 
 - 관리자 페이지
 ![](https://velog.velcdn.com/images/stresszero/post/835c69e6-c0b3-4408-8668-8bff6815794a/image.gif)

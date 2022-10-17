@@ -1,5 +1,6 @@
 import json
 import jwt
+import os
 
 from unittest.mock import patch, MagicMock
 
@@ -10,6 +11,10 @@ from ninja.testing import TestClient
 
 from users.models import User
 from users.schemas import UserDetailOut
+
+
+# to skip ConfigError
+os.environ["NINJA_SKIP_REGISTRY"] = "yes"
 
 # user = User.objects.get(id=9)
 # json.loads(json.dumps(UserDetailOut.from_orm(user).dict(), cls=DjangoJSONEncoder))

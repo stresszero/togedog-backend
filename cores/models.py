@@ -23,7 +23,7 @@ class EnumField(CharField):
 
     def get_default(self):
         """
-        Field 메서드 오버라이딩
+        Django Field 메서드 오버라이딩
         enum값에 대한 validation을 하기 위해 오버라이딩 하였음
         """
         default = super().get_default()
@@ -32,7 +32,7 @@ class EnumField(CharField):
 
     def to_python(self, value):
         """
-        CharField 메서드 오버라이딩
+        Django CharField 메서드 오버라이딩
         enum에 대한 value 체크 및 변환 작업을 위해 재정의
         """
         return super().to_python(self.validate_enum(value))

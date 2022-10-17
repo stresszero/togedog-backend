@@ -4,6 +4,7 @@ import os
 
 from unittest.mock import patch, MagicMock
 
+from django.contrib.auth.hashers import make_password, check_password
 from django.conf import settings
 from django.test import TestCase, Client
 from django.urls import reverse_lazy
@@ -12,14 +13,12 @@ from ninja.testing import TestClient
 from users.models import User
 from users.schemas import UserDetailOut
 
-
-# to skip ConfigError
+# to avoid ConfigError when using ninja TestClient
 os.environ["NINJA_SKIP_REGISTRY"] = "yes"
 
 # user = User.objects.get(id=9)
 # json.loads(json.dumps(UserDetailOut.from_orm(user).dict(), cls=DjangoJSONEncoder))
 
-# listout=[UserListOut.from_orm(i).dict() for i in list]
 # list = (
 #         User.objects.annotate(
 #             reported_count=Count("post_reported", distinct=True)
@@ -28,6 +27,7 @@ os.environ["NINJA_SKIP_REGISTRY"] = "yes"
 #         .filter(id__lte=50)
 #         .order_by("-created_at")
 #     )
+# listout=[UserListOut.from_orm(i).dict() for i in list]
 # json.loads(json.dumps(listout, cls=DjangoJSONEncoder))
 class UserTest(TestCase):
     def setUp(self):
@@ -42,16 +42,20 @@ class UserTest(TestCase):
             address="",
             created_at="2022-10-12T10:00:00Z",
         )
-        # self.test_admin = User.objects.create(
-        #     name="admin",
-        #     nickname="admin",
-        #     email="admin@test.com",
-        #     user_type="admin",
-        #     status="active",
-        #     account_type="email",
-        #     address="",
-        #     created_at="2022-10-12T10:00:00Z",
-        # )
+        self.test_admin = User.objects.create(
+            name="admin",
+            nickname="admin",
+            email="admin@test.com",
+            user_type="admin",
+            status="active",
+            account_type="email",
+            address="",
+            created_at="2022-10-12T10:00:00Z",
+        )
+        self.test_user_1.password = make_password("test1234!!", salt=settings.PASSWORD_SALT)
+        self.test_user_1.save()
+        self.test_admin.password = make_password("test1234@@", salt=settings.PASSWORD_SALT)
+        self.test_admin.save()
 
     def tearDown(self):
         User.objects.all().delete()
@@ -91,29 +95,15 @@ class UserTest(TestCase):
         self.assertEqual(response.json(), {"message": "user already exists"})
 
     def test_success_get_user_list(self):
-        body = {
-            "name": "admin",
-            "nickname": "admin",
-            "email": "admin@test.com",
-            "password": "test1234!!",
-            "account_type": "email",
-            "address": "",
-        }
-        user_signup = self.client.post(
-            "/api/users/signup", 
-            json.dumps(body), 
-            content_type="application/json"
-        )
-        user_login_response = self.client.post(
-            "/api/users/login/email", 
-            json.dumps({"email": body['email'], "password": body['password']}),
+        admin_user_login_response = self.client.post(
+            reverse_lazy("api-1.0.0:email_user_login"),
+            # "/api/users/login/email", 
+            json.dumps({"email": self.test_admin.email, "password": "test1234@@"}),
             content_type="application/json"
         ).json()
-        user = User.objects.get(id=user_login_response['user']['id'])
-        user.user_type = "admin"
-        user.save()
+        admin = User.objects.get(id=admin_user_login_response['user']['id'])
 
-        admin_jwt = user_login_response['access_token']
+        admin_jwt = admin_user_login_response['access_token']
         response = self.client.get(
             reverse_lazy("api-1.0.0:get_user_list"), 
             HTTP_AUTHORIZATION=f'Bearer {admin_jwt}'
@@ -121,16 +111,16 @@ class UserTest(TestCase):
         results = {
             "items": [
                 {
-                    "id": user.id,
-                    "created_at": f"{user.created_at.isoformat()[:-9]}Z",
-                    "name": user.name,
-                    "nickname": user.nickname,
-                    "email": user.email,
-                    "user_type": user.user_type,
-                    "status": user.status,
-                    "account_type": user.account_type,
+                    "id": admin.id,
+                    "created_at": f"{admin.created_at.isoformat()[:-9]}Z",
+                    "name": admin.name,
+                    "nickname": admin.nickname,
+                    "email": admin.email,
+                    "user_type": admin.user_type,
+                    "status": admin.status,
+                    "account_type": admin.account_type,
                     "thumbnail_url": settings.DEFAULT_USER_THUMBNAIL_URL,
-                    "mbti": user.mbti,
+                    "mbti": admin.mbti,
                     "reported_count": 0,
                 },
                 {
@@ -143,7 +133,7 @@ class UserTest(TestCase):
                     "status": self.test_user_1.status,
                     "account_type": self.test_user_1.account_type,
                     "thumbnail_url": settings.DEFAULT_USER_THUMBNAIL_URL,
-                    "mbti": "none",
+                    "mbti": self.test_user_1.mbti,
                     "reported_count": 0,
                 }
             ],
@@ -183,51 +173,28 @@ class UserTest(TestCase):
         self.assertEqual(response.status_code, 422)
 
     def test_success_get_user_info(self):
-        body = {
-            "name": "QWER",
-            "nickname": "QWER",
-            "email": "qwer@test.com",
-            "password": "test1234!!",
-            "account_type": "email",
-            "address": "",
-        }
-        self.client.post(
-            "/api/users/signup", 
-            json.dumps(body), 
-            content_type="application/json"
-        )
         user_login_response = self.client.post(
-            "/api/users/login/email", 
-            json.dumps({"email": body['email'], "password": body['password']}),
+            reverse_lazy("api-1.0.0:email_user_login"),
+            json.dumps({"email": "test@test.com", "password": "test1234!!"}),
             content_type="application/json"
         ).json()
         user = User.objects.get(id=user_login_response['user']['id'])
         user_jwt = user_login_response['access_token']
-        response = self.client.get(f"/api/users/{user.id}", HTTP_AUTHORIZATION=f'Bearer {user_jwt}')
+        response = self.client.get(
+            f"/api/users/{user.id}", 
+            HTTP_AUTHORIZATION=f'Bearer {user_jwt}'
+        )
 
         self.assertEqual(response.status_code, 200)
 
     def test_fail_403_get_user_info(self):
-        body = {
-            "name": "QWER",
-            "nickname": "QWER",
-            "email": "qwer@test.com",
-            "password": "test1234!!",
-            "account_type": "email",
-            "address": "",
-        }
-        self.client.post(
-            "/api/users/signup", 
-            json.dumps(body), 
-            content_type="application/json"
-        )
         user_login_response = self.client.post(
-            "/api/users/login/email", 
-            json.dumps({"email": body['email'], "password": body['password']}),
+            reverse_lazy("api-1.0.0:email_user_login"),
+            json.dumps({"email": "test@test.com", "password": "test1234!!"}),
             content_type="application/json"
         ).json()
         user = User.objects.get(id=user_login_response['user']['id'])
         user_jwt = user_login_response['access_token']
-        response = self.client.get("/api/users/1", HTTP_AUTHORIZATION=f'Bearer {user_jwt}')
+        response = self.client.get("/api/users/1234", HTTP_AUTHORIZATION=f'Bearer {user_jwt}')
 
         self.assertEqual(response.status_code, 403)

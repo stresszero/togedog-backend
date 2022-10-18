@@ -5,7 +5,7 @@ from django.contrib.auth.hashers import make_password, check_password
 from django.db.models import Q, Count
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
-from ninja import Router, Form
+from ninja import Router, Form, Query
 from ninja.files import UploadedFile
 from ninja.pagination import paginate, PageNumberPagination
 
@@ -28,6 +28,7 @@ from users.schemas import (
     UserDetailOut,
     EmailSignupCheckIn,
     TestKakaoToken,
+    UserListFilters,
 )
 
 router = Router(tags=["사용자 관련 API"])
@@ -37,32 +38,29 @@ router = Router(tags=["사용자 관련 API"])
     "", response=List[UserListOut], auth=[AuthBearer()], summary="관리자페이지 사용자 목록 조회"
 )
 @paginate(PageNumberPagination, page_size=10)
-def get_user_list(request, search: str = None, reported: int = None, date: str = None):
+def get_user_list(request, query: UserListFilters = Query(...)):
     """
     사용자 목록 조회
     - 관리자 계정만 조회 가능, 한페이지에 10개씩 조회
-    - 쿼리 파라미터 search: 사용자 닉네임으로 검색
-    - reported: 정수값을 넣으면 해당 정수값 이상 신고받은 사용자 검색
+    - 쿼리 파라미터
+        - search: 사용자 닉네임 검색
+        - reported: 정수를 넣으면 그 값 이상 신고받은 사용자 검색
+        - date: "2022-01-01~2022-12-31" 형식으로 넣으면 사용자 가입일의 범위로 검색
+        - page: 1부터 시작하는 페이지네이션 번호
     - 리스폰스
-        - items: 유저정보 목록(배열)
-        - count: 유저정보 전체 개수
+        - items: 사용자 상세정보 목록(배열), 10개씩 페이지네이션 됨
+        - 기본값으로 가입일 최신 순으로 정렬됨
+        - count: 결과로 나온 사용자 정보의 전체 개수
     """
     is_admin(request)
-
-    q = Q()
-    if search:
-        q &= Q(nickname__icontains=search)
-    if reported:
-        q &= Q(reported_count__gte=reported)
-    if date:
-        q &= Q(created_at__date__range=[date.split("~")[0], date.split("~")[1]])
+    user_filter = {key: value for key, value in query.dict().items() if query.dict()[key]}
 
     return (
         User.objects.annotate(
             reported_count=Count("post_reported", distinct=True)
             + Count("comment_reported", distinct=True)
         )
-        .filter(q)
+        .filter(**user_filter)
         .order_by("-created_at")
     )
 

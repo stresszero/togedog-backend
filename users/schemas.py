@@ -3,12 +3,13 @@ from datetime import datetime
 from typing import Optional
 
 from ninja import Schema
-from pydantic import EmailStr, validator
+from pydantic import EmailStr, validator, Field
 
 from django.conf import settings
 from users.models import User, NAME_AND_NICKNAME_MAX_LENGTH
 
 REGEX_PASSWORD = "^(?=.*[A-Za-z])(?=.*\d)(?=.*[$@$!%*#?&])[A-Za-z\d$@$!%*#?&]{8,16}$"
+REGEX_DATE_RANGE = '\d{4}-\d{2}-\d{2}~\d{4}-\d{2}-\d{2}'
 
 def validate_name(value: str):
     if value in settings.BAD_WORDS_LIST:
@@ -82,3 +83,15 @@ class ModifyUserIn(Schema):
 
 class TestKakaoToken(Schema):
     token: str
+
+class UserListFilters(Schema):
+    nickname__icontains: str = Field(None, alias="search", description="사용자 닉네임 검색")
+    reported_count__gte: int = Field(None, alias="reported", description="정수값을 넣으면 해당 정수값 이상 신고받은 사용자 검색")
+    created_at__date__range: str = Field(None, alias="date", description="사용자 가입일 범위로 검색")
+
+    @validator("created_at__date__range")
+    def validate_filter_date(cls, value):
+        if re.match(REGEX_DATE_RANGE, value):
+            return [value.split("~")[0], value.split("~")[1]]
+        raise ValueError("invalid date format")
+        

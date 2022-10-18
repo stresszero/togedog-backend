@@ -1,15 +1,15 @@
 from typing import List
 
-from django.db.models import Q, Count
+from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
-from ninja import Router, Form
+from ninja import Router, Form, Query
 from ninja.files import UploadedFile
 from ninja.pagination import paginate, PageNumberPagination
 
 from cores.utils import validate_upload_file, handle_upload_file, delete_existing_image
-from cores.schemas import MessageOut, ContentIn
+from cores.schemas import MessageOut, ContentIn, PostListFilters
 from comments.models import Comment, CommentDelete
 from posts.models import Post, PostLike, PostDelete, PostReport
 from posts.schemas import (
@@ -32,9 +32,7 @@ MB = 1024 * 1024
 
 @router.get("/admin", response=List[AdminGetPostListOut], summary="관리자 페이지 게시글 리스트 조회")
 @paginate(PageNumberPagination, page_size=10)
-def get_posts_by_admin(
-    request, search: str = None, reported: int = None, date: str = None
-):
+def get_posts_by_admin(request, query: PostListFilters = Query(...)):
     """
     **관리자 페이지 게시글 조회**
     - DB상에서 is_deleted=False인 글만 조회함
@@ -42,21 +40,15 @@ def get_posts_by_admin(
     - search: 사용자 닉네임으로 검색
     - reported: 신고건수 이상 글 조회(3입력하면 신고건수 3회 이상 글만 조회)
     - date: 글 작성기간으로 검색(형식: 2021-01-01~2021-01-31, 중간에 ~으로 구분)
+    - page: 1부터 시작하는 페이지네이션 번호
     """
     is_admin(request)
-
-    q = Q()
-    if search:
-        q &= Q(user__nickname__icontains=search)
-    if reported:
-        q &= Q(reported_count__gte=reported)
-    if date:
-        q &= Q(created_at__date__range=[date.split("~")[0], date.split("~")[1]])
+    post_filters = {key: value for key, value in query.dict().items() if query.dict()[key]}
 
     return (
         Post.objects.annotate(reported_count=Count("reports", distinct=True))
         .select_related("user")
-        .filter(q, is_deleted=False)
+        .filter(is_deleted=False, **post_filters)
         .prefetch_related("likes", "reports")
         .order_by("-created_at")
     )
@@ -64,22 +56,17 @@ def get_posts_by_admin(
 
 @router.get("/deleted/", response={200: List[DeletedPostOut]}, summary="삭제된 게시글 리스트 조회")
 @paginate(PageNumberPagination, page_size=10)
-def get_deleted_posts(request, search: str = None, date: str = None):
+def get_deleted_posts(request, query: PostListFilters = Query(...)):
     """
     **삭제된 게시글 목록 조회, 관리자만 가능**
-    - 파라미터 값 의미는 get posts by admin과 동일
+    - 쿼리 파라미터는 get posts by admin과 동일
     """
     is_admin(request)
-
-    q = Q()
-    if search:
-        q &= Q(user__nickname__icontains=search)
-    if date:
-        q &= Q(created_at__date__range=[date.split("~")[0], date.split("~")[1]])
+    post_filters = {key: value for key, value in query.dict().items() if query.dict()[key]}
 
     return (
         Post.objects.select_related("user")
-        .filter(q, is_deleted=True)
+        .filter(is_deleted=True, **post_filters)
         .order_by("-updated_at")
     )
 

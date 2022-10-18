@@ -2,7 +2,7 @@ from typing import List
 
 from django.conf import settings
 from django.contrib.auth.hashers import make_password, check_password
-from django.db.models import Q, Count
+from django.db.models import Count
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from ninja import Router, Form, Query
@@ -10,7 +10,7 @@ from ninja.files import UploadedFile
 from ninja.pagination import paginate, PageNumberPagination
 
 from cores.models import UserAccountType, UserStatus
-from cores.schemas import MessageOut
+from cores.schemas import MessageOut, UserListFilters
 from cores.utils import (
     validate_upload_file,
     delete_existing_image,
@@ -28,7 +28,6 @@ from users.schemas import (
     UserDetailOut,
     EmailSignupCheckIn,
     TestKakaoToken,
-    UserListFilters,
 )
 
 router = Router(tags=["사용자 관련 API"])
@@ -255,24 +254,19 @@ def email_user_login(request, body: EmailUserSigninIn):
     summary="차단 계정 목록 조회",
 )
 @paginate(PageNumberPagination, page_size=10)
-def get_banned_user_list(request, search: str = None, date: str = None):
+def get_banned_user_list(request, query: UserListFilters = Query(...)):
     """
     차단 계정 목록 조회
     """
     is_admin(request)
-
-    q = Q()
-    if search:
-        q &= Q(nickname__icontains=search) | Q(email__icontains=search)
-    if date:
-        q &= Q(created_at__date__range=[date.split("~")[0], date.split("~")[1]])
+    user_filter = {key: value for key, value in query.dict().items() if query.dict()[key]}
 
     return (
         User.objects.annotate(
             reported_count=Count("post_reported", distinct=True)
             + Count("comment_reported", distinct=True)
         )
-        .filter(q, status=UserStatus.BANNED)
+        .filter(status=UserStatus.BANNED.value, **user_filter)
         .order_by("-created_at")
     )
 

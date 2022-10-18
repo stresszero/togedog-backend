@@ -402,3 +402,4 @@ bad_words.py
 password.txt
 private/
 settings.json
+htmlcov/

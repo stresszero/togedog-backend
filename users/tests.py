@@ -7,7 +7,7 @@ from unittest.mock import patch, MagicMock
 from django.contrib.auth.hashers import make_password, check_password
 from django.conf import settings
 from django.test import TestCase, Client
-from django.urls import reverse_lazy
+from django.urls import reverse
 from ninja.testing import TestClient
 
 from users.models import User
@@ -66,11 +66,10 @@ class UserTest(TestCase):
             "nickname": "테스터",
             "email": "tester@test.com",
             "password": "test1234!!",
-            "account_type": "email",
             "address": "",
         }
         response = self.client.post(
-            "/api/users/signup", 
+            reverse("api-1.0.0:email_user_signup"),
             json.dumps(body), 
             content_type="application/json"
         )
@@ -83,21 +82,80 @@ class UserTest(TestCase):
             "nickname": "테스터",
             "email": "test@test.com",
             "password": "test1234!!",
-            "account_type": "email",
             "address": "",
         }
         response = self.client.post(
-            "/api/users/signup", 
+            reverse("api-1.0.0:email_user_signup"),
             json.dumps(body), 
             content_type="application/json"
         )
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json(), {"message": "user already exists"})
 
+    def test_fail_422_email_user_signup(self):
+        wrong_email_body = {
+            "name": "테스터",
+            "nickname": "테스터",
+            "email": "test",
+            "password": "test1234!!",
+            "address": "",
+        }
+        wrong_email_response = self.client.post(
+            reverse("api-1.0.0:email_user_signup"),
+            json.dumps(wrong_email_body), 
+            content_type="application/json"
+        )
+        self.assertEqual(wrong_email_response.status_code, 422)
+
+        bad_word_name_body = {
+            "name": "fuck",
+            "nickname": "테스터",
+            "email": "asdf@asdf.com",
+            "password": "test1234!!",
+            "address": "",
+        }
+        bad_word_name_response = self.client.post(
+            reverse("api-1.0.0:email_user_signup"),
+            json.dumps(bad_word_name_body),
+            content_type="application/json",
+        )
+        self.assertEqual(bad_word_name_response.status_code, 422)
+
+        bad_word_nickname_body = {
+            "name": "테스터",
+            "nickname": "fuck",
+            "email": "qwer@qwer.com",
+            "password": "test1234!!",
+            "address": "",
+        }
+        bad_word_nickname_response = self.client.post(
+            reverse("api-1.0.0:email_user_signup"),
+            json.dumps(bad_word_nickname_body),
+            content_type="application/json",
+        )
+        self.assertEqual(bad_word_nickname_response.status_code, 422)
+
+        invalid_password_body = {
+            "name": "테스터",
+            "nickname": "테스터",
+            "email": "zxcv@zxcv.com",
+            "password": "test1234",
+            "address": "",
+        }
+        invalid_password_response = self.client.post(
+            reverse("api-1.0.0:email_user_signup"),
+            json.dumps(invalid_password_body),
+            content_type="application/json",
+        )
+        self.assertEqual(invalid_password_response.status_code, 422)
+
+    def test_fail_405_email_user_signup(self):
+        response = self.client.get(reverse("api-1.0.0:email_user_signup"))
+        self.assertEqual(response.status_code, 405)
+
     def test_success_get_user_list(self):
         admin_user_login_response = self.client.post(
-            reverse_lazy("api-1.0.0:email_user_login"),
-            # "/api/users/login/email", 
+            reverse("api-1.0.0:email_user_login"),
             json.dumps({"email": self.test_admin.email, "password": "test1234@@"}),
             content_type="application/json"
         ).json()
@@ -105,7 +163,7 @@ class UserTest(TestCase):
 
         admin_jwt = admin_user_login_response['access_token']
         response = self.client.get(
-            reverse_lazy("api-1.0.0:get_user_list"), 
+            reverse("api-1.0.0:get_user_list"), 
             HTTP_AUTHORIZATION=f'Bearer {admin_jwt}'
         )
         results = {
@@ -143,12 +201,13 @@ class UserTest(TestCase):
         self.assertEqual(response.json(), results)
 
     def test_fail_405_get_user_list(self):
-        response = self.client.post("/api/users")
+        response = self.client.post(reverse("api-1.0.0:get_user_list"))
+        self.assertContains(response, "Method not allowed", status_code=405)
         self.assertEqual(response.status_code, 405)
 
     def test_success_check_duplicate_email(self):
         response = self.client.post(
-            "/api/users/signup/emailcheck/", 
+            reverse("api-1.0.0:check_duplicate_email"),
             json.dumps({"email": "testtest@test.com"}),
             content_type="application/json"
         )
@@ -157,7 +216,7 @@ class UserTest(TestCase):
 
     def test_fail_400_check_duplicate_email(self):
         response = self.client.post(
-            "/api/users/signup/emailcheck/", 
+            reverse("api-1.0.0:check_duplicate_email"),
             json.dumps({"email": "test@test.com"}), 
             content_type="application/json"
         )
@@ -166,7 +225,7 @@ class UserTest(TestCase):
     
     def test_fail_422_check_duplicate_email(self):
         response = self.client.post(
-            "/api/users/signup/emailcheck/", 
+            reverse("api-1.0.0:check_duplicate_email"),
             json.dumps({"email": "test"}), 
             content_type="application/json"
         )
@@ -174,7 +233,7 @@ class UserTest(TestCase):
 
     def test_success_get_user_info(self):
         user_login_response = self.client.post(
-            reverse_lazy("api-1.0.0:email_user_login"),
+            reverse("api-1.0.0:email_user_login"),
             json.dumps({"email": "test@test.com", "password": "test1234!!"}),
             content_type="application/json"
         ).json()
@@ -189,7 +248,7 @@ class UserTest(TestCase):
 
     def test_fail_403_get_user_info(self):
         user_login_response = self.client.post(
-            reverse_lazy("api-1.0.0:email_user_login"),
+            reverse("api-1.0.0:email_user_login"),
             json.dumps({"email": "test@test.com", "password": "test1234!!"}),
             content_type="application/json"
         ).json()

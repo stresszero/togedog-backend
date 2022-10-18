@@ -122,13 +122,10 @@ def email_user_signup(request, body: EmailUserSignupIn):
         email=body_dict["email"], account_type=UserAccountType.EMAIL.value
     ).exists():
         return 400, {"message": "user already exists"}
-
     body_dict.update(
         {
             "password": make_password(body_dict["password"], salt=settings.PASSWORD_SALT),
-            "name": body_dict["name"],
-            "nickname": body_dict["nickname"],
-            "account_type": "email",
+            "account_type": UserAccountType.EMAIL.value,
         }
     )
     User.objects.create(**body_dict)
@@ -169,7 +166,7 @@ def modify_user_info(
 
     body_dict = body.dict()
     res = {}
-    
+
     if validate_upload_file(file):
         delete_existing_image(user.thumbnail_url, "user_thumbnail")
         user.thumbnail_url = handle_upload_file(file, "user_thumbnail")

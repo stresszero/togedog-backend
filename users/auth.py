@@ -58,6 +58,14 @@ class AuthBearer(HttpBearer):
         return self.user
 
 
+class CheckAuthUserAdmin(AuthBearer):
+    def authenticate(self, request, token):
+        user = super().authenticate(request, token)
+        if user.user_type != "admin":
+            raise HttpError(403, "forbidden")
+        return user
+
+
 class CookieKey(APIKeyCookie):
     param_name: str = "access_token"
 

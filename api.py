@@ -1,6 +1,4 @@
-from typing import Union
-
-from django.db.models import F, Q
+from django.db.models import F
 from django.utils import timezone
 from ninja import NinjaAPI
 
@@ -22,6 +20,7 @@ api = NinjaAPI(
     description="함께하개 프로젝트 API 명세서와 테스트 제공",
     # csrf=True,
     docs_url="/api/docs",
+    # docs_decorator=admin_required,
     # docs_url=None,
 )
 
@@ -55,11 +54,11 @@ def get_notices(request):
 
 @api.post(
     "/api/admin/notices",
-    response={200: MessageOut, 400: MessageOut},
+    response={200: MessageOut, 400: MessageOut, 404: MessageOut},
     auth=AuthBearer(),
     summary="신고 건 확인 처리",
 )
-def check_notice(request, type: str, id: Union[str, int]):
+def check_notice(request, type: str, id: str):
     """
     게시글/댓글 신고 확인, 관리자만 가능
     - type이 post_report이고 id값이 정수이면 해당 게시글 신고 확인 처리
@@ -67,30 +66,26 @@ def check_notice(request, type: str, id: Union[str, int]):
     - id가 all이면 모든 신고건(글/댓글) 확인 처리
     """
     is_admin(request)
-    try:
-        q = Q()
-        q &= Q(is_checked=False)
-        if id == "all":
-            pass
-        elif int(id):
-            q &= Q(id=id)
-        else:
-            return 400, {"message": "bad request"}
+    report_filters = {"is_checked": False}
 
-        if type == "post_report":
-            PostReport.objects.filter(q).update(
-                is_checked=True, updated_at=timezone.now()
-            )
-        elif type == "comment_report":
-            CommentReport.objects.filter(q).update(
-                is_checked=True, updated_at=timezone.now()
-            )
-        else:
-            return 400, {"message": "bad request"}
-
-    except ValueError:
+    if id == "all":
+        pass
+    elif id.isdigit():
+        report_filters["id"] = int(id)
+    else:
         return 400, {"message": "bad request"}
 
+    if type == "post_report":
+        notices = PostReport.objects.filter(**report_filters)
+    elif type == "comment_report":
+        notices = CommentReport.objects.filter(**report_filters)
+    else:
+        return 400, {"message": "bad request"}
+
+    if not notices.exists():
+        return 404, {"message": "notices not found"}
+    
+    notices.update(is_checked=True, updated_at=timezone.now())
     return 200, {"message": "success"}
 
 

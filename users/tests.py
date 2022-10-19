@@ -151,6 +151,7 @@ class UserTest(TestCase):
 
     def test_fail_405_email_user_signup(self):
         response = self.client.get(reverse("api-1.0.0:email_user_signup"))
+        self.assertContains(response, "Method not allowed", status_code=405)
         self.assertEqual(response.status_code, 405)
 
     def test_success_get_user_list(self):
@@ -257,3 +258,18 @@ class UserTest(TestCase):
         response = self.client.get("/api/users/1234", HTTP_AUTHORIZATION=f'Bearer {user_jwt}')
 
         self.assertEqual(response.status_code, 403)
+
+    def test_success_logout(self):
+        self.client.cookies["access_token"] = "test access token"
+        self.client.cookies["refresh_token"] = "test refresh token"
+        response = self.client.get(reverse("api-1.0.0:logout"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.cookies["access_token"].value, "")
+        self.assertEqual(response.cookies["refresh_token"].value, "")
+        self.assertEqual(response.json(), {"message": "cookie deleted"})
+
+    def test_fail_405_logout(self):
+        response = self.client.post(reverse("api-1.0.0:logout"))
+        self.assertContains(response, "Method not allowed", status_code=405)
+        self.assertEqual(response.status_code, 405)

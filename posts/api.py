@@ -43,7 +43,7 @@ def get_posts_by_admin(request, query: PostListFilters = Query(...)):
     - page: 1부터 시작하는 페이지네이션 번호
     """
     is_admin(request)
-    post_filters = {key: value for key, value in query.dict().items() if query.dict()[key]}
+    post_filters = {key: value for key, value in query.dict().items() if value}
 
     return (
         Post.objects.annotate(reported_count=Count("reports", distinct=True))
@@ -59,10 +59,14 @@ def get_posts_by_admin(request, query: PostListFilters = Query(...)):
 def get_deleted_posts(request, query: PostListFilters = Query(...)):
     """
     **삭제된 게시글 목록 조회, 관리자만 가능**
-    - 쿼리 파라미터는 get posts by admin과 동일
+    - 쿼리 파라미터는 PostListFilters에서 reported만 제외
     """
     is_admin(request)
-    post_filters = {key: value for key, value in query.dict().items() if query.dict()[key]}
+    post_filters = {
+        key: value
+        for key, value in query.dict().items()
+        if value and key != "reported_count__gte"
+    }
 
     return (
         Post.objects.select_related("user")
@@ -162,7 +166,7 @@ def delete_post(request, post_id: int, body: DeletePostIn = Form(...)):
         if post.user_id == request.auth.id
         else body.delete_reason,
     )
-    objs = [
+    comment_delete_objs = [
         CommentDelete(
             user_id=item["user_id"],
             comment_id=item["id"],
@@ -170,7 +174,7 @@ def delete_post(request, post_id: int, body: DeletePostIn = Form(...)):
         )
         for item in post.comments.filter(is_deleted=False).values("user_id", "id")
     ]
-    CommentDelete.objects.bulk_create(objs)
+    CommentDelete.objects.bulk_create(comment_delete_objs)
     Comment.objects.filter(post_id=post_id).update(
         is_deleted=True, updated_at=timezone.now()
     )

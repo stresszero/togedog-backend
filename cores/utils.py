@@ -42,7 +42,7 @@ s3_client = boto3.client(
 )
 
 
-def validate_upload_file(file: UploadedFile) -> bool:
+def validate_upload_file(file: UploadedFile):
     if not file:
         return False
     if file.name.split(".")[-1].lower() not in IMAGE_EXTENSIONS_LIST:
@@ -64,7 +64,7 @@ def delete_existing_image(url: str, type: str):
         s3_client.delete_object(Bucket="post_images", Key=url.split("/")[-1])
 
 
-def handle_upload_file(file: UploadedFile, type: str) -> str:
+def handle_upload_file(file: UploadedFile, type: str):
     upload_filename = f'{str(uuid.uuid4())}.{file.name.split(".")[-1]}'
     if type == "user_thumbnail":
         url = f"{settings.PROFILE_IMAGES_URL}{upload_filename}"

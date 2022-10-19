@@ -52,14 +52,14 @@ def get_user_list(request, query: UserListFilters = Query(...)):
         - count: 결과로 나온 사용자 정보의 전체 개수
     """
     is_admin(request)
-    user_filter = {key: value for key, value in query.dict().items() if query.dict()[key]}
+    user_filters = {key: value for key, value in query.dict().items() if value}
 
     return (
         User.objects.annotate(
             reported_count=Count("post_reported", distinct=True)
             + Count("comment_reported", distinct=True)
         )
-        .filter(**user_filter)
+        .filter(**user_filters)
         .order_by("-created_at")
     )
 
@@ -259,14 +259,14 @@ def get_banned_user_list(request, query: UserListFilters = Query(...)):
     차단 계정 목록 조회
     """
     is_admin(request)
-    user_filter = {key: value for key, value in query.dict().items() if query.dict()[key]}
+    user_filters = {key: value for key, value in query.dict().items() if value}
 
     return (
         User.objects.annotate(
             reported_count=Count("post_reported", distinct=True)
             + Count("comment_reported", distinct=True)
         )
-        .filter(status=UserStatus.BANNED.value, **user_filter)
+        .filter(status=UserStatus.BANNED.value, **user_filters)
         .order_by("-created_at")
     )
 

@@ -175,7 +175,7 @@ def modify_user_info(
             res[f"{attr}_input"] = value
 
     user.save()
-    return JsonResponse(res)
+    return JsonResponse(res, status=200)
 
 
 @router.delete(

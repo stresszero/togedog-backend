@@ -4,7 +4,7 @@ import os
 
 from unittest.mock import patch, MagicMock
 
-from django.contrib.auth.hashers import make_password, check_password
+from django.contrib.auth.hashers import make_password
 from django.conf import settings
 from django.test import TestCase, Client
 from django.urls import reverse
@@ -253,7 +253,6 @@ class UserTest(TestCase):
             json.dumps({"email": "test@test.com", "password": "test1234!!"}),
             content_type="application/json"
         ).json()
-        user = User.objects.get(id=user_login_response['user']['id'])
         user_jwt = user_login_response['access_token']
         response = self.client.get("/api/users/1234", HTTP_AUTHORIZATION=f'Bearer {user_jwt}')
 
@@ -273,3 +272,74 @@ class UserTest(TestCase):
         response = self.client.post(reverse("api-1.0.0:logout"))
         self.assertContains(response, "Method not allowed", status_code=405)
         self.assertEqual(response.status_code, 405)
+
+    def test_success_deactivate_user(self):
+        admin_user_login_response = self.client.post(
+            reverse("api-1.0.0:email_user_login"),
+            json.dumps({"email": self.test_admin.email, "password": "test1234@@"}),
+            content_type="application/json"
+        ).json()
+        admin_jwt = admin_user_login_response['access_token']
+
+        response = self.client.patch(
+                    reverse(
+                        "api-1.0.0:deactivate_user", 
+                        kwargs={"user_id": self.test_user_1.id}
+                    ), 
+                    HTTP_AUTHORIZATION=f'Bearer {admin_jwt}'
+        )
+        banned_user = User.objects.get(id=self.test_user_1.id)
+        self.assertEqual(banned_user.status, "banned")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"message": "success"})
+    
+    def test_fail_403_deactivate_user(self):
+        user_login_response = self.client.post(
+            reverse("api-1.0.0:email_user_login"),
+            json.dumps({"email": "test@test.com", "password": "test1234!!"}),
+            content_type="application/json"
+        ).json()
+        user_jwt = user_login_response['access_token']
+        response = self.client.patch(
+                    reverse(
+                        "api-1.0.0:deactivate_user", 
+                        kwargs={"user_id": self.test_user_1.id}
+                    ), 
+                    HTTP_AUTHORIZATION=f'Bearer {user_jwt}'
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json(), {'detail': 'forbidden'})
+
+    def test_fail_404_deactivate_user(self):
+        admin_user_login_response = self.client.post(
+            reverse("api-1.0.0:email_user_login"),
+            json.dumps({"email": self.test_admin.email, "password": "test1234@@"}),
+            content_type="application/json"
+        ).json()
+        admin_jwt = admin_user_login_response['access_token']
+        response = self.client.patch(
+                    reverse(
+                        "api-1.0.0:deactivate_user", 
+                        kwargs={"user_id": 1234}
+                    ), 
+                    HTTP_AUTHORIZATION=f'Bearer {admin_jwt}'
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json(), {'detail': 'Not Found'})
+
+    def test_fail_405_deactivate_user(self):
+        admin_user_login_response = self.client.post(
+            reverse("api-1.0.0:email_user_login"),
+            json.dumps({"email": self.test_admin.email, "password": "test1234@@"}),
+            content_type="application/json"
+        ).json()
+        admin_jwt = admin_user_login_response['access_token']
+        response = self.client.get(
+                    reverse(
+                        "api-1.0.0:deactivate_user", 
+                        kwargs={"user_id": self.test_user_1.id}
+                    ), 
+                    HTTP_AUTHORIZATION=f'Bearer {admin_jwt}'
+        )
+        self.assertEqual(response.status_code, 405)
+        self.assertContains(response, "Method not allowed", status_code=405)

@@ -16,7 +16,7 @@ from users.schemas import UserDetailOut
 # to avoid ConfigError when using ninja TestClient
 os.environ["NINJA_SKIP_REGISTRY"] = "yes"
 
-# user = User.objects.get(id=9)
+# user = User.objects.get(id=1234)
 # json.loads(json.dumps(UserDetailOut.from_orm(user).dict(), cls=DjangoJSONEncoder))
 
 # list = (
@@ -29,6 +29,7 @@ os.environ["NINJA_SKIP_REGISTRY"] = "yes"
 #     )
 # listout=[UserListOut.from_orm(i).dict() for i in list]
 # json.loads(json.dumps(listout, cls=DjangoJSONEncoder))
+
 class UserTest(TestCase):
     def setUp(self):
         self.client = Client()
@@ -57,14 +58,30 @@ class UserTest(TestCase):
         self.test_admin.password = make_password("test1234@@", salt=settings.PASSWORD_SALT)
         self.test_admin.save()
 
+        self.admin_user_login_response = self.client.post(
+            reverse("api-1.0.0:email_user_login"),
+            json.dumps({"email": self.test_admin.email, "password": "test1234@@"}),
+            content_type="application/json"
+        ).json()
+        self.admin_jwt = self.admin_user_login_response['access_token']
+
+        self.user_login_response = self.client.post(
+            reverse("api-1.0.0:email_user_login"),
+            json.dumps({"email": self.test_user_1.email, "password": "test1234!!"}),
+            content_type="application/json"
+        ).json()
+        self.user_jwt = self.user_login_response['access_token']
+
     def tearDown(self):
         User.objects.all().delete()
-    
+
+
+class EmailUserSignupTest(UserTest):
     def test_success_email_user_signup(self):
         body = {
-            "name": "테스터",
-            "nickname": "테스터",
-            "email": "tester@test.com",
+            "name": "홍길동",
+            "nickname": "홍길동",
+            "email": "mrhong@withdog.me",
             "password": "test1234!!",
             "address": "",
         }
@@ -78,10 +95,10 @@ class UserTest(TestCase):
 
     def test_fail_400_email_user_signup(self):
         body = {
-            "name": "테스터",
-            "nickname": "테스터",
+            "name": "김철수",
+            "nickname": "김철수",
             "email": "test@test.com",
-            "password": "test1234!!",
+            "password": "test123!@#",
             "address": "",
         }
         response = self.client.post(
@@ -152,34 +169,33 @@ class UserTest(TestCase):
     def test_fail_405_email_user_signup(self):
         response = self.client.get(reverse("api-1.0.0:email_user_signup"))
         self.assertContains(response, "Method not allowed", status_code=405)
-        self.assertEqual(response.status_code, 405)
 
+
+class GetUserListTest(UserTest):
     def test_success_get_user_list(self):
         admin_user_login_response = self.client.post(
             reverse("api-1.0.0:email_user_login"),
             json.dumps({"email": self.test_admin.email, "password": "test1234@@"}),
             content_type="application/json"
         ).json()
-        admin = User.objects.get(id=admin_user_login_response['user']['id'])
 
-        admin_jwt = admin_user_login_response['access_token']
         response = self.client.get(
             reverse("api-1.0.0:get_user_list"), 
-            HTTP_AUTHORIZATION=f'Bearer {admin_jwt}'
+            HTTP_AUTHORIZATION=f'Bearer {self.admin_jwt}'
         )
         results = {
             "items": [
                 {
-                    "id": admin.id,
-                    "created_at": f"{admin.created_at.isoformat()[:-9]}Z",
-                    "name": admin.name,
-                    "nickname": admin.nickname,
-                    "email": admin.email,
-                    "user_type": admin.user_type,
-                    "status": admin.status,
-                    "account_type": admin.account_type,
-                    "thumbnail_url": settings.DEFAULT_USER_THUMBNAIL_URL,
-                    "mbti": admin.mbti,
+                    "id": self.test_admin.id,
+                    "created_at": f"{self.test_admin.created_at.isoformat()[:-9]}Z",
+                    "name": self.test_admin.name,
+                    "nickname": self.test_admin.nickname,
+                    "email": self.test_admin.email,
+                    "user_type": self.test_admin.user_type,
+                    "status": self.test_admin.status,
+                    "account_type": self.test_admin.account_type,
+                    "thumbnail_url": self.test_admin.thumbnail_url,
+                    "mbti": self.test_admin.mbti,
                     "reported_count": 0,
                 },
                 {
@@ -191,7 +207,7 @@ class UserTest(TestCase):
                     "user_type": self.test_user_1.user_type,
                     "status": self.test_user_1.status,
                     "account_type": self.test_user_1.account_type,
-                    "thumbnail_url": settings.DEFAULT_USER_THUMBNAIL_URL,
+                    "thumbnail_url": self.test_user_1.thumbnail_url,
                     "mbti": self.test_user_1.mbti,
                     "reported_count": 0,
                 }
@@ -204,8 +220,118 @@ class UserTest(TestCase):
     def test_fail_405_get_user_list(self):
         response = self.client.post(reverse("api-1.0.0:get_user_list"))
         self.assertContains(response, "Method not allowed", status_code=405)
-        self.assertEqual(response.status_code, 405)
 
+
+class GetUserInfoTest(UserTest):
+    def test_success_get_user_info_by_oneself(self):
+        response = self.client.get(
+            reverse(
+                "api-1.0.0:get_user_info",
+                kwargs={"user_id": self.user_login_response["user"]["id"]},
+            ),
+            HTTP_AUTHORIZATION=f'Bearer {self.user_jwt}',
+        )
+        data = {
+            "id"           : self.test_user_1.id,
+            "name"         : self.test_user_1.name,
+            "nickname"     : self.test_user_1.nickname,
+            "email"        : self.test_user_1.email,
+            "user_type"    : self.test_user_1.user_type,
+            "status"       : self.test_user_1.status,
+            "account_type" : self.test_user_1.account_type,
+            "thumbnail_url": self.test_user_1.thumbnail_url,
+            "mbti"         : self.test_user_1.mbti,
+            "address"      : self.test_user_1.address,
+            "created_at"   : f"{self.test_user_1.created_at.isoformat()[:-9]}Z",
+        }
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), data)
+
+    def test_fail_403_get_user_info(self):
+        response = self.client.get(
+            reverse(
+                "api-1.0.0:get_user_info",
+                kwargs={"user_id": self.test_admin.id},
+            ),
+            HTTP_AUTHORIZATION=f'Bearer {self.user_jwt}'
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json(), {"detail": "forbidden"})
+
+    def test_fail_401_get_user_info(self):
+        response = self.client.get(
+            reverse(
+                "api-1.0.0:get_user_info",
+                kwargs={"user_id": self.test_user_1.id},
+            ),
+        )
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json(), {"detail": "Unauthorized"})
+
+
+class LogoutTest(UserTest):
+    def test_success_logout(self):
+        self.client.cookies["access_token"] = "test access token"
+        self.client.cookies["refresh_token"] = "test refresh token"
+        response = self.client.get(reverse("api-1.0.0:logout"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.cookies["access_token"].value, "")
+        self.assertEqual(response.cookies["refresh_token"].value, "")
+        self.assertEqual(response.json(), {"message": "cookie deleted"})
+
+    def test_fail_405_logout(self):
+        response = self.client.post(reverse("api-1.0.0:logout"))
+        self.assertContains(response, "Method not allowed", status_code=405)
+
+
+class DeactivateUserTest(UserTest):
+    def test_success_deactivate_user(self):
+        response = self.client.patch(
+                    reverse(
+                        "api-1.0.0:deactivate_user", 
+                        kwargs={"user_id": self.test_user_1.id}
+                    ), 
+                    HTTP_AUTHORIZATION=f'Bearer {self.admin_jwt}'
+        )
+        self.assertEqual(User.objects.get(id=self.test_user_1.id).status, "banned")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"message": "success"})
+    
+    def test_fail_403_deactivate_user(self):
+        response = self.client.patch(
+                    reverse(
+                        "api-1.0.0:deactivate_user", 
+                        kwargs={"user_id": self.test_user_1.id}
+                    ), 
+                    HTTP_AUTHORIZATION=f'Bearer {self.user_jwt}'
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json(), {'detail': 'forbidden'})
+
+    def test_fail_404_deactivate_user(self):
+        response = self.client.patch(
+                    reverse(
+                        "api-1.0.0:deactivate_user",
+                        kwargs={"user_id": 1234}
+                    ), 
+                    HTTP_AUTHORIZATION=f'Bearer {self.admin_jwt}'
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json(), {'detail': 'Not Found'})
+
+    def test_fail_405_deactivate_user(self):
+        response = self.client.get(
+                    reverse(
+                        "api-1.0.0:deactivate_user",
+                        kwargs={"user_id": self.test_user_1.id}
+                    ), 
+                    HTTP_AUTHORIZATION=f'Bearer {self.admin_jwt}'
+        )
+        self.assertContains(response, "Method not allowed", status_code=405)
+
+
+class CheckDuplicateEmailTest(UserTest):
     def test_success_check_duplicate_email(self):
         response = self.client.post(
             reverse("api-1.0.0:check_duplicate_email"),
@@ -231,115 +357,3 @@ class UserTest(TestCase):
             content_type="application/json"
         )
         self.assertEqual(response.status_code, 422)
-
-    def test_success_get_user_info(self):
-        user_login_response = self.client.post(
-            reverse("api-1.0.0:email_user_login"),
-            json.dumps({"email": "test@test.com", "password": "test1234!!"}),
-            content_type="application/json"
-        ).json()
-        user = User.objects.get(id=user_login_response['user']['id'])
-        user_jwt = user_login_response['access_token']
-        response = self.client.get(
-            f"/api/users/{user.id}", 
-            HTTP_AUTHORIZATION=f'Bearer {user_jwt}'
-        )
-
-        self.assertEqual(response.status_code, 200)
-
-    def test_fail_403_get_user_info(self):
-        user_login_response = self.client.post(
-            reverse("api-1.0.0:email_user_login"),
-            json.dumps({"email": "test@test.com", "password": "test1234!!"}),
-            content_type="application/json"
-        ).json()
-        user_jwt = user_login_response['access_token']
-        response = self.client.get("/api/users/1234", HTTP_AUTHORIZATION=f'Bearer {user_jwt}')
-
-        self.assertEqual(response.status_code, 403)
-
-    def test_success_logout(self):
-        self.client.cookies["access_token"] = "test access token"
-        self.client.cookies["refresh_token"] = "test refresh token"
-        response = self.client.get(reverse("api-1.0.0:logout"))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.cookies["access_token"].value, "")
-        self.assertEqual(response.cookies["refresh_token"].value, "")
-        self.assertEqual(response.json(), {"message": "cookie deleted"})
-
-    def test_fail_405_logout(self):
-        response = self.client.post(reverse("api-1.0.0:logout"))
-        self.assertContains(response, "Method not allowed", status_code=405)
-        self.assertEqual(response.status_code, 405)
-
-    def test_success_deactivate_user(self):
-        admin_user_login_response = self.client.post(
-            reverse("api-1.0.0:email_user_login"),
-            json.dumps({"email": self.test_admin.email, "password": "test1234@@"}),
-            content_type="application/json"
-        ).json()
-        admin_jwt = admin_user_login_response['access_token']
-
-        response = self.client.patch(
-                    reverse(
-                        "api-1.0.0:deactivate_user", 
-                        kwargs={"user_id": self.test_user_1.id}
-                    ), 
-                    HTTP_AUTHORIZATION=f'Bearer {admin_jwt}'
-        )
-        banned_user = User.objects.get(id=self.test_user_1.id)
-        self.assertEqual(banned_user.status, "banned")
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), {"message": "success"})
-    
-    def test_fail_403_deactivate_user(self):
-        user_login_response = self.client.post(
-            reverse("api-1.0.0:email_user_login"),
-            json.dumps({"email": "test@test.com", "password": "test1234!!"}),
-            content_type="application/json"
-        ).json()
-        user_jwt = user_login_response['access_token']
-        response = self.client.patch(
-                    reverse(
-                        "api-1.0.0:deactivate_user", 
-                        kwargs={"user_id": self.test_user_1.id}
-                    ), 
-                    HTTP_AUTHORIZATION=f'Bearer {user_jwt}'
-        )
-        self.assertEqual(response.status_code, 403)
-        self.assertEqual(response.json(), {'detail': 'forbidden'})
-
-    def test_fail_404_deactivate_user(self):
-        admin_user_login_response = self.client.post(
-            reverse("api-1.0.0:email_user_login"),
-            json.dumps({"email": self.test_admin.email, "password": "test1234@@"}),
-            content_type="application/json"
-        ).json()
-        admin_jwt = admin_user_login_response['access_token']
-        response = self.client.patch(
-                    reverse(
-                        "api-1.0.0:deactivate_user", 
-                        kwargs={"user_id": 1234}
-                    ), 
-                    HTTP_AUTHORIZATION=f'Bearer {admin_jwt}'
-        )
-        self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.json(), {'detail': 'Not Found'})
-
-    def test_fail_405_deactivate_user(self):
-        admin_user_login_response = self.client.post(
-            reverse("api-1.0.0:email_user_login"),
-            json.dumps({"email": self.test_admin.email, "password": "test1234@@"}),
-            content_type="application/json"
-        ).json()
-        admin_jwt = admin_user_login_response['access_token']
-        response = self.client.get(
-                    reverse(
-                        "api-1.0.0:deactivate_user", 
-                        kwargs={"user_id": self.test_user_1.id}
-                    ), 
-                    HTTP_AUTHORIZATION=f'Bearer {admin_jwt}'
-        )
-        self.assertEqual(response.status_code, 405)
-        self.assertContains(response, "Method not allowed", status_code=405)

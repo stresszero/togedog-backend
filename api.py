@@ -70,7 +70,7 @@ def check_notice(request, type: str, id: str):
 
     if id == "all":
         pass
-    elif id.isdigit():
+    elif id.isdigit() and int(id) != 0:
         report_filters["id"] = int(id)
     else:
         return 400, {"message": "bad request"}

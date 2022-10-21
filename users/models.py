@@ -30,6 +30,9 @@ class User(TimeStampedModel):
 
     class Meta:
         db_table = "user"
+        indexes = [
+            models.Index(fields=["email"], name="user_email_idx"),
+        ]
 
     @property
     def get_user_info_dict(self):

@@ -461,3 +461,25 @@ class DeleteUserAccountTest(UserTest):
         )
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.json(), {"detail": "Not Found"})
+
+
+class GetBannedUserListTest(UserTest):
+    def test_success_get_banned_user_list(self):
+        response = self.client.get(
+            reverse("api-1.0.0:get_banned_user_list"),
+            HTTP_AUTHORIZATION=f'Bearer {self.admin_jwt}'
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"banned_users": []})
+
+    def test_fail_401_get_banned_user_list(self):
+        response = self.client.get(reverse("api-1.0.0:get_banned_user_list"))
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json(), {"detail": "Unauthorized"})
+
+    def test_fail_405_get_banned_user_list(self):
+        response = self.client.post(
+            reverse("api-1.0.0:get_banned_user_list"),
+            HTTP_AUTHORIZATION=f'Bearer {self.admin_jwt}'
+        )
+        self.assertContains(response, "Method not allowed", status_code=405)

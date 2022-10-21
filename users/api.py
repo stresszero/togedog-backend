@@ -5,7 +5,7 @@ from django.contrib.auth.hashers import make_password, check_password
 from django.db.models import Count
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
-from ninja import Router, Form, Query
+from ninja import Form, Query
 from ninja.router import URLBugFixedRouter
 from ninja.files import UploadedFile
 from ninja.pagination import paginate, PageNumberPagination
@@ -31,8 +31,9 @@ from users.schemas import (
     TestKakaoToken,
 )
 
-# router = Router(tags=["사용자 관련 API"])
+# https://github.com/vitalik/django-ninja/issues/575
 router = URLBugFixedRouter(tags=["사용자 관련 API"])
+
 
 @router.get(
     "", response=List[UserListOut], auth=[AuthBearer()], summary="관리자페이지 사용자 목록 조회"
@@ -74,19 +75,6 @@ def logout(request):
     response.delete_cookie("access_token")
     response.delete_cookie("refresh_token")
     return response
-
-
-@router.get("/bearer", auth=AuthBearer(), summary="Bearer 토큰 확인")
-def check_bearer(request):
-    """
-    Bearer 토큰 확인 테스트
-    """
-    return {
-        "user_id"    : request.auth.id,
-        "user_type"  : request.auth.user_type,
-        "user_status": request.auth.status,
-        "accout_type": request.auth.account_type,
-    }
 
 
 @router.post(
@@ -223,7 +211,6 @@ def main_login_check(request):
     메인페이지에서 이미 로그인돼있는 상태인지 확인(쿠키 활용)
     """
     return 200, request.auth
-    # return 400, {"message": "user is not logged in"}
 
 
 @router.post(

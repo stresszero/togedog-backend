@@ -62,15 +62,15 @@ class UserTest(TestCase):
             reverse("api-1.0.0:email_user_login"),
             json.dumps({"email": self.test_admin.email, "password": "test1234@@"}),
             content_type="application/json"
-        ).json()
-        self.admin_jwt = self.admin_user_login_response['access_token']
+        )
+        self.admin_jwt = self.admin_user_login_response.json()['access_token']
 
         self.user_login_response = self.client.post(
             reverse("api-1.0.0:email_user_login"),
             json.dumps({"email": self.test_user_1.email, "password": "test1234!!"}),
             content_type="application/json"
-        ).json()
-        self.user_jwt = self.user_login_response['access_token']
+        )
+        self.user_jwt = self.user_login_response.json()['access_token']
 
     def tearDown(self):
         User.objects.all().delete()
@@ -227,7 +227,7 @@ class GetUserInfoTest(UserTest):
         response = self.client.get(
             reverse(
                 "api-1.0.0:get_user_info",
-                kwargs={"user_id": self.user_login_response["user"]["id"]},
+                kwargs={"user_id": self.user_login_response.json()["user"]["id"]},
             ),
             HTTP_AUTHORIZATION=f'Bearer {self.user_jwt}',
         )
@@ -335,7 +335,7 @@ class CheckDuplicateEmailTest(UserTest):
     def test_success_check_duplicate_email(self):
         response = self.client.post(
             reverse("api-1.0.0:check_duplicate_email"),
-            json.dumps({"email": "testtest@test.com"}),
+            json.dumps({"email": "unique@test.com"}),
             content_type="application/json"
         )
         self.assertEqual(response.status_code, 200)
@@ -353,7 +353,111 @@ class CheckDuplicateEmailTest(UserTest):
     def test_fail_422_check_duplicate_email(self):
         response = self.client.post(
             reverse("api-1.0.0:check_duplicate_email"),
-            json.dumps({"email": "test"}), 
+            json.dumps({"email": "invalid"}), 
             content_type="application/json"
         )
         self.assertEqual(response.status_code, 422)
+
+
+class MainLoginCheckTest(UserTest):
+    def test_success_main_login_check(self):
+        response = self.client.post(
+            reverse("api-1.0.0:main_login_check"),
+            HTTP_AUTHORIZATION=f'Bearer {self.user_jwt}'
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_fail_401_main_login_check(self):
+        response = self.client.post(reverse("api-1.0.0:main_login_check"))
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json(), {"detail": "Unauthorized"})
+
+    def test_fail_400_main_login_check(self):
+        invalid_token_response = self.client.post(
+            reverse("api-1.0.0:main_login_check"),
+            HTTP_AUTHORIZATION='Bearer qwerasdfzxcv'
+        )
+        self.assertEqual(invalid_token_response.status_code, 400)
+        self.assertEqual(invalid_token_response.json(), {"detail": "invalid token"})
+
+    def test_fail_405_main_login_check(self):
+        response = self.client.get(
+            reverse("api-1.0.0:main_login_check"),
+            HTTP_AUTHORIZATION=f'Bearer {self.user_jwt}'
+        )
+        self.assertContains(response, "Method not allowed", status_code=405)
+
+class EmailUserLoginTest(UserTest):
+    def test_success_email_user_login(self):
+        data = {
+            "access_token": self.user_jwt,
+            "user": self.test_user_1.get_user_info_dict
+        }
+        self.assertEqual(self.user_login_response.status_code, 200)
+        self.assertEqual(self.user_login_response.json(), data)
+
+    def test_fail_404_email_user_login(self):
+        response = self.client.post(
+            reverse("api-1.0.0:email_user_login"),
+            json.dumps({"email": "wrong@email.com", "password": "test1234!!"}),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json(), {"detail": "Not Found"})
+    
+    def test_fail_400_email_user_login(self):
+        response = self.client.post(
+            reverse("api-1.0.0:email_user_login"),
+            json.dumps({"email": self.test_user_1.email, "password": "abcd"}),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json(), {"message": "invalid user"})
+    
+    def test_fail_405_email_user_login(self):
+        response = self.client.get(reverse("api-1.0.0:email_user_login"))
+        self.assertContains(response, "Method not allowed", status_code=405)
+
+
+class DeleteUserAccountTest(UserTest):
+    def test_success_delete_user_account(self):
+        response = self.client.delete(
+            reverse(
+                "api-1.0.0:delete_user_account", 
+                kwargs={"user_id": self.test_user_1.id}
+            ),
+            HTTP_AUTHORIZATION=f'Bearer {self.user_jwt}'
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"message": "success"})
+
+    def test_fail_401_delete_user_account(self):
+        response = self.client.delete(
+            reverse(
+                "api-1.0.0:delete_user_account", 
+                kwargs={"user_id": self.test_user_1.id},
+            ),
+        )
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json(), {"detail": "Unauthorized"})
+
+    def test_fail_405_delete_user_account(self):
+        response = self.client.put(
+            reverse(
+                "api-1.0.0:delete_user_account", 
+                kwargs={"user_id": self.test_user_1.id},
+            ),
+            HTTP_AUTHORIZATION=f'Bearer {self.admin_jwt}',
+        )
+        self.assertContains(response, "Method not allowed", status_code=405)
+
+    def test_fail_404_delete_user_account(self):
+        response = self.client.delete(
+            reverse(
+                "api-1.0.0:delete_user_account", 
+                kwargs={"user_id": 12345}
+            ),
+            HTTP_AUTHORIZATION=f'Bearer {self.admin_jwt}',
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json(), {"detail": "Not Found"})

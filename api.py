@@ -19,20 +19,20 @@ api = NinjaAPI(
     version="1.0.0",
     description="함께하개 프로젝트 API 명세서와 테스트 제공",
     # csrf=True,
-    docs_url="/api/docs",
+    docs_url="/docs",
     # docs_decorator=admin_required,
     # docs_url=None,
 )
 
-api.add_router("/api/users", users_router)
-api.add_router("/api/posts", posts_router)
-api.add_router("/api/posts", comments_router)
-api.add_router("/api/cores", cores_router)
-api.add_router("/api/chat", chat_router)
+api.add_router("/users", users_router)
+api.add_router("/posts", posts_router)
+api.add_router("/posts", comments_router)
+api.add_router("/cores", cores_router)
+api.add_router("/chat", chat_router)
 
 
 @api.get(
-    "/api/admin/notices",
+    "/admin/notices",
     response=NoticeReportOut,
     auth=AuthBearer(),
     summary="신고 알람 건수와 목록 확인",
@@ -53,7 +53,7 @@ def get_notices(request):
 
 
 @api.post(
-    "/api/admin/notices",
+    "/admin/notices",
     response={200: MessageOut, 400: MessageOut, 404: MessageOut},
     auth=AuthBearer(),
     summary="신고 건 확인 처리",
@@ -89,7 +89,7 @@ def check_notice(request, type: str, id: str):
     return 200, {"message": "success"}
 
 
-@api.get("/api/cookie/test", summary="쿠키 테스트")
+@api.get("/cookie/test", summary="쿠키 테스트")
 def test_cookie(request):
     return {"cookie_access_token": request.COOKIES["access_token"]}
 
@@ -103,12 +103,12 @@ def add_test_count(request):
     return {"message": "success"}
 
 
-@api.get("/api/test-count", summary="MBTI 검사 횟수 확인")
+@api.get("/test-count", summary="MBTI 검사 횟수 확인")
 def get_test_count(request):
     return {"userNum": UserTestCount.objects.get(id=1).test_count}
 
 
-@api.get("/api/cookiekey", auth=auth_cookie)
+@api.get("/cookiekey", auth=auth_cookie)
 def cookie_test(request):
     """
     쿠키 인가 테스트

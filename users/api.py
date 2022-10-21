@@ -6,6 +6,7 @@ from django.db.models import Count
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from ninja import Router, Form, Query
+from ninja.router import URLBugFixedRouter
 from ninja.files import UploadedFile
 from ninja.pagination import paginate, PageNumberPagination
 
@@ -30,8 +31,8 @@ from users.schemas import (
     TestKakaoToken,
 )
 
-router = Router(tags=["사용자 관련 API"])
-
+# router = Router(tags=["사용자 관련 API"])
+router = URLBugFixedRouter(tags=["사용자 관련 API"])
 
 @router.get(
     "", response=List[UserListOut], auth=[AuthBearer()], summary="관리자페이지 사용자 목록 조회"
@@ -181,7 +182,7 @@ def modify_user_info(
 @router.delete(
     "/{user_id}", response={200: MessageOut}, auth=[AuthBearer()], summary="회원 탈퇴"
 )
-def delete_user(request, user_id: int):
+def delete_user_account(request, user_id: int):
     """
     회원 탈퇴, 로그인한 본인 또는 관리자만 가능, DB에서 완전히 삭제됨
     """
@@ -215,15 +216,14 @@ def deactivate_user(request, user_id: int):
     "/login/check",
     response={200: UserDetailOut, 400: MessageOut},
     auth=AuthBearer(),
-    summary="메인페이지에서 이미 로그인돼있는 상태인지 확인",
+    summary="메인페이지 로그인 상태 확인",
 )
 def main_login_check(request):
     """
     메인페이지에서 이미 로그인돼있는 상태인지 확인(쿠키 활용)
     """
-    if request.auth:
-        return 200, request.auth
-    return 400, {"message": "user is not logged in"}
+    return 200, request.auth
+    # return 400, {"message": "user is not logged in"}
 
 
 @router.post(

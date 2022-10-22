@@ -479,3 +479,15 @@ class GetBannedUserListTest(UserTest):
             HTTP_AUTHORIZATION=f'Bearer {self.admin_jwt}'
         )
         self.assertContains(response, "Method not allowed", status_code=405)
+
+
+class ModifyUserInfoTest(UserTest):
+    def test_success_modify_user_info(self):
+        pass
+
+    def test_fail_400_modify_user_info(self):
+        pass
+
+    def test_fail_401_modify_user_info(self):
+        pass
+

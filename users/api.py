@@ -149,7 +149,6 @@ def modify_user_info(
     """
     has_authority(request, user_id, user_check=True, banned_check=False)
     user = get_object_or_404(User, id=user_id)
-
     body_dict = body.dict()
     res = {}
 

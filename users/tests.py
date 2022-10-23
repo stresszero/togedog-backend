@@ -6,7 +6,7 @@ from unittest.mock import patch, MagicMock
 
 from django.contrib.auth.hashers import make_password
 from django.conf import settings
-from django.test import TestCase, Client
+from django.test import TestCase, Client, RequestFactory
 from django.urls import reverse
 
 from users.models import User

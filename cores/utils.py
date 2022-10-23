@@ -1,4 +1,5 @@
 import jwt, requests, uuid
+import botocore
 import boto3
 from datetime import datetime, timedelta, timezone
 
@@ -9,6 +10,7 @@ from ninja.files import UploadedFile
 
 from users.models import User
 
+
 MB = 1024 * 1024
 IMAGE_EXTENSIONS_LIST = ["jpg", "jpeg", "jfif", "png", "webp", "avif", "svg"]
 
@@ -17,68 +19,96 @@ EXP_WEEKS = 2
 COOKIE_MAX_AGE_HOUR = 8
 
 
-def generate_jwt(payload: dict, type: str):
-    if type == "access":
-        exp = datetime.now(timezone.utc) + timedelta(days=EXP_DAYS)
-
-    elif type == "refresh":
-        exp = datetime.now(timezone.utc) + timedelta(weeks=EXP_WEEKS)
-
-    else:
-        raise ValueError("invalid token type")
-
-    payload["exp"] = exp
-    payload["iat"] = datetime.now(timezone.utc)
-
-    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+class FileHandler:
+    def __init__(self, file_service):
+        self.file_service = file_service
+    
+    def upload(self, file, type, upload_filename, ExtraArgs):
+        return self.file_service.upload(file, type, upload_filename, ExtraArgs)
+        
+    def delete(self, type, url):
+        return self.file_service.delete(type, url)
 
 
-s3_client = boto3.client(
-    "s3",
-    endpoint_url=settings.AWS_S3_ENDPOINT_URL,
-    aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-    aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-    region_name=settings.AWS_S3_REGION_NAME,
-)
+class S3Service:
+    def __init__(self):
+        self.endpoint_url      = settings.AWS_S3_ENDPOINT_URL
+        self.access_key        = settings.AWS_ACCESS_KEY_ID
+        self.secret_access_key = settings.AWS_SECRET_ACCESS_KEY
+        self.region_name       = settings.AWS_S3_REGION_NAME
+
+        self.s3_client = boto3.client(
+            "s3",
+            endpoint_url          = self.endpoint_url,
+            aws_access_key_id     = self.access_key,
+            aws_secret_access_key = self.secret_access_key,
+            region_name           = self.region_name,
+        )
+
+    def upload(self, file, type, upload_filename, ExtraArgs):
+        try:
+            self.s3_client.upload_fileobj(
+                Fileobj=file,
+                Bucket=type,
+                Key=upload_filename,
+                ExtraArgs=ExtraArgs,
+            )
+        except botocore.exceptions.ClientError as error:
+            raise HttpError(400, "S3 service is not available") from error
+
+    def delete(self, type, url):
+        self.s3_client.delete_object(Bucket=type, Key=url.split("/")[-1])
+
+
+s3_service = S3Service()
+file_handler = FileHandler(s3_service)
 
 
 def validate_upload_file(file: UploadedFile):
     if not file:
         return False
+
     if file.name.split(".")[-1].lower() not in IMAGE_EXTENSIONS_LIST:
         raise HttpError(400, "invalid file extension")
+
     if file.size > 50 * MB:
         raise HttpError(400, "file size is too large")
+
     return True
 
 
 def delete_existing_image(url: str, type: str):
+    if type not in ["user_thumbnail", "post_images"]:
+        raise HttpError(400, "invalid type")
+
     if (
         type == "user_thumbnail"
         and url != settings.DEFAULT_USER_THUMBNAIL_URL
         and url.startswith(settings.PROFILE_IMAGES_URL)
     ):
-        s3_client.delete_object(Bucket="user_thumbnail", Key=url.split("/")[-1])
+        file_handler.delete(type, url)
 
-    if type == "post_image" and url != settings.DEFAULT_POST_IMAGE_URL:
-        s3_client.delete_object(Bucket="post_images", Key=url.split("/")[-1])
+    if type == "post_images" and url != settings.DEFAULT_POST_IMAGE_URL:
+        file_handler.delete(type, url)
 
 
 def handle_upload_file(file: UploadedFile, type: str):
+    if type not in ["user_thumbnail", "post_images"]:
+        raise HttpError(400, "invalid type")
+
     upload_filename = f'{str(uuid.uuid4())}.{file.name.split(".")[-1]}'
-    if type == "user_thumbnail":
-        url = f"{settings.PROFILE_IMAGES_URL}{upload_filename}"
-    elif type == "post_images":
-        url = f"{settings.POST_IMAGES_URL}{upload_filename}"
-    else:
-        raise HttpError(400, "invalid upload type")
-    s3_client.upload_fileobj(
+    url_dict = {
+        "user_thumbnail": f"{settings.PROFILE_IMAGES_URL}{upload_filename}",
+        "post_images": f"{settings.POST_IMAGES_URL}{upload_filename}"
+    }
+
+    file_handler.upload(
         file,
         type,
         upload_filename,
         ExtraArgs={"ACL": "public-read", "ContentType": file.content_type},
     )
-    return url
+    return url_dict[type]
 
 
 def censor_text(text: str) -> str:
@@ -133,6 +163,22 @@ class SocialLoginUserProfile:
         if response.status_code != 200:
             raise HttpError(400, "invalid google access token")
         self._user_profile = response.json()
+
+
+def generate_jwt(payload: dict, type: str):
+    if type == "access":
+        exp = datetime.now(timezone.utc) + timedelta(days=EXP_DAYS)
+
+    elif type == "refresh":
+        exp = datetime.now(timezone.utc) + timedelta(weeks=EXP_WEEKS)
+
+    else:
+        raise ValueError("invalid token type")
+
+    payload["exp"] = exp
+    payload["iat"] = datetime.now(timezone.utc)
+
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
 def create_user_login_response(

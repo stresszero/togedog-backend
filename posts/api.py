@@ -119,7 +119,7 @@ def modify_post(
     has_authority(request, user_id=post.user_id, user_check=True)
 
     if validate_upload_file(file):
-        delete_existing_image(post.image_url, type="post_image")
+        delete_existing_image(post.image_url, type="post_images")
         post.image_url = handle_upload_file(file, "post_images")
 
     post.subject = body.subject

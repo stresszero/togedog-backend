@@ -1,11 +1,11 @@
 import json
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from django.contrib.auth.hashers import make_password
 from django.conf import settings
 from django.core.files.base import ContentFile
-from django.test import TestCase, Client, RequestFactory
+from django.test import TestCase, Client
 from django.test.client import MULTIPART_CONTENT, encode_multipart, BOUNDARY
 from django.urls import reverse
 
@@ -13,6 +13,7 @@ from users.models import User
 
 
 class UserTest(TestCase):
+
     def setUp(self):
         self.client = Client()
         self.test_user_1 = User.objects.create(
@@ -502,14 +503,75 @@ class ModifyUserInfoTest(UserTest):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), results)
 
-    def test_success_with_file_modify_user_info(self):
-        pass
+    @patch("cores.utils.file_handler")
+    def test_success_with_file_modify_user_info(self, mock_patch):
+        upload_file = ContentFile(b"foo", "bar.png")
+        modify_data = {"name": "asdf", "nickname": "asdf", "file": upload_file}
+
+        mock_response = mock_patch.return_value
+        mock_response.status_code = 200
+        
+        response = self.client.patch(
+            reverse(
+                "api-1.0.0:modify_user_info", 
+                kwargs={"user_id": self.test_user_1.id}
+            ),
+            data=encode_multipart(data=modify_data, boundary=BOUNDARY),
+            content_type=MULTIPART_CONTENT,
+            HTTP_AUTHORIZATION=f'Bearer {self.user_jwt}',
+        )
+
+        mock_response.json.return_value = {
+            "name_input": "asdf",
+            "nickname_input": "asdf",
+            "user_thumbnail_url": f"{User.objects.get(id=self.test_user_1.id).thumbnail_url}",
+        }
+        self.assertEqual(User.objects.get(id=self.test_user_1.id).name, "asdf")
+        self.assertEqual(User.objects.get(id=self.test_user_1.id).nickname, "asdf")
+        self.assertEqual(response.json(), mock_response.json.return_value)
+        self.assertEqual(response.status_code, mock_response.status_code)
 
     def test_fail_400_modify_user_info(self):
-        pass
+        upload_file = ContentFile(b"foo", "foo.bar")
+        modify_data = {"name": "asdf", "nickname": "asdf", "file": upload_file}
+        wrong_extension_response = self.client.patch(
+            reverse(
+                "api-1.0.0:modify_user_info", 
+                kwargs={"user_id": self.test_user_1.id}
+            ),
+            data=encode_multipart(data=modify_data, boundary=BOUNDARY),
+            content_type=MULTIPART_CONTENT,
+            HTTP_AUTHORIZATION=f'Bearer {self.user_jwt}',
+        )
+        self.assertEqual(wrong_extension_response.status_code, 400)
+        self.assertContains(wrong_extension_response, "invalid file extension", status_code=400)
+
+        too_large_file = ContentFile(b"foo" * 1024 * 1024 * 51, "foo.png")
+        modify_data["file"] = too_large_file
+        too_large_file_response = self.client.patch(
+            reverse(
+                "api-1.0.0:modify_user_info", 
+                kwargs={"user_id": self.test_user_1.id}
+            ),
+            data=encode_multipart(data=modify_data, boundary=BOUNDARY),
+            content_type=MULTIPART_CONTENT,
+            HTTP_AUTHORIZATION=f'Bearer {self.user_jwt}',
+        )
+        self.assertEqual(too_large_file_response.status_code, 400)
+        self.assertContains(too_large_file_response, "file size is too large", status_code=400)
 
     def test_fail_401_modify_user_info(self):
-        pass
+        modify_data = {"name": "asdf", "nickname": "asdf"}
+        response = self.client.patch(
+            reverse(
+                "api-1.0.0:modify_user_info", 
+                kwargs={"user_id": self.test_admin.id}
+            ),
+            data=encode_multipart(data=modify_data, boundary=BOUNDARY),
+            content_type=MULTIPART_CONTENT,
+        )
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json(), {"detail": "Unauthorized"})
 
     def test_fail_403_modify_user_info(self):
         response = self.client.patch(

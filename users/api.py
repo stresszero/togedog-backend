@@ -258,7 +258,7 @@ def get_banned_user_list(request, query: UserListFilters = Query(...)):
 
 
 @router.post("/test/kakaotoken/", summary="카카오 소셜 로그인")
-def kakao_token_test(request, token: TestKakaoToken):
+def kakao_social_login(request, token: TestKakaoToken):
     """
     클라이언트에서 카카오 소셜 로그인 후 액세스 토큰 받아서 회원가입 또는 로그인
     """
@@ -285,7 +285,7 @@ def kakao_token_test(request, token: TestKakaoToken):
 
 
 @router.post("/test/googletoken/", summary="구글 소셜 로그인")
-def google_token_test(request, token: TestKakaoToken):
+def google_social_login(request, token: TestKakaoToken):
     """
     클라이언트에서 구글 소셜 로그인 후 액세스 토큰 받아서 회원가입 또는 로그인
     """

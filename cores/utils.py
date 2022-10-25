@@ -23,8 +23,8 @@ class FileHandler:
     def __init__(self, file_service):
         self.file_service = file_service
     
-    def upload(self, file, type, upload_filename, ExtraArgs):
-        return self.file_service.upload(file, type, upload_filename, ExtraArgs)
+    def upload(self, file, type, upload_filename, extra_args):
+        return self.file_service.upload(file, type, upload_filename, extra_args)
         
     def delete(self, type, url):
         return self.file_service.delete(type, url)
@@ -45,13 +45,13 @@ class S3Service:
             region_name           = self.region_name,
         )
 
-    def upload(self, file, type, upload_filename, ExtraArgs):
+    def upload(self, file, type, upload_filename, extra_args):
         try:
             self.s3_client.upload_fileobj(
                 Fileobj=file,
                 Bucket=type,
                 Key=upload_filename,
-                ExtraArgs=ExtraArgs,
+                ExtraArgs=extra_args,
             )
         except botocore.exceptions.ClientError as error:
             raise HttpError(400, "S3 service is not available") from error
@@ -110,7 +110,7 @@ def handle_upload_file(file: UploadedFile, type: str):
         file,
         type,
         upload_filename,
-        ExtraArgs={"ACL": "public-read", "ContentType": file.content_type},
+        extra_args={"ACL": "public-read", "ContentType": file.content_type},
     )
     return url_dict[type]
 
@@ -136,32 +136,32 @@ def censor_text(text: str) -> str:
 
 
 class SocialLoginUserProfile:
-    def __init__(self, code, type: str):
+    def __init__(self, access_token, type: str):
         self.kakao_profile_uri = settings.KAKAO_PROFILE_URI
         self.google_profile_uri = settings.GOOGLE_PROFILE_URI
         self._user_profile = None
 
         if type == "kakao":
-            self.get_kakao_profile(code)
+            self.get_kakao_profile(access_token)
         elif type == "google":
-            self.get_google_profile(code)
+            self.get_google_profile(access_token)
         else:
             raise ValueError("invalid social login type")
 
-    def get_kakao_profile(self, code: str):
+    def get_kakao_profile(self, access_token: str):
         response = requests.post(
             self.kakao_profile_uri,
-            headers={"Authorization": f"Bearer {code}"},
+            headers={"Authorization": f"Bearer {access_token}"},
             timeout=3,
         )
         if response.status_code != 200:
             raise HttpError(400, "invalid kakao access token")
         self._user_profile = response.json()
 
-    def get_google_profile(self, code: str):
-        response = requests.get(
+    def get_google_profile(self, access_token: str):
+        response = requests.post(
             self.google_profile_uri,
-            headers={"Authorization": f"Bearer {code}"},
+            headers={"Authorization": f"Bearer {access_token}"},
             timeout=3,
         )
         if response.status_code != 200:

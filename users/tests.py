@@ -1,6 +1,6 @@
 import json
 
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 from django.contrib.auth.hashers import make_password
 from django.conf import settings
@@ -13,7 +13,6 @@ from users.models import User
 
 
 class UserTest(TestCase):
-
     def setUp(self):
         self.client = Client()
         self.test_user_1 = User.objects.create(
@@ -223,6 +222,7 @@ class GetUserInfoTest(UserTest):
         }
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), results)
+        self.assertEqual(str(self.test_user_1), "테스트")
 
     def test_fail_403_get_user_info(self):
         response = self.client.get(
@@ -596,3 +596,103 @@ class ModifyUserInfoTest(UserTest):
         self.assertEqual(response.json(), {"detail": "Not Found"})
 
 
+class KakaoSocialLoginTest(UserTest):
+    @patch("cores.utils.requests")
+    def test_success_kakao_social_login(self, mock_request):
+        class FakeKakaoResponse:
+            def json(self):
+                return {
+                    "id": 123456789,
+                    "email": "qwer@qwer.com",
+                    'kakao_account': {
+                        "profile": {
+                            "nickname"           : "QWER",
+                            "thumbnail_image_url": "http://thumbnail.com/image.jpg",
+                        }, 
+                    },
+                }
+
+            @property
+            def status_code(self):
+                return 200
+            
+        mock_request.post = MagicMock(return_value=FakeKakaoResponse())
+        response = self.client.post(
+            reverse("api-1.0.0:kakao_social_login"),
+            json.dumps({"token": "12345"}), 
+            content_type="application/json"
+        )
+        
+        self.assertEqual(response.status_code, 200)
+
+    @patch("cores.utils.requests")
+    def test_fail_400_kakao_social_login(self, mock_request):
+        class KeyErrorResponse:
+            def json(self):
+                return {
+                    "id": 123456789,
+                    "email": "qwer@qwer.com",
+                    'wrong_key': {
+                        "profile": {
+                            "nickname"           : "QWER",
+                            "thumbnail_image_url": "http://thumbnail.com/image.jpg",
+                        }, 
+                    },
+                }
+
+            @property
+            def status_code(self):
+                return 200
+        mock_request.post = MagicMock(return_value=KeyErrorResponse())
+        response = self.client.post(
+            reverse("api-1.0.0:kakao_social_login"),
+            json.dumps({"token": "12345"}), 
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 400)        
+        self.assertEqual(response.json(), {"message": "key error"})
+
+class GoogleSocialLoginTest(UserTest):
+    @patch("cores.utils.requests")
+    def test_success_google_social_login(self, mock_request):
+        class FakeGoogleResponse:
+            def json(self):
+                return {
+                    "sub": 123456789,
+                    "email": "qwer@qwer.com",
+                    "given_name": "QWER",
+                    "picture": "http://thumbnail.com/image.jpg",
+                }
+            
+            @property
+            def status_code(self):
+                return 200
+        mock_request.post = MagicMock(return_value=FakeGoogleResponse())
+        response = self.client.post(
+            reverse("api-1.0.0:google_social_login"),
+            json.dumps({"token": "12345"}), 
+            content_type="application/json"
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+    @patch("cores.utils.requests")
+    def test_fail_400_google_social_login(self, mock_request):
+        class KeyErrorResponse:
+            def json(self):
+                return {
+                    "wrong_key": 123456789,
+                }
+            
+            @property
+            def status_code(self):
+                return 200
+            
+        mock_request.post = MagicMock(return_value=KeyErrorResponse())
+        response = self.client.post(
+            reverse("api-1.0.0:google_social_login"),
+            json.dumps({"token": "12345"}),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 400)        
+        self.assertEqual(response.json(), {"message": "key error"})

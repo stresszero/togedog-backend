@@ -15,9 +15,9 @@ def func_to_test(bucket_name, key, content):
 class MyTest(unittest.TestCase):
     mock_s3 = mock_s3()
     bucket_name = 'moto-test-bucket'
+
     def setUp(self):
         self.mock_s3.start()
-
         s3 = boto3.resource('s3')
         bucket = s3.Bucket(self.bucket_name)
         bucket.create(CreateBucketConfiguration={'LocationConstraint': "ap-northeast-2"},)
@@ -28,7 +28,6 @@ class MyTest(unittest.TestCase):
     def test(self):
         content = b"abc"
         key = '/moto-test'
-
         func_to_test(self.bucket_name, key, content)
 
         s3 = boto3.resource('s3')

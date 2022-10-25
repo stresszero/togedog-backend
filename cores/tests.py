@@ -2,15 +2,16 @@ import boto3
 import unittest
 from moto import mock_s3
 
-from django.conf import settings
+# from django.conf import settings
 
-from .utils import validate_upload_file, delete_existing_image, handle_upload_file
+# from .utils import validate_upload_file, delete_existing_image, handle_upload_file
 
 
 def func_to_test(bucket_name, key, content):
     s3 = boto3.resource('s3')
     object = s3.Object(bucket_name, key)
     object.put(Body=content)
+
 
 class MyTest(unittest.TestCase):
     mock_s3 = mock_s3()

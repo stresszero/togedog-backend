@@ -110,7 +110,9 @@ def email_user_signup(request, body: EmailUserSignupIn):
         return 400, {"message": "user already exists"}
     body_dict.update(
         {
-            "password": make_password(body_dict["password"], salt=settings.PASSWORD_SALT),
+            "password": make_password(
+                body_dict["password"], salt=settings.PASSWORD_SALT
+            ),
             "account_type": UserAccountType.EMAIL.value,
         }
     )
@@ -270,8 +272,9 @@ def kakao_social_login(request, token: TestKakaoToken):
                 "email": kakao_profile["kakao_account"].get(
                     "email", settings.KAKAO_DEFAULT_EMAIL
                 ),
-                "nickname": kakao_profile["kakao_account"]["profile"]["nickname"]\
-                    [:NAME_AND_NICKNAME_MAX_LENGTH],
+                "nickname": kakao_profile["kakao_account"]["profile"]["nickname"][
+                    :NAME_AND_NICKNAME_MAX_LENGTH
+                ],
                 "thumbnail_url": kakao_profile["kakao_account"]["profile"].get(
                     "thumbnail_image_url", settings.DEFAULT_USER_THUMBNAIL_URL
                 ),
@@ -294,11 +297,10 @@ def google_social_login(request, token: TestKakaoToken):
         user, is_created = User.objects.get_or_create(
             social_account_id=google_profile["sub"],
             defaults={
-                "email"        : google_profile["email"],
-                "nickname"     : google_profile["given_name"]\
-                    [:NAME_AND_NICKNAME_MAX_LENGTH],
+                "email": google_profile["email"],
+                "nickname": google_profile["given_name"][:NAME_AND_NICKNAME_MAX_LENGTH],
                 "thumbnail_url": google_profile["picture"],
-                "account_type" : UserAccountType.GOOGLE.value,
+                "account_type": UserAccountType.GOOGLE.value,
             },
         )
         return create_user_login_response(user)

@@ -10,7 +10,7 @@ from cores.schemas import MessageOut, NoticeReportOut
 from posts.api import router as posts_router
 from posts.models import PostReport
 from users.api import router as users_router
-from users.auth import AuthBearer, is_admin, cookie_key, auth_cookie
+from users.auth import AuthBearer, is_admin, auth_cookie
 from users.models import UserTestCount
 
 
@@ -84,7 +84,7 @@ def check_notice(request, type: str, id: str):
 
     if not notices.exists():
         return 404, {"message": "notices not found"}
-    
+
     notices.update(is_checked=True, updated_at=timezone.now())
     return 200, {"message": "success"}
 

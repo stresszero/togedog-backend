@@ -35,24 +35,28 @@ class UserTest(TestCase):
             address="",
             created_at="2022-10-12T10:00:00Z",
         )
-        self.test_user_1.password = make_password("test1234!!", salt=settings.PASSWORD_SALT)
+        self.test_user_1.password = make_password(
+            "test1234!!", salt=settings.PASSWORD_SALT
+        )
         self.test_user_1.save()
-        self.test_admin.password = make_password("test1234@@", salt=settings.PASSWORD_SALT)
+        self.test_admin.password = make_password(
+            "test1234@@", salt=settings.PASSWORD_SALT
+        )
         self.test_admin.save()
 
         self.admin_user_login_response = self.client.post(
             reverse("api-1.0.0:email_user_login"),
             json.dumps({"email": self.test_admin.email, "password": "test1234@@"}),
-            content_type="application/json"
+            content_type="application/json",
         )
-        self.admin_jwt = self.admin_user_login_response.json()['access_token']
+        self.admin_jwt = self.admin_user_login_response.json()["access_token"]
 
         self.user_login_response = self.client.post(
             reverse("api-1.0.0:email_user_login"),
             json.dumps({"email": self.test_user_1.email, "password": "test1234!!"}),
-            content_type="application/json"
+            content_type="application/json",
         )
-        self.user_jwt = self.user_login_response.json()['access_token']
+        self.user_jwt = self.user_login_response.json()["access_token"]
 
     def tearDown(self):
         User.objects.all().delete()
@@ -69,8 +73,8 @@ class EmailUserSignupTest(UserTest):
         }
         response = self.client.post(
             reverse("api-1.0.0:email_user_signup"),
-            json.dumps(body), 
-            content_type="application/json"
+            json.dumps(body),
+            content_type="application/json",
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"message": "success"})
@@ -85,8 +89,8 @@ class EmailUserSignupTest(UserTest):
         }
         response = self.client.post(
             reverse("api-1.0.0:email_user_signup"),
-            json.dumps(body), 
-            content_type="application/json"
+            json.dumps(body),
+            content_type="application/json",
         )
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json(), {"message": "user already exists"})
@@ -101,8 +105,8 @@ class EmailUserSignupTest(UserTest):
         }
         wrong_email_response = self.client.post(
             reverse("api-1.0.0:email_user_signup"),
-            json.dumps(wrong_email_body), 
-            content_type="application/json"
+            json.dumps(wrong_email_body),
+            content_type="application/json",
         )
         self.assertEqual(wrong_email_response.status_code, 422)
 
@@ -156,8 +160,8 @@ class EmailUserSignupTest(UserTest):
 class GetUserListTest(UserTest):
     def test_success_get_user_list(self):
         response = self.client.get(
-            reverse("api-1.0.0:get_user_list"), 
-            HTTP_AUTHORIZATION=f'Bearer {self.admin_jwt}'
+            reverse("api-1.0.0:get_user_list"),
+            HTTP_AUTHORIZATION=f"Bearer {self.admin_jwt}",
         )
         results = {
             "items": [
@@ -186,7 +190,7 @@ class GetUserListTest(UserTest):
                     "thumbnail_url": self.test_user_1.thumbnail_url,
                     "mbti": self.test_user_1.mbti,
                     "reported_count": 0,
-                }
+                },
             ],
             "count": 2,
         }
@@ -205,20 +209,20 @@ class GetUserInfoTest(UserTest):
                 "api-1.0.0:get_user_info",
                 kwargs={"user_id": self.user_login_response.json()["user"]["id"]},
             ),
-            HTTP_AUTHORIZATION=f'Bearer {self.user_jwt}',
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
         )
         results = {
-            "id"           : self.test_user_1.id,
-            "name"         : self.test_user_1.name,
-            "nickname"     : self.test_user_1.nickname,
-            "email"        : self.test_user_1.email,
-            "user_type"    : self.test_user_1.user_type,
-            "status"       : self.test_user_1.status,
-            "account_type" : self.test_user_1.account_type,
+            "id": self.test_user_1.id,
+            "name": self.test_user_1.name,
+            "nickname": self.test_user_1.nickname,
+            "email": self.test_user_1.email,
+            "user_type": self.test_user_1.user_type,
+            "status": self.test_user_1.status,
+            "account_type": self.test_user_1.account_type,
             "thumbnail_url": self.test_user_1.thumbnail_url,
-            "mbti"         : self.test_user_1.mbti,
-            "address"      : self.test_user_1.address,
-            "created_at"   : f"{self.test_user_1.created_at.isoformat()[:-9]}Z",
+            "mbti": self.test_user_1.mbti,
+            "address": self.test_user_1.address,
+            "created_at": f"{self.test_user_1.created_at.isoformat()[:-9]}Z",
         }
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), results)
@@ -230,7 +234,7 @@ class GetUserInfoTest(UserTest):
                 "api-1.0.0:get_user_info",
                 kwargs={"user_id": self.test_admin.id},
             ),
-            HTTP_AUTHORIZATION=f'Bearer {self.user_jwt}'
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
         )
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.json(), {"detail": "forbidden"})
@@ -265,45 +269,39 @@ class LogoutTest(UserTest):
 class DeactivateUserTest(UserTest):
     def test_success_deactivate_user(self):
         response = self.client.patch(
-                    reverse(
-                        "api-1.0.0:deactivate_user", 
-                        kwargs={"user_id": self.test_user_1.id}
-                    ), 
-                    HTTP_AUTHORIZATION=f'Bearer {self.admin_jwt}'
+            reverse(
+                "api-1.0.0:deactivate_user", kwargs={"user_id": self.test_user_1.id}
+            ),
+            HTTP_AUTHORIZATION=f"Bearer {self.admin_jwt}",
         )
         self.assertEqual(User.objects.get(id=self.test_user_1.id).status, "banned")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"message": "success"})
-    
+
     def test_fail_403_deactivate_user(self):
         response = self.client.patch(
             reverse(
-                "api-1.0.0:deactivate_user", 
-                kwargs={"user_id": self.test_user_1.id}
-            ), 
-            HTTP_AUTHORIZATION=f'Bearer {self.user_jwt}'
+                "api-1.0.0:deactivate_user", kwargs={"user_id": self.test_user_1.id}
+            ),
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
         )
         self.assertEqual(response.status_code, 403)
-        self.assertEqual(response.json(), {'detail': 'forbidden'})
+        self.assertEqual(response.json(), {"detail": "forbidden"})
 
     def test_fail_404_deactivate_user(self):
         response = self.client.patch(
-                    reverse(
-                        "api-1.0.0:deactivate_user",
-                        kwargs={"user_id": 1234}
-                    ), 
-                    HTTP_AUTHORIZATION=f'Bearer {self.admin_jwt}'
+            reverse("api-1.0.0:deactivate_user", kwargs={"user_id": 1234}),
+            HTTP_AUTHORIZATION=f"Bearer {self.admin_jwt}",
         )
         self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.json(), {'detail': 'Not Found'})
+        self.assertEqual(response.json(), {"detail": "Not Found"})
 
     def test_fail_405_deactivate_user(self):
         response = self.client.get(
-                    reverse(
-                        "api-1.0.0:deactivate_user",
-                        kwargs={"user_id": self.test_user_1.id}
-                    ), 
-                    HTTP_AUTHORIZATION=f'Bearer {self.admin_jwt}'
+            reverse(
+                "api-1.0.0:deactivate_user", kwargs={"user_id": self.test_user_1.id}
+            ),
+            HTTP_AUTHORIZATION=f"Bearer {self.admin_jwt}",
         )
         self.assertContains(response, "Method not allowed", status_code=405)
 
@@ -313,7 +311,7 @@ class CheckDuplicateEmailTest(UserTest):
         response = self.client.post(
             reverse("api-1.0.0:check_duplicate_email"),
             json.dumps({"email": "unique@test.com"}),
-            content_type="application/json"
+            content_type="application/json",
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"message": "success"})
@@ -321,17 +319,17 @@ class CheckDuplicateEmailTest(UserTest):
     def test_fail_400_check_duplicate_email(self):
         response = self.client.post(
             reverse("api-1.0.0:check_duplicate_email"),
-            json.dumps({"email": "test@test.com"}), 
-            content_type="application/json"
+            json.dumps({"email": "test@test.com"}),
+            content_type="application/json",
         )
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json(), {"message": "email already exists"})
-    
+
     def test_fail_422_check_duplicate_email(self):
         response = self.client.post(
             reverse("api-1.0.0:check_duplicate_email"),
-            json.dumps({"email": "invalid"}), 
-            content_type="application/json"
+            json.dumps({"email": "invalid"}),
+            content_type="application/json",
         )
         self.assertEqual(response.status_code, 422)
 
@@ -340,7 +338,7 @@ class MainLoginCheckTest(UserTest):
     def test_success_main_login_check(self):
         response = self.client.post(
             reverse("api-1.0.0:main_login_check"),
-            HTTP_AUTHORIZATION=f'Bearer {self.user_jwt}'
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
         )
         self.assertEqual(response.status_code, 200)
 
@@ -352,7 +350,7 @@ class MainLoginCheckTest(UserTest):
     def test_fail_400_main_login_check(self):
         invalid_token_response = self.client.post(
             reverse("api-1.0.0:main_login_check"),
-            HTTP_AUTHORIZATION='Bearer qwerasdfzxcv'
+            HTTP_AUTHORIZATION="Bearer qwerasdfzxcv",
         )
         self.assertEqual(invalid_token_response.status_code, 400)
         self.assertEqual(invalid_token_response.json(), {"detail": "invalid token"})
@@ -360,15 +358,16 @@ class MainLoginCheckTest(UserTest):
     def test_fail_405_main_login_check(self):
         response = self.client.get(
             reverse("api-1.0.0:main_login_check"),
-            HTTP_AUTHORIZATION=f'Bearer {self.user_jwt}'
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
         )
         self.assertContains(response, "Method not allowed", status_code=405)
+
 
 class EmailUserLoginTest(UserTest):
     def test_success_email_user_login(self):
         data = {
             "access_token": self.user_jwt,
-            "user": self.test_user_1.get_user_info_dict
+            "user": self.test_user_1.get_user_info_dict,
         }
         self.assertEqual(self.user_login_response.status_code, 200)
         self.assertEqual(self.user_login_response.json(), data)
@@ -377,20 +376,20 @@ class EmailUserLoginTest(UserTest):
         response = self.client.post(
             reverse("api-1.0.0:email_user_login"),
             json.dumps({"email": "wrong@email.com", "password": "test1234!!"}),
-            content_type="application/json"
+            content_type="application/json",
         )
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.json(), {"detail": "Not Found"})
-    
+
     def test_fail_400_email_user_login(self):
         response = self.client.post(
             reverse("api-1.0.0:email_user_login"),
             json.dumps({"email": self.test_user_1.email, "password": "abcd"}),
-            content_type="application/json"
+            content_type="application/json",
         )
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json(), {"message": "invalid user"})
-    
+
     def test_fail_405_email_user_login(self):
         response = self.client.get(reverse("api-1.0.0:email_user_login"))
         self.assertContains(response, "Method not allowed", status_code=405)
@@ -400,10 +399,9 @@ class DeleteUserAccountTest(UserTest):
     def test_success_delete_user_account(self):
         response = self.client.delete(
             reverse(
-                "api-1.0.0:delete_user_account", 
-                kwargs={"user_id": self.test_user_1.id}
+                "api-1.0.0:delete_user_account", kwargs={"user_id": self.test_user_1.id}
             ),
-            HTTP_AUTHORIZATION=f'Bearer {self.user_jwt}'
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"message": "success"})
@@ -411,7 +409,7 @@ class DeleteUserAccountTest(UserTest):
     def test_fail_401_delete_user_account(self):
         response = self.client.delete(
             reverse(
-                "api-1.0.0:delete_user_account", 
+                "api-1.0.0:delete_user_account",
                 kwargs={"user_id": self.test_user_1.id},
             ),
         )
@@ -421,20 +419,17 @@ class DeleteUserAccountTest(UserTest):
     def test_fail_405_delete_user_account(self):
         response = self.client.put(
             reverse(
-                "api-1.0.0:delete_user_account", 
+                "api-1.0.0:delete_user_account",
                 kwargs={"user_id": self.test_user_1.id},
             ),
-            HTTP_AUTHORIZATION=f'Bearer {self.admin_jwt}',
+            HTTP_AUTHORIZATION=f"Bearer {self.admin_jwt}",
         )
         self.assertContains(response, "Method not allowed", status_code=405)
 
     def test_fail_404_delete_user_account(self):
         response = self.client.delete(
-            reverse(
-                "api-1.0.0:delete_user_account", 
-                kwargs={"user_id": 12345}
-            ),
-            HTTP_AUTHORIZATION=f'Bearer {self.admin_jwt}',
+            reverse("api-1.0.0:delete_user_account", kwargs={"user_id": 12345}),
+            HTTP_AUTHORIZATION=f"Bearer {self.admin_jwt}",
         )
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.json(), {"detail": "Not Found"})
@@ -446,7 +441,7 @@ class GetBannedUserListTest(UserTest):
         self.test_user_1.save()
         response = self.client.get(
             reverse("api-1.0.0:get_banned_user_list"),
-            HTTP_AUTHORIZATION=f'Bearer {self.admin_jwt}'
+            HTTP_AUTHORIZATION=f"Bearer {self.admin_jwt}",
         )
         results = {
             "items": [
@@ -477,7 +472,7 @@ class GetBannedUserListTest(UserTest):
     def test_fail_405_get_banned_user_list(self):
         response = self.client.post(
             reverse("api-1.0.0:get_banned_user_list"),
-            HTTP_AUTHORIZATION=f'Bearer {self.admin_jwt}'
+            HTTP_AUTHORIZATION=f"Bearer {self.admin_jwt}",
         )
         self.assertContains(response, "Method not allowed", status_code=405)
 
@@ -487,12 +482,11 @@ class ModifyUserInfoTest(UserTest):
         modify_data = {"name": "asdf", "nickname": "asdf"}
         response = self.client.patch(
             reverse(
-                "api-1.0.0:modify_user_info", 
-                kwargs={"user_id": self.test_user_1.id}
+                "api-1.0.0:modify_user_info", kwargs={"user_id": self.test_user_1.id}
             ),
             data=encode_multipart(data=modify_data, boundary=BOUNDARY),
             content_type=MULTIPART_CONTENT,
-            HTTP_AUTHORIZATION=f'Bearer {self.user_jwt}',
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
         )
         results = {
             "name_input": "asdf",
@@ -510,15 +504,14 @@ class ModifyUserInfoTest(UserTest):
 
         mock_response = mock_patch.return_value
         mock_response.status_code = 200
-        
+
         response = self.client.patch(
             reverse(
-                "api-1.0.0:modify_user_info", 
-                kwargs={"user_id": self.test_user_1.id}
+                "api-1.0.0:modify_user_info", kwargs={"user_id": self.test_user_1.id}
             ),
             data=encode_multipart(data=modify_data, boundary=BOUNDARY),
             content_type=MULTIPART_CONTENT,
-            HTTP_AUTHORIZATION=f'Bearer {self.user_jwt}',
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
         )
 
         mock_response.json.return_value = {
@@ -536,36 +529,37 @@ class ModifyUserInfoTest(UserTest):
         modify_data = {"name": "asdf", "nickname": "asdf", "file": upload_file}
         wrong_extension_response = self.client.patch(
             reverse(
-                "api-1.0.0:modify_user_info", 
-                kwargs={"user_id": self.test_user_1.id}
+                "api-1.0.0:modify_user_info", kwargs={"user_id": self.test_user_1.id}
             ),
             data=encode_multipart(data=modify_data, boundary=BOUNDARY),
             content_type=MULTIPART_CONTENT,
-            HTTP_AUTHORIZATION=f'Bearer {self.user_jwt}',
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
         )
         self.assertEqual(wrong_extension_response.status_code, 400)
-        self.assertContains(wrong_extension_response, "invalid file extension", status_code=400)
+        self.assertContains(
+            wrong_extension_response, "invalid file extension", status_code=400
+        )
 
         too_large_file = ContentFile(b"foo" * 1024 * 1024 * 51, "foo.png")
         modify_data["file"] = too_large_file
         too_large_file_response = self.client.patch(
             reverse(
-                "api-1.0.0:modify_user_info", 
-                kwargs={"user_id": self.test_user_1.id}
+                "api-1.0.0:modify_user_info", kwargs={"user_id": self.test_user_1.id}
             ),
             data=encode_multipart(data=modify_data, boundary=BOUNDARY),
             content_type=MULTIPART_CONTENT,
-            HTTP_AUTHORIZATION=f'Bearer {self.user_jwt}',
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
         )
         self.assertEqual(too_large_file_response.status_code, 400)
-        self.assertContains(too_large_file_response, "file size is too large", status_code=400)
+        self.assertContains(
+            too_large_file_response, "file size is too large", status_code=400
+        )
 
     def test_fail_401_modify_user_info(self):
         modify_data = {"name": "asdf", "nickname": "asdf"}
         response = self.client.patch(
             reverse(
-                "api-1.0.0:modify_user_info", 
-                kwargs={"user_id": self.test_admin.id}
+                "api-1.0.0:modify_user_info", kwargs={"user_id": self.test_admin.id}
             ),
             data=encode_multipart(data=modify_data, boundary=BOUNDARY),
             content_type=MULTIPART_CONTENT,
@@ -576,21 +570,17 @@ class ModifyUserInfoTest(UserTest):
     def test_fail_403_modify_user_info(self):
         response = self.client.patch(
             reverse(
-                "api-1.0.0:modify_user_info", 
-                kwargs={"user_id": self.test_admin.id}
+                "api-1.0.0:modify_user_info", kwargs={"user_id": self.test_admin.id}
             ),
-            HTTP_AUTHORIZATION=f'Bearer {self.user_jwt}',
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
         )
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.json(), {"detail": "forbidden"})
 
     def test_fail_404_modify_user_info(self):
         response = self.client.patch(
-            reverse(
-                "api-1.0.0:modify_user_info", 
-                kwargs={"user_id": 12345}
-            ),
-            HTTP_AUTHORIZATION=f'Bearer {self.admin_jwt}',
+            reverse("api-1.0.0:modify_user_info", kwargs={"user_id": 12345}),
+            HTTP_AUTHORIZATION=f"Bearer {self.admin_jwt}",
         )
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.json(), {"detail": "Not Found"})
@@ -604,25 +594,25 @@ class KakaoSocialLoginTest(UserTest):
                 return {
                     "id": 123456789,
                     "email": "qwer@qwer.com",
-                    'kakao_account': {
+                    "kakao_account": {
                         "profile": {
-                            "nickname"           : "QWER",
+                            "nickname": "QWER",
                             "thumbnail_image_url": "http://thumbnail.com/image.jpg",
-                        }, 
+                        },
                     },
                 }
 
             @property
             def status_code(self):
                 return 200
-            
+
         mock_request.post = MagicMock(return_value=FakeKakaoResponse())
         response = self.client.post(
             reverse("api-1.0.0:kakao_social_login"),
-            json.dumps({"token": "12345"}), 
-            content_type="application/json"
+            json.dumps({"token": "12345"}),
+            content_type="application/json",
         )
-        
+
         self.assertEqual(response.status_code, 200)
 
     @patch("cores.utils.requests")
@@ -632,25 +622,27 @@ class KakaoSocialLoginTest(UserTest):
                 return {
                     "id": 123456789,
                     "email": "qwer@qwer.com",
-                    'wrong_key': {
+                    "wrong_key": {
                         "profile": {
-                            "nickname"           : "QWER",
+                            "nickname": "QWER",
                             "thumbnail_image_url": "http://thumbnail.com/image.jpg",
-                        }, 
+                        },
                     },
                 }
 
             @property
             def status_code(self):
                 return 200
+
         mock_request.post = MagicMock(return_value=KeyErrorResponse())
         response = self.client.post(
             reverse("api-1.0.0:kakao_social_login"),
-            json.dumps({"token": "12345"}), 
-            content_type="application/json"
+            json.dumps({"token": "12345"}),
+            content_type="application/json",
         )
-        self.assertEqual(response.status_code, 400)        
+        self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json(), {"message": "key error"})
+
 
 class GoogleSocialLoginTest(UserTest):
     @patch("cores.utils.requests")
@@ -663,15 +655,16 @@ class GoogleSocialLoginTest(UserTest):
                     "given_name": "QWER",
                     "picture": "http://thumbnail.com/image.jpg",
                 }
-            
+
             @property
             def status_code(self):
                 return 200
+
         mock_request.post = MagicMock(return_value=FakeGoogleResponse())
         response = self.client.post(
             reverse("api-1.0.0:google_social_login"),
-            json.dumps({"token": "12345"}), 
-            content_type="application/json"
+            json.dumps({"token": "12345"}),
+            content_type="application/json",
         )
 
         self.assertEqual(response.status_code, 200)
@@ -683,16 +676,16 @@ class GoogleSocialLoginTest(UserTest):
                 return {
                     "wrong_key": 123456789,
                 }
-            
+
             @property
             def status_code(self):
                 return 200
-            
+
         mock_request.post = MagicMock(return_value=KeyErrorResponse())
         response = self.client.post(
             reverse("api-1.0.0:google_social_login"),
             json.dumps({"token": "12345"}),
-            content_type="application/json"
+            content_type="application/json",
         )
-        self.assertEqual(response.status_code, 400)        
+        self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json(), {"message": "key error"})

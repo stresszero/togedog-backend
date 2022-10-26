@@ -675,6 +675,9 @@ class GoogleSocialLoginTest(UserTest):
             def json(self):
                 return {
                     "wrong_key": 123456789,
+                    "email": "qwer@qwer.com",
+                    "given_name": "QWER",
+                    "picture": "http://thumbnail.com/image.jpg",
                 }
 
             @property

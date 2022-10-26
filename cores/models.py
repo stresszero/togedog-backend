@@ -15,7 +15,7 @@ class TimeStampedModel(models.Model):
 class EnumField(CharField):
     def __init__(self, enum, *args, **kwargs):
         """
-        EnumField에 대한 값을 정의하지 않으면 해당 필드는 
+        EnumField에 대한 값을 정의하지 않으면 해당 필드는
         TypeError를 내보내면서 반드시 정의하도록 요구
         """
         self.enum = enum
@@ -42,7 +42,7 @@ class EnumField(CharField):
 
     def deconstruct(self):
         """
-        enum이라는 파라미터를 추가하고 이를 사용하기 위해 
+        enum이라는 파라미터를 추가하고 이를 사용하기 위해
         deconstruct 메소드의 kwargs에 해당 내용을 명시
         """
         name, path, args, kwargs = super().deconstruct()
@@ -51,7 +51,7 @@ class EnumField(CharField):
 
     def validate_enum(self, value):
         """
-        애플리케이션에서 enum 또는 직접적인 값을 넣었을 때에는 그 값을 반환하고
+        애플리케이션에서 Enum 또는 해당되는 값을 넣었을 때에는 그 값을 반환하고
         그렇지 않았을 때에는 AttributeError를 일으킴
         """
         for name, member in self.enum.__members__.items():

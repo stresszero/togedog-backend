@@ -192,7 +192,7 @@ class GetUserListTest(UserTest):
                     "reported_count": 0,
                 },
             ],
-            "count": 2,
+            "count": User.objects.all().count(),
         }
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), results)

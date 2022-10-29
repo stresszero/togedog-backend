@@ -13,18 +13,18 @@ from .models import EnumField
 
 def func_to_test(bucket_name, key, content):
     s3 = boto3.resource("s3")
-    object = s3.Object(bucket_name, key)
-    object.put(Body=content)
+    test_object = s3.Object(bucket_name, key)
+    test_object.put(Body=content)
 
 
-class MyTest(unittest.TestCase):
+class S3ServiceTest(unittest.TestCase):
     mock_s3 = mock_s3()
     bucket_name = "moto-test-bucket"
 
     def setUp(self):
         self.mock_s3.start()
-        s3 = boto3.resource("s3")
-        bucket = s3.Bucket(self.bucket_name)
+        self.s3_resource = boto3.resource("s3")
+        bucket = self.s3_resource.Bucket(self.bucket_name)
         bucket.create(
             CreateBucketConfiguration={"LocationConstraint": "ap-northeast-2"},
         )
@@ -32,14 +32,13 @@ class MyTest(unittest.TestCase):
     def tearDown(self):
         self.mock_s3.stop()
 
-    def test(self):
+    def test_upload(self):
         content = b"abc"
         key = "/moto-test"
         func_to_test(self.bucket_name, key, content)
 
-        s3 = boto3.resource("s3")
-        object = s3.Object(self.bucket_name, key)
-        actual = object.get()["Body"].read()
+        test_object = self.s3_resource.Object(self.bucket_name, key)
+        actual = test_object.get()["Body"].read()
         self.assertEqual(actual, content)
 
 

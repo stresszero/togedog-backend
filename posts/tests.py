@@ -1,7 +1,8 @@
 from django.urls import reverse
 
+from comments.models import Comment
+from posts.models import Post, PostLike
 from users.tests import UserTest
-from posts.models import Post
 
 
 class PostTest(UserTest):
@@ -11,6 +12,15 @@ class PostTest(UserTest):
             user=self.test_user_1,
             subject="Test",
             content="Test",
+        )
+        self.test_post_comment = Comment.objects.create(
+            user=self.test_user_1,
+            post=self.test_post,
+            content="test comment",
+        )
+        self.test_post_like = PostLike.objects.create(
+            like_user=self.test_user_1,
+            post=self.test_post,
         )
         self.test_deleted_post = Post.objects.create(
             user=self.test_user_1,
@@ -116,3 +126,69 @@ class GetDeletedPostsTest(PostTest):
 
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.json(), {"detail": "forbidden"})
+
+
+class GetPostTest(PostTest):
+    def test_success_get_post(self):
+        response = self.client.get(
+            reverse("api-1.0.0:get_post", kwargs={"post_id": self.test_post.id}),
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
+        )
+
+        results = {
+            "id": self.test_post.id,
+            "user_id": self.test_post.user_id,
+            "user_nickname": self.test_post.user.nickname,
+            "user_thumbnail": self.test_post.user.thumbnail_url,
+            "subject": self.test_post.subject,
+            "content": self.test_post.content,
+            "image_url": self.test_post.image_url,
+            "created_at": f"{self.test_post.created_at.isoformat()[:-9]}Z",
+            "post_likes_count": self.test_post.get_likes_count,
+            "is_liked": self.test_post.likes.filter(
+                like_user_id=self.test_user_1.id
+            ).exists(),
+            "comments_list": [
+                {
+                    "content": comment.content,
+                    "created_at": f"{comment.created_at.isoformat()[:-9]}Z",
+                    "id": comment.id,
+                    "post_id": comment.post_id,
+                    "user_id": comment.user_id,
+                    "user_nickname": comment.user.nickname,
+                    "user_thumbnail": comment.user.thumbnail_url,
+                }
+                for comment in self.test_post.comments.filter(
+                    is_deleted=False
+                ).order_by("created_at")
+            ],
+        }
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), results)
+
+    def test_fail_405_get_post(self):
+        response = self.client.post(
+            reverse("api-1.0.0:get_post", kwargs={"post_id": self.test_post.id}),
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
+        )
+
+        self.assertEqual(response.status_code, 405)
+        self.assertContains(response, "Method not allowed", status_code=405)
+
+    def test_fail_403_get_post(self):
+        self.test_user_1.status = "banned"
+        self.test_user_1.save()
+        response = self.client.get(
+            reverse("api-1.0.0:get_post", kwargs={"post_id": self.test_post.id}),
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json(), {"detail": "forbidden"})
+
+    def test_fail_401_get_post(self):
+        response = self.client.get(
+            reverse("api-1.0.0:get_post", kwargs={"post_id": self.test_post.id})
+        )
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json(), {"detail": "Unauthorized"})

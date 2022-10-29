@@ -94,7 +94,7 @@ def test_cookie(request):
     return {"cookie_access_token": request.COOKIES["access_token"]}
 
 
-@api.post("/api/test-count", summary="MBTI 검사 횟수 올리기")
+@api.post("/test-count", summary="MBTI 검사 횟수 올리기")
 def add_test_count(request):
     count_obj = UserTestCount.objects.get(id=1)
     count_obj.test_count = F("test_count") + 1

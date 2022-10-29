@@ -7,6 +7,7 @@ from users.auth import AuthBearer, has_authority
 
 from .mongodb import get_message
 
+
 router = Router(tags=["채팅 관련 API"], auth=AuthBearer())
 
 

@@ -8,6 +8,7 @@ from comments.schemas import GetCommentOut
 from posts.models import Post
 from users.auth import AuthBearer, has_authority, is_admin
 
+
 router = Router(tags=["댓글 관련 API"], auth=AuthBearer())
 
 

@@ -128,6 +128,57 @@ class GetDeletedPostsTest(PostTest):
         self.assertEqual(response.json(), {"detail": "forbidden"})
 
 
+class GetDeletedPostByAdmin(PostTest):
+    def test_success_get_deleted_post_by_admin(self):
+        response = self.client.get(
+            reverse(
+                "api-1.0.0:get_deleted_post_by_admin",
+                kwargs={"post_id": self.test_deleted_post.id},
+            ),
+            HTTP_AUTHORIZATION=f"Bearer {self.admin_jwt}",
+        )
+        result = {
+            "id": self.test_deleted_post.id,
+            "subject": self.test_deleted_post.subject,
+            "content": self.test_deleted_post.content,
+            "created_at": f"{self.test_deleted_post.created_at.isoformat()[:-9]}Z",
+            "image_url": self.test_deleted_post.image_url,
+            "user_id": self.test_deleted_post.user.id,
+            "user_name": self.test_deleted_post.user.nickname,
+            "user_nickname": self.test_deleted_post.user.nickname,
+            "user_email": self.test_deleted_post.user.email,
+            "user_mbti": self.test_deleted_post.user.mbti,
+            "user_address": self.test_deleted_post.user.address,
+            "user_thumbnail": self.test_deleted_post.user.thumbnail_url,
+            "user_created_at": f"{self.test_deleted_post.user.created_at.isoformat()[:-9]}Z",
+            "delete_reason": "등록된 삭제사유 없음",
+        }
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), result)
+
+    def test_fail_405_get_deleted_post_by_admin(self):
+        response = self.client.post(
+            reverse(
+                "api-1.0.0:get_deleted_post_by_admin",
+                kwargs={"post_id": self.test_deleted_post.id},
+            ),
+            HTTP_AUTHORIZATION=f"Bearer {self.admin_jwt}",
+        )
+        self.assertEqual(response.status_code, 405)
+        self.assertContains(response, "Method not allowed", status_code=405)
+
+    def test_fail_403_get_deleted_post_by_admin(self):
+        response = self.client.get(
+            reverse(
+                "api-1.0.0:get_deleted_post_by_admin",
+                kwargs={"post_id": self.test_deleted_post.id},
+            ),
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json(), {"detail": "forbidden"})
+
+
 class GetPostTest(PostTest):
     def test_success_get_post(self):
         response = self.client.get(

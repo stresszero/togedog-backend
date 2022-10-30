@@ -1,4 +1,5 @@
 [run]
 include = 
         */users/*
+        */posts/*
         */cores/*

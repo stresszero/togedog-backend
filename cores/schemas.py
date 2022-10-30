@@ -82,3 +82,8 @@ class NoticeReportOut(Schema):
     count: int = None
     post_reports: List[PostReportOut] = []
     comment_reports: List[CommentReportOut] = []
+
+
+class CheckNoticeIn(Schema):
+    id: str
+    type: str

@@ -1,3 +1,7 @@
+from unittest.mock import patch
+
+from django.core.files.base import ContentFile
+from django.test.client import MULTIPART_CONTENT, encode_multipart, BOUNDARY
 from django.urls import reverse
 
 from comments.models import Comment
@@ -246,7 +250,89 @@ class GetPostTest(PostTest):
 
 
 class ModifyPostTest(PostTest):
-    pass
+    def test_success_without_file_modify_post(self):
+        modify_data = {"subject": "modify_test", "content": "modify_test"}
+        response = self.client.patch(
+            reverse("api-1.0.0:modify_post", kwargs={"post_id": self.test_post.id}),
+            data=encode_multipart(data=modify_data, boundary=BOUNDARY),
+            content_type=MULTIPART_CONTENT,
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"message": "success"})
+
+    @patch("cores.utils.file_handler")
+    def test_success_with_file_modify_post(self, mock_patch):
+        upload_file = ContentFile(b"foo", "bar.png")
+        modify_data = {"subject": "qwer", "content": "qwer", "file": upload_file}
+
+        mock_response = mock_patch.return_value
+        mock_response.status_code = 200
+
+        response = self.client.patch(
+            reverse("api-1.0.0:modify_post", kwargs={"post_id": self.test_post.id}),
+            data=encode_multipart(data=modify_data, boundary=BOUNDARY),
+            content_type=MULTIPART_CONTENT,
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
+        )
+        mock_response.json.return_value = {"message": "success"}
+        self.assertEqual(response.status_code, mock_response.status_code)
+        self.assertEqual(response.json(), mock_response.json.return_value)
+
+    def test_fail_400_modify_post(self):
+        upload_file = ContentFile(b"foo", "foo.bar")
+        modify_data = {"subject": "asdf", "content": "asdf", "file": upload_file}
+        wrong_extension_response = self.client.patch(
+            reverse("api-1.0.0:modify_post", kwargs={"post_id": self.test_post.id}),
+            data=encode_multipart(data=modify_data, boundary=BOUNDARY),
+            content_type=MULTIPART_CONTENT,
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
+        )
+        self.assertEqual(wrong_extension_response.status_code, 400)
+        self.assertContains(
+            wrong_extension_response, "invalid file extension", status_code=400
+        )
+
+        too_large_file = ContentFile(b"foo" * 1024 * 1024 * 51, "foo.png")
+        modify_data["file"] = too_large_file
+        too_large_file_response = self.client.patch(
+            reverse("api-1.0.0:modify_post", kwargs={"post_id": self.test_post.id}),
+            data=encode_multipart(data=modify_data, boundary=BOUNDARY),
+            content_type=MULTIPART_CONTENT,
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
+        )
+        self.assertEqual(too_large_file_response.status_code, 400)
+        self.assertContains(
+            too_large_file_response, "file size is too large", status_code=400
+        )
+
+    def test_fail_401_modify_post(self):
+        modify_data = {"subject": "modify_test", "content": "modify_test"}
+        response = self.client.patch(
+            reverse("api-1.0.0:modify_post", kwargs={"post_id": self.test_post.id}),
+            data=encode_multipart(data=modify_data, boundary=BOUNDARY),
+            content_type=MULTIPART_CONTENT,
+        )
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json(), {"detail": "Unauthorized"})
+
+    def test_fail_403_modify_post(self):
+        self.test_post.user_id = self.test_admin.id
+        self.test_post.save()
+        response = self.client.patch(
+            reverse("api-1.0.0:modify_post", kwargs={"post_id": self.test_post.id}),
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json(), {"detail": "forbidden"})
+
+    def test_fail_404_modify_post(self):
+        response = self.client.patch(
+            reverse("api-1.0.0:modify_post", kwargs={"post_id": 999}),
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json(), {"detail": "Not Found"})
 
 
 class GetPostByAdminTest(PostTest):

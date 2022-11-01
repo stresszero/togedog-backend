@@ -4,9 +4,10 @@ from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
-from ninja import Router, Form, Query
+from ninja import Form, Query
 from ninja.files import UploadedFile
 from ninja.pagination import paginate, PageNumberPagination
+from ninja.router import URLBugFixedRouter
 
 from cores.utils import validate_upload_file, handle_upload_file, delete_existing_image
 from cores.schemas import MessageOut, ContentIn, PostListFilters
@@ -25,7 +26,7 @@ from posts.schemas import (
 )
 from users.auth import AuthBearer, has_authority, is_admin
 
-router = Router(tags=["게시글 관련 API"], auth=AuthBearer())
+router = URLBugFixedRouter(tags=["게시글 관련 API"], auth=AuthBearer())
 
 MB = 1024 * 1024
 

@@ -4,8 +4,8 @@ from django.core.files.base import ContentFile
 from django.test.client import MULTIPART_CONTENT, encode_multipart, BOUNDARY
 from django.urls import reverse
 
-from comments.models import Comment
-from posts.models import Post, PostLike
+from comments.models import Comment, CommentDelete
+from posts.models import Post, PostLike, PostDelete
 from users.tests import UserTest
 
 
@@ -397,3 +397,55 @@ class GetPostByAdminTest(PostTest):
         )
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.json(), {"detail": "forbidden"})
+
+
+class DeletePostTest(PostTest):
+    def test_success_delete_post(self):
+        response = self.client.post(
+            reverse("api-1.0.0:delete_post", kwargs={"post_id": self.test_post.id}),
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
+        )
+        post = Post.objects.get(id=self.test_post.id)
+        post_delete = PostDelete.objects.get(post_id=self.test_post.id)
+        comments = Comment.objects.filter(post_id=self.test_post.id)
+        comment_deletes = CommentDelete.objects.filter(
+            comment_id=self.test_post_comment.id
+        )
+
+        self.assertEqual(post.is_deleted, True)
+        self.assertEqual(post_delete.post_id, self.test_post.id)
+        self.assertEqual(post_delete.delete_reason, "글쓴이 본인이 삭제")
+        self.assertEqual(
+            all(i.delete_reason == "게시글 삭제로 인한 댓글 자동삭제" for i in comment_deletes), True
+        )
+        self.assertEqual(comment_deletes.count(), comments.count())
+        self.assertEqual(all(comment.is_deleted for comment in comments), True)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"message": "success"})
+
+    def test_fail_405_delete_post(self):
+        response = self.client.get(
+            reverse("api-1.0.0:delete_post", kwargs={"post_id": self.test_post.id}),
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
+        )
+        self.assertEqual(response.status_code, 405)
+        self.assertContains(response, "Method not allowed", status_code=405)
+    
+    def test_fail_403_delete_post(self):
+        self.test_post.user_id = self.test_admin.id
+        self.test_post.save()
+        response = self.client.post(
+            reverse("api-1.0.0:delete_post", kwargs={"post_id": self.test_post.id}),
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json(), {"detail": "forbidden"})
+
+    def test_fail_404_delete_post(self):
+        response = self.client.post(
+            reverse("api-1.0.0:delete_post", kwargs={"post_id": 12345}),
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json(), {"detail": "Not Found"})
+        

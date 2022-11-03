@@ -5,7 +5,7 @@ from django.test.client import MULTIPART_CONTENT, encode_multipart, BOUNDARY
 from django.urls import reverse
 
 from comments.models import Comment, CommentDelete
-from posts.models import Post, PostLike, PostDelete
+from posts.models import Post, PostLike, PostDelete, PostReport
 from users.tests import UserTest
 
 
@@ -430,7 +430,7 @@ class DeletePostTest(PostTest):
         )
         self.assertEqual(response.status_code, 405)
         self.assertContains(response, "Method not allowed", status_code=405)
-    
+
     def test_fail_403_delete_post(self):
         self.test_post.user_id = self.test_admin.id
         self.test_post.save()
@@ -448,4 +448,55 @@ class DeletePostTest(PostTest):
         )
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.json(), {"detail": "Not Found"})
-        
+
+
+class ReportPostTest(PostTest):
+    def test_success_report_test(self):
+        response = self.client.post(
+            reverse("api-1.0.0:report_post", kwargs={"post_id": self.test_post.id}),
+            HTTP_AUTHORIZATION=f"Bearer {self.admin_jwt}",
+            data={"content": "테스트 신고"},
+        )
+        test_post_report = PostReport.objects.all().first()
+        self.assertEqual(test_post_report.post_id, self.test_post.id)
+        self.assertEqual(test_post_report.reporter_user_id, self.test_admin.id)
+        self.assertEqual(test_post_report.reported_user_id, self.test_post.user_id)
+        self.assertEqual(test_post_report.content, "테스트 신고")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"message": "success"})
+
+    def test_fail_405_report_post(self):
+        response = self.client.get(
+            reverse("api-1.0.0:report_post", kwargs={"post_id": self.test_post.id}),
+            HTTP_AUTHORIZATION=f"Bearer {self.admin_jwt}",
+            data={"content": "테스트 신고"},
+        )
+        self.assertEqual(response.status_code, 405)
+        self.assertContains(response, "Method not allowed", status_code=405)
+
+    def test_fail_404_report_post(self):
+        response = self.client.post(
+            reverse("api-1.0.0:report_post", kwargs={"post_id": 12345}),
+            HTTP_AUTHORIZATION=f"Bearer {self.admin_jwt}",
+            data={"content": "테스트 신고"},
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json(), {"detail": "Not Found"})
+
+    def test_fail_403_report_post(self):
+        response = self.client.post(
+            reverse("api-1.0.0:report_post", kwargs={"post_id": self.test_post.id}),
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
+            data={"content": "테스트 신고"},
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json(), {"detail": "You can't report yourself"})
+
+    def test_fail_401_report_post(self):
+        response = self.client.post(
+            reverse("api-1.0.0:report_post", kwargs={"post_id": self.test_post.id}),
+            data={"content": "테스트 신고"},
+        )
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json(), {"detail": "Unauthorized"})

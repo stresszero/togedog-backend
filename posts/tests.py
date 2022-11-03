@@ -500,3 +500,58 @@ class ReportPostTest(PostTest):
         )
         self.assertEqual(response.status_code, 401)
         self.assertEqual(response.json(), {"detail": "Unauthorized"})
+
+
+class DeletePostFromDbTest(PostTest):
+    @patch("cores.utils.file_handler")
+    def test_success_delete_post_from_db(self, mock_patch):
+        mock_response = mock_patch.return_value
+        mock_response.status_code = 200
+        response = self.client.delete(
+            reverse(
+                "api-1.0.0:delete_post_from_db", kwargs={"post_id": self.test_post.id}
+            ),
+            HTTP_AUTHORIZATION=f"Bearer {self.admin_jwt}",
+        )
+        mock_response.json.return_value = {"message": "success"}
+
+        self.assertEqual(Post.objects.filter(id=self.test_post.id).exists(), False)
+        self.assertEqual(response.status_code, mock_response.status_code)
+        self.assertEqual(response.json(), mock_response.json.return_value)
+
+    def test_fail_405_delete_post_from_db(self):
+        response = self.client.get(
+            reverse(
+                "api-1.0.0:delete_post_from_db", kwargs={"post_id": self.test_post.id}
+            ),
+            HTTP_AUTHORIZATION=f"Bearer {self.admin_jwt}",
+        )
+        self.assertEqual(response.status_code, 405)
+        self.assertContains(response, "Method not allowed", status_code=405)
+
+    def test_fail_404_delete_post_from_db(self):
+        response = self.client.delete(
+            reverse("api-1.0.0:delete_post_from_db", kwargs={"post_id": 12345}),
+            HTTP_AUTHORIZATION=f"Bearer {self.admin_jwt}",
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json(), {"detail": "Not Found"})
+
+    def test_fail_403_delete_post_from_db(self):
+        response = self.client.delete(
+            reverse(
+                "api-1.0.0:delete_post_from_db", kwargs={"post_id": self.test_post.id}
+            ),
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json(), {"detail": "forbidden"})
+
+    def test_fail_401_delete_post_from_db(self):
+        response = self.client.delete(
+            reverse(
+                "api-1.0.0:delete_post_from_db", kwargs={"post_id": self.test_post.id}
+            )
+        )
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json(), {"detail": "Unauthorized"})

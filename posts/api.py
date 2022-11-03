@@ -211,7 +211,7 @@ def delete_post_from_db(request, post_id: int):
     """
     is_admin(request)
     post = get_object_or_404(Post, id=post_id)
-    delete_existing_image(post.image_url, type="post_image")
+    delete_existing_image(post.image_url, type="post_images")
     post.delete()
 
     return 200, {"message": "success"}

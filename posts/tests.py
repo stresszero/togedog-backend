@@ -36,6 +36,10 @@ class PostTest(UserTest):
     def tearDown(self):
         super().tearDown()
         Post.objects.all().delete()
+        Comment.objects.all().delete()
+        PostLike.objects.all().delete()
+        PostDelete.objects.all().delete()
+        PostReport.objects.all().delete()
 
 
 class GetPostsByAdminTest(PostTest):
@@ -552,6 +556,72 @@ class DeletePostFromDbTest(PostTest):
             reverse(
                 "api-1.0.0:delete_post_from_db", kwargs={"post_id": self.test_post.id}
             )
+        )
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json(), {"detail": "Unauthorized"})
+
+
+class CreatePostLikeTest(PostTest):
+    def test_success_create_post_like(self):
+        response = self.client.post(
+            reverse(
+                "api-1.0.0:create_post_like", kwargs={"post_id": self.test_post.id}
+            ),
+            HTTP_AUTHORIZATION=f"Bearer {self.admin_jwt}",
+        )
+        post_like = PostLike.objects.filter(
+            post_id=self.test_post.id, like_user_id=self.test_admin.id
+        )
+        self.assertEqual(post_like.exists(), True)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"message": "post like created"})
+
+        response = self.client.post(
+            reverse(
+                "api-1.0.0:create_post_like", kwargs={"post_id": self.test_post.id}
+            ),
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
+        )
+        post_like = PostLike.objects.filter(
+            post_id=self.test_post.id, like_user_id=self.test_user_1.id
+        )
+        self.assertEqual(post_like.exists(), False)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"message": "post like deleted"})
+
+    def test_fail_405_create_post_like(self):
+        response = self.client.get(
+            reverse(
+                "api-1.0.0:create_post_like", kwargs={"post_id": self.test_post.id}
+            ),
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
+        )
+        self.assertEqual(response.status_code, 405)
+        self.assertContains(response, "Method not allowed", status_code=405)
+
+    def test_fail_404_create_post_like(self):
+        response = self.client.post(
+            reverse("api-1.0.0:create_post_like", kwargs={"post_id": 12345}),
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json(), {"detail": "Not Found"})
+
+    def test_fail_403_create_post_like(self):
+        self.test_user_1.status = "banned"
+        self.test_user_1.save()
+        response = self.client.post(
+            reverse(
+                "api-1.0.0:create_post_like", kwargs={"post_id": self.test_post.id}
+            ),
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json(), {"detail": "forbidden"})
+
+    def test_fail_401_create_post_like(self):
+        response = self.client.post(
+            reverse("api-1.0.0:create_post_like", kwargs={"post_id": self.test_post.id})
         )
         self.assertEqual(response.status_code, 401)
         self.assertEqual(response.json(), {"detail": "Unauthorized"})

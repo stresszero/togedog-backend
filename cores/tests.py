@@ -44,11 +44,13 @@ class S3ServiceTest(unittest.TestCase):
 
 class EnumFieldTest(TestCase):
     def test_enumfield_requirement(self):
+        # EnumField에 인자가 없으므로 TypeError가 발생해야 함
         with self.assertRaises(TypeError):
             EnumField()
 
     def test_get_default_error(self):
         field = EnumField(enum=TestEnum, default="hello")
+        # TestEnum에 "hello"라는 값이 없으므로 AttributeError가 발생해야 함
         with self.assertRaises(AttributeError):
             field.get_default()
 

@@ -1,12 +1,18 @@
-import jwt, requests, uuid
+import jwt
+import requests
+import uuid
 import botocore
 import boto3
 from datetime import datetime, timedelta, timezone
+from typing import Iterator
 
 from django.conf import settings
 from django.http import JsonResponse
+from django.urls import URLPattern, path as django_path
 from ninja.errors import HttpError
 from ninja.files import UploadedFile
+from ninja.router import Router
+from ninja.utils import normalize_path, replace_path_param_notation
 
 from users.models import User
 
@@ -19,30 +25,46 @@ EXP_WEEKS = 2
 COOKIE_MAX_AGE_HOUR = 8
 
 
+# https://github.com/vitalik/django-ninja/issues/575
+class URLBugFixedRouter(Router):
+    def urls_paths(self, prefix: str) -> Iterator[URLPattern]:
+        prefix = replace_path_param_notation(prefix)
+        for path, path_view in self.path_operations.items():
+            path = replace_path_param_notation(path)
+            route = "/".join([i for i in (prefix, path) if i])
+            # to skip lot of checks we simply treat double slash as a mistake:
+            route = normalize_path(route)
+            route = route.lstrip("/")
+
+            for operation in path_view.operations:
+                url_name = self.api.get_operation_url_name(operation, router=self)
+                yield django_path(route, path_view.get_view(), name=url_name)
+
+
 class FileHandler:
     def __init__(self, file_service):
         self.file_service = file_service
-    
+
     def upload(self, file, type, upload_filename, extra_args):
         return self.file_service.upload(file, type, upload_filename, extra_args)
-        
+
     def delete(self, type, url):
         return self.file_service.delete(type, url)
 
 
 class S3Service:
     def __init__(self):
-        self.endpoint_url      = settings.AWS_S3_ENDPOINT_URL
-        self.access_key        = settings.AWS_ACCESS_KEY_ID
+        self.endpoint_url = settings.AWS_S3_ENDPOINT_URL
+        self.access_key = settings.AWS_ACCESS_KEY_ID
         self.secret_access_key = settings.AWS_SECRET_ACCESS_KEY
-        self.region_name       = settings.AWS_S3_REGION_NAME
+        self.region_name = settings.AWS_S3_REGION_NAME
 
         self.s3_client = boto3.client(
             "s3",
-            endpoint_url          = self.endpoint_url,
-            aws_access_key_id     = self.access_key,
-            aws_secret_access_key = self.secret_access_key,
-            region_name           = self.region_name,
+            endpoint_url=self.endpoint_url,
+            aws_access_key_id=self.access_key,
+            aws_secret_access_key=self.secret_access_key,
+            region_name=self.region_name,
         )
 
     def upload(self, file, type, upload_filename, extra_args):
@@ -103,7 +125,7 @@ def handle_upload_file(file: UploadedFile, type: str):
     upload_filename = f'{str(uuid.uuid4())}.{file.name.split(".")[-1]}'
     url_dict = {
         "user_thumbnail": f"{settings.PROFILE_IMAGES_URL}{upload_filename}",
-        "post_images": f"{settings.POST_IMAGES_URL}{upload_filename}"
+        "post_images": f"{settings.POST_IMAGES_URL}{upload_filename}",
     }
 
     file_handler.upload(
@@ -129,7 +151,7 @@ def censor_text(text: str) -> str:
             censored_text = (
                 censored_text[:bad_word_index]
                 + "*" * bad_word_length
-                + censored_text[bad_word_index + bad_word_length:]
+                + censored_text[bad_word_index + bad_word_length :]
             )
             bad_word_index = text.find(bad_word, bad_word_index + 1)
     return censored_text

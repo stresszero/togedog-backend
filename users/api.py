@@ -6,7 +6,6 @@ from django.db.models import Count
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from ninja import Form, Query
-from ninja.router import URLBugFixedRouter
 from ninja.files import UploadedFile
 from ninja.pagination import paginate, PageNumberPagination
 
@@ -18,6 +17,7 @@ from cores.utils import (
     handle_upload_file,
     create_user_login_response,
     SocialLoginUserProfile,
+    URLBugFixedRouter,
 )
 from users.auth import AuthBearer, is_admin, has_authority
 from users.models import User, NAME_AND_NICKNAME_MAX_LENGTH
@@ -31,7 +31,7 @@ from users.schemas import (
     TestKakaoToken,
 )
 
-# https://github.com/vitalik/django-ninja/issues/575
+
 router = URLBugFixedRouter(tags=["사용자 관련 API"])
 
 

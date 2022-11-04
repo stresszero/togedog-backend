@@ -7,9 +7,13 @@ from django.utils import timezone
 from ninja import Form, Query
 from ninja.files import UploadedFile
 from ninja.pagination import paginate, PageNumberPagination
-from ninja.router import URLBugFixedRouter
 
-from cores.utils import validate_upload_file, handle_upload_file, delete_existing_image
+from cores.utils import (
+    validate_upload_file,
+    handle_upload_file,
+    delete_existing_image,
+    URLBugFixedRouter,
+)
 from cores.schemas import MessageOut, ContentIn, PostListFilters
 from comments.models import Comment, CommentDelete
 from posts.models import Post, PostLike, PostDelete, PostReport

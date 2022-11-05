@@ -1,6 +1,6 @@
 import os
-import socketio
 
+import socketio
 from django.core.asgi import get_asgi_application
 
 # from chat.socketio import sio_async

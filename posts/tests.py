@@ -1,11 +1,11 @@
 from unittest.mock import patch
 
 from django.core.files.base import ContentFile
-from django.test.client import MULTIPART_CONTENT, encode_multipart, BOUNDARY
+from django.test.client import BOUNDARY, MULTIPART_CONTENT, encode_multipart
 from django.urls import reverse
 
 from comments.models import Comment, CommentDelete
-from posts.models import Post, PostLike, PostDelete, PostReport
+from posts.models import Post, PostDelete, PostLike, PostReport
 from users.tests import UserTest
 
 

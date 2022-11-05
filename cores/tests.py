@@ -1,9 +1,10 @@
-import boto3
 import unittest
 from enum import Enum
+
+import boto3
+from django.test import TestCase
 from moto import mock_s3
 
-from django.test import TestCase
 from .models import EnumField
 
 # from django.conf import settings

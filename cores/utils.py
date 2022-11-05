@@ -1,21 +1,21 @@
-import jwt
-import requests
 import uuid
-import botocore
-import boto3
 from datetime import datetime, timedelta, timezone
 from typing import Iterator
 
+import boto3
+import botocore
+import jwt
+import requests
 from django.conf import settings
 from django.http import JsonResponse
-from django.urls import URLPattern, path as django_path
+from django.urls import URLPattern
+from django.urls import path as django_path
 from ninja.errors import HttpError
 from ninja.files import UploadedFile
 from ninja.router import Router
 from ninja.utils import normalize_path, replace_path_param_notation
 
 from users.models import User
-
 
 MB = 1024 * 1024
 IMAGE_EXTENSIONS_LIST = ["jpg", "jpeg", "jfif", "png", "webp", "avif", "svg"]

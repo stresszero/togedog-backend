@@ -1,13 +1,8 @@
-from django.db import models
 from django.conf import settings
+from django.db import models
 
-from cores.models import (
-    TimeStampedModel,
-    EnumField,
-    UserType,
-    UserStatus,
-    UserAccountType,
-)
+from cores.models import (EnumField, TimeStampedModel, UserAccountType,
+                          UserStatus, UserType)
 
 NAME_AND_NICKNAME_MAX_LENGTH = 10
 

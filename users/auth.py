@@ -1,11 +1,10 @@
 import jwt
-
-from ninja.security import HttpBearer, APIKeyCookie
+from django.conf import settings
 from ninja.errors import HttpError
+from ninja.security import APIKeyCookie, HttpBearer
 
 from cores.models import UserStatus
 from users.models import User
-from django.conf import settings
 
 
 def has_authority(

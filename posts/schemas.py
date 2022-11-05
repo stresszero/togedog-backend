@@ -1,10 +1,10 @@
 from datetime import datetime
 from typing import List, Optional
 
-from ninja import Schema, ModelSchema, Field
+from ninja import Field, ModelSchema, Schema
 
-from posts.models import Post
 from comments.models import Comment
+from posts.models import Post
 
 
 class PostUser(Schema):

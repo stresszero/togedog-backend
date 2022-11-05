@@ -5,8 +5,8 @@ from typing import Optional
 from ninja import Schema
 from pydantic import EmailStr, validator
 
-from users.models import User
 from cores.schemas import REGEX_PASSWORD, validate_name
+from users.models import User
 
 
 class EmailSignupCheckIn(Schema):

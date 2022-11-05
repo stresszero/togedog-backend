@@ -1,36 +1,24 @@
 from typing import List
 
 from django.conf import settings
-from django.contrib.auth.hashers import make_password, check_password
+from django.contrib.auth.hashers import check_password, make_password
 from django.db.models import Count
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from ninja import Form, Query
 from ninja.files import UploadedFile
-from ninja.pagination import paginate, PageNumberPagination
+from ninja.pagination import PageNumberPagination, paginate
 
 from cores.models import UserAccountType, UserStatus
 from cores.schemas import MessageOut, UserListFilters
-from cores.utils import (
-    validate_upload_file,
-    delete_existing_image,
-    handle_upload_file,
-    create_user_login_response,
-    SocialLoginUserProfile,
-    URLBugFixedRouter,
-)
-from users.auth import AuthBearer, is_admin, has_authority
-from users.models import User, NAME_AND_NICKNAME_MAX_LENGTH
-from users.schemas import (
-    EmailUserSignupIn,
-    EmailUserSigninIn,
-    ModifyUserIn,
-    UserListOut,
-    UserDetailOut,
-    EmailSignupCheckIn,
-    TestKakaoToken,
-)
-
+from cores.utils import (SocialLoginUserProfile, URLBugFixedRouter,
+                         create_user_login_response, delete_existing_image,
+                         handle_upload_file, validate_upload_file)
+from users.auth import AuthBearer, has_authority, is_admin
+from users.models import NAME_AND_NICKNAME_MAX_LENGTH, User
+from users.schemas import (EmailSignupCheckIn, EmailUserSigninIn,
+                           EmailUserSignupIn, ModifyUserIn, TestKakaoToken,
+                           UserDetailOut, UserListOut)
 
 router = URLBugFixedRouter(tags=["사용자 관련 API"])
 

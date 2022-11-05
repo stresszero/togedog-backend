@@ -1,11 +1,10 @@
 import os
-from bson.errors import InvalidId
 from datetime import datetime, timezone
 
 from bson import ObjectId
-from pymongo import MongoClient, DESCENDING
-
+from bson.errors import InvalidId
 from django.conf import settings
+from pymongo import DESCENDING, MongoClient
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "togedog_dj.settings")
 

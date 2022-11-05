@@ -10,9 +10,8 @@ from cores.schemas import MessageOut, NoticeReportOut
 from posts.api import router as posts_router
 from posts.models import PostReport
 from users.api import router as users_router
-from users.auth import AuthBearer, is_admin, auth_cookie
+from users.auth import AuthBearer, auth_cookie, is_admin
 from users.models import UserTestCount
-
 
 api = NinjaAPI(
     title="함께하개 API 문서",

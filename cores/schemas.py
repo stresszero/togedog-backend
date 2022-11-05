@@ -2,7 +2,7 @@ import re
 from typing import List
 
 from django.conf import settings
-from ninja import Schema, ModelSchema, Field
+from ninja import Field, ModelSchema, Schema
 from pydantic import validator
 
 from comments.models import CommentReport

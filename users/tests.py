@@ -1,12 +1,11 @@
 import json
+from unittest.mock import MagicMock, patch
 
-from unittest.mock import patch, MagicMock
-
-from django.contrib.auth.hashers import make_password
 from django.conf import settings
+from django.contrib.auth.hashers import make_password
 from django.core.files.base import ContentFile
-from django.test import TestCase, Client
-from django.test.client import MULTIPART_CONTENT, encode_multipart, BOUNDARY
+from django.test import Client, TestCase
+from django.test.client import BOUNDARY, MULTIPART_CONTENT, encode_multipart
 from django.urls import reverse
 
 from users.models import User

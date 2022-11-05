@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from ninja import Schema, ModelSchema, Field
+from ninja import Field, ModelSchema, Schema
 
 from comments.models import Comment
 

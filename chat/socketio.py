@@ -1,17 +1,17 @@
 import os
-import socketio
 
 import django
+import socketio
 from django.conf import settings
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "togedog_dj.settings")
 django.setup()
 
-from .mongodb import save_message
 from cores.models import UserStatus
 from cores.utils import censor_text
 from users.models import User
 
+from .mongodb import save_message
 
 sio = socketio.Server(
     async_mode="eventlet",

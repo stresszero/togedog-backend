@@ -3,12 +3,12 @@
 
 ## 프론트엔드 팀원
 
-- 안성주(PM), 김슬비, 최현민, 윤경연, 김철회
+- [안성주(PM)](https://github.com/wkddb1359), [김슬비](https://github.com/kseul), [최현민](https://github.com/cham-min), [윤경연](https://github.com/Yuntroll95), [김철회](https://github.com/cjforla)
 - [프론트엔드 저장소 바로가기](https://github.com/kseul/with_dog)
 
 ## 백엔드 팀원
 
-- 강세영
+- [강세영](https://github.com/stresszero)
 
 ##  백엔드 사용 기술
 - Python 3.9.13
@@ -34,7 +34,9 @@
     - 회원, 게시글 관리 기능
     - 회원 차단(비활성화)
     - 사용자 신고 알림 및 확인 기능
-- 채팅 및 채팅 메시지 신고 기능
+- 채팅
+  - 욕설 필터링
+  - 채팅 메시지 신고 기능
   
 ## DB ERD
 ![](https://velog.velcdn.com/images/stresszero/post/73efda51-7df5-4639-aabd-9a63eee54d50/image.png)

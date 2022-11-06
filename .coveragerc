@@ -3,3 +3,5 @@ include =
         */users/*
         */posts/*
         */cores/*
+        */comments/*
+        */chat/*

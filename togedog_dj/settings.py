@@ -49,7 +49,7 @@ DATABASES = DATABASES
 
 # production setting
 ALLOWED_HOSTS = ALLOWED_HOSTS
-DEBUG = True
+DEBUG = False
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # ALLOWED_HOSTS = ["*"]
@@ -81,7 +81,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     # "debug_toolbar",
-    # 'sslserver',
     "corsheaders",
     "django_extensions",
     "django.contrib.postgres",

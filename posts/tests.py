@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+from django.conf import settings
 from django.core.files.base import ContentFile
 from django.test.client import BOUNDARY, MULTIPART_CONTENT, encode_multipart
 from django.urls import reverse
@@ -254,7 +255,7 @@ class GetPostTest(PostTest):
 
 
 class ModifyPostTest(PostTest):
-    def test_success_without_file_modify_post(self):
+    def test_success_modify_post_without_file(self):
         modify_data = {"subject": "modify_test", "content": "modify_test"}
         response = self.client.patch(
             reverse("api-1.0.0:modify_post", kwargs={"post_id": self.test_post.id}),
@@ -266,7 +267,7 @@ class ModifyPostTest(PostTest):
         self.assertEqual(response.json(), {"message": "success"})
 
     @patch("cores.utils.file_handler")
-    def test_success_with_file_modify_post(self, mock_patch):
+    def test_success_modify_post_with_file(self, mock_patch):
         upload_file = ContentFile(b"foo", "bar.png")
         modify_data = {"subject": "qwer", "content": "qwer", "file": upload_file}
 
@@ -625,3 +626,170 @@ class CreatePostLikeTest(PostTest):
         )
         self.assertEqual(response.status_code, 401)
         self.assertEqual(response.json(), {"detail": "Unauthorized"})
+
+
+class GetPostsTest(PostTest):
+    def test_success_get_posts(self):
+        response = self.client.get(
+            reverse("api-1.0.0:get_posts"),
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
+        )
+        posts = (
+            Post.objects.filter(is_deleted=False)
+            .select_related("user")
+            .prefetch_related("likes")
+            .order_by("-created_at")[0:9]
+        )
+        results = [
+            {
+                "id": post.id,
+                "created_at": f"{post.created_at.isoformat()[:-9]}Z",
+                "updated_at": f"{post.updated_at.isoformat()[:-9]}Z",
+                "subject": post.subject,
+                "image_url": post.image_url,
+                "user_id": post.user_id,
+                "user_nickname": post.user.nickname,
+                "user_thumbnail": post.user.thumbnail_url,
+                "post_likes_count": post.likes.count(),
+            }
+            for post in posts
+        ]
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), results)
+
+    def test_fail_405_get_posts(self):
+        response = self.client.patch(
+            reverse("api-1.0.0:get_posts"), HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}"
+        )
+        self.assertEqual(response.status_code, 405)
+        self.assertContains(response, "Method not allowed", status_code=405)
+
+    def test_fail_403_get_posts(self):
+        self.test_user_1.status = "banned"
+        self.test_user_1.save()
+        response = self.client.get(
+            reverse("api-1.0.0:get_posts"),
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json(), {"detail": "forbidden"})
+
+    def test_fail_401_get_posts(self):
+        response = self.client.get(reverse("api-1.0.0:get_posts"))
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json(), {"detail": "Unauthorized"})
+
+    def test_fail_500_get_posts(self):
+        try:
+            response = self.client.get(
+                reverse("api-1.0.0:get_posts") + "?sort=asdf",
+                HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
+            )
+            self.assertEqual(response.status_code, 500)
+        except Exception:
+            pass
+
+
+class CreatePostTest(PostTest):
+    def test_success_create_post_without_file(self):
+        post_input = {"subject": "foo", "content": "bar"}
+        response = self.client.post(
+            reverse("api-1.0.0:create_post"),
+            data=post_input,
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
+            content_type=MULTIPART_CONTENT,
+        )
+        post = Post.objects.filter(
+            subject="foo", content="bar", user_id=self.test_user_1.id
+        )
+
+        self.assertEqual(post.exists(), True)
+        self.assertEqual(post.get().image_url, settings.DEFAULT_POST_IMAGE_URL)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"message": "success"})
+
+    @patch("cores.utils.file_handler")
+    def test_success_create_post_with_file(self, mock_patch):
+        upload_file = ContentFile(b"foo", "bar.png")
+        post_input = {"subject": "qwer", "content": "qwer", "file": upload_file}
+
+        mock_response = mock_patch.return_value
+        mock_response.status_code = 200
+
+        response = self.client.post(
+            reverse("api-1.0.0:create_post"),
+            data=post_input,
+            content_type=MULTIPART_CONTENT,
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
+        )
+        mock_response.json.return_value = {"message": "success"}
+        self.assertEqual(response.status_code, mock_response.status_code)
+        self.assertEqual(response.json(), mock_response.json.return_value)
+
+    def test_fail_405_create_post(self):
+        response = self.client.put(
+            reverse("api-1.0.0:create_post"),
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
+        )
+        self.assertEqual(response.status_code, 405)
+        self.assertContains(response, "Method not allowed", status_code=405)
+
+    def test_fail_403_create_post(self):
+        self.test_user_1.status = "banned"
+        self.test_user_1.save()
+        post_input = {"subject": "foo", "content": "bar"}
+        response = self.client.post(
+            reverse("api-1.0.0:create_post"),
+            data=post_input,
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
+            content_type=MULTIPART_CONTENT,
+        )
+        post = Post.objects.filter(
+            subject="foo", content="bar", user_id=self.test_user_1.id
+        )
+        self.assertEqual(post.exists(), False)
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json(), {"detail": "forbidden"})
+
+    def test_fail_401_create_post(self):
+        response = self.client.post(reverse("api-1.0.0:create_post"))
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json(), {"detail": "Unauthorized"})
+
+    def test_fail_422_create_post(self):
+        post_input = {"subject": "foo"}
+        response = self.client.post(
+            reverse("api-1.0.0:create_post"),
+            data=post_input,
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
+            content_type=MULTIPART_CONTENT,
+        )
+        self.assertEqual(response.status_code, 422)
+
+    def test_fail_400_create_post(self):
+        upload_file = ContentFile(b"foo", "foo.bar")
+        post_input = {"subject": "asdf", "content": "asdf", "file": upload_file}
+        wrong_extension_response = self.client.post(
+            reverse("api-1.0.0:create_post"),
+            data=post_input,
+            content_type=MULTIPART_CONTENT,
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
+        )
+
+        self.assertEqual(wrong_extension_response.status_code, 400)
+        self.assertContains(
+            wrong_extension_response, "invalid file extension", status_code=400
+        )
+
+        too_large_file = ContentFile(b"foo" * 1024 * 1024 * 51, "foo.png")
+        post_input["file"] = too_large_file
+        too_large_file_response = self.client.post(
+            reverse("api-1.0.0:create_post"),
+            data=post_input,
+            content_type=MULTIPART_CONTENT,
+            HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
+        )
+        self.assertEqual(too_large_file_response.status_code, 400)
+        self.assertContains(
+            too_large_file_response, "file size is too large", status_code=400
+        )

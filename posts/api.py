@@ -9,18 +9,30 @@ from ninja.pagination import PageNumberPagination, paginate
 
 from comments.models import Comment, CommentDelete
 from cores.schemas import ContentIn, MessageOut, PostListFilters
-from cores.utils import (URLBugFixedRouter, delete_existing_image,
-                         handle_upload_file, validate_upload_file)
+from cores.utils import (
+    URLBugFixedRouter,
+    delete_existing_image,
+    handle_upload_file,
+    validate_upload_file,
+)
 from posts.models import Post, PostDelete, PostLike, PostReport
-from posts.schemas import (AdminGetDeletedPostOut, AdminGetPostListOut,
-                           AdminGetPostOut, CreatePostIn, DeletedPostOut,
-                           DeletePostIn, GetPostListOut, GetPostOut,
-                           ModifyPostIn)
+from posts.schemas import (
+    AdminGetDeletedPostOut,
+    AdminGetPostListOut,
+    AdminGetPostOut,
+    CreatePostIn,
+    DeletedPostOut,
+    DeletePostIn,
+    GetPostListOut,
+    GetPostOut,
+    ModifyPostIn,
+)
 from users.auth import AuthBearer, has_authority, is_admin
 
-router = URLBugFixedRouter(tags=["게시글 관련 API"], auth=AuthBearer())
 
 MB = 1024 * 1024
+
+router = URLBugFixedRouter(tags=["게시글 관련 API"], auth=AuthBearer())
 
 
 @router.get("/admin", response=List[AdminGetPostListOut], summary="관리자 페이지 게시글 리스트 조회")

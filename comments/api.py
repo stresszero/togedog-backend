@@ -1,14 +1,15 @@
 from django.shortcuts import get_object_or_404
-from ninja import Form, Router
+from ninja import Form
 
 from comments.models import Comment, CommentReport
 from comments.schemas import GetCommentOut
 from cores.schemas import ContentIn, MessageOut
+from cores.utils import URLBugFixedRouter
 from posts.models import Post
 from users.auth import AuthBearer, has_authority, is_admin
 
 
-router = Router(tags=["댓글 관련 API"], auth=AuthBearer())
+router = URLBugFixedRouter(tags=["댓글 관련 API"], auth=AuthBearer())
 
 
 @router.post("/{post_id}/comments", response={200: GetCommentOut}, summary="댓글 작성")

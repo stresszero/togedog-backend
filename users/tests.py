@@ -1,4 +1,7 @@
 import json
+import jwt
+import time
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
 from django.conf import settings
@@ -8,6 +11,7 @@ from django.test import Client, TestCase
 from django.test.client import BOUNDARY, MULTIPART_CONTENT, encode_multipart
 from django.urls import reverse
 
+from cores.utils import create_user_login_response, generate_jwt
 from users.models import User
 
 
@@ -699,3 +703,47 @@ class GoogleSocialLoginTest(UserTest):
         )
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json(), {"message": "key error"})
+
+
+class AuthBearerTest(UserTest):
+    def test_success_auth_bearer(self):
+        access_token = generate_jwt({"user": self.test_user_1.id}, "access")
+        response = self.client.get(
+            reverse("api-1.0.0:get_posts"),
+            HTTP_AUTHORIZATION=f"Bearer {access_token}",
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_fail_400_auth_bearer_user_does_not_exists(self):
+        wrong_user_access_token = generate_jwt({"user": 12345}, "access")
+        response = self.client.get(
+            reverse("api-1.0.0:get_posts"),
+            HTTP_AUTHORIZATION=f"Bearer {wrong_user_access_token}",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json(), {"detail": "user does not exist"})
+
+    def test_fail_400_auth_bearer_invalid_token(self):
+        response = self.client.get(
+            reverse("api-1.0.0:get_posts"),
+            HTTP_AUTHORIZATION="Bearer 1234567890",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json(), {"detail": "invalid token"})
+
+    def test_fail_401_auth_bearer_token_expired(self):
+        payload = {
+            "user": self.test_user_1.id,
+            "exp": datetime.now(timezone.utc) + timedelta(seconds=1),
+            "iat": datetime.now(timezone.utc),
+        }
+        expired_access_token = jwt.encode(
+            payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM
+        )
+        time.sleep(2)
+        response = self.client.get(
+            reverse("api-1.0.0:get_posts"),
+            HTTP_AUTHORIZATION=f"Bearer {expired_access_token}",
+        )
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json(), {"detail": "token expired"})

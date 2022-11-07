@@ -45,8 +45,8 @@ class AuthBearer(HttpBearer):
             )
             self.user = User.objects.get(id=payload["user"])
 
-        except User.DoesNotExist:
-            return HttpError(400, "user does not exist")
+        except User.DoesNotExist as e:
+            raise HttpError(400, "user does not exist") from e
 
         except jwt.ExpiredSignatureError as e:
             raise HttpError(401, "token expired") from e

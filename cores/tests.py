@@ -7,10 +7,6 @@ from moto import mock_s3
 
 from .models import EnumField
 
-# from django.conf import settings
-
-# from .utils import validate_upload_file, delete_existing_image, handle_upload_file
-
 
 def func_to_test(bucket_name, key, content):
     s3 = boto3.resource("s3")

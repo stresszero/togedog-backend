@@ -11,6 +11,7 @@ from users.models import NAME_AND_NICKNAME_MAX_LENGTH
 
 REGEX_PASSWORD = "^(?=.*[A-Za-z])(?=.*\d)(?=.*[$@$!%*#?&])[A-Za-z\d$@$!%*#?&]{8,16}$"
 REGEX_DATE_RANGE = "^(-?(?:[1-9][0-9]*)?[0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])~(-?(?:[1-9][0-9]*)?[0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])"
+REPORT_TYPES = ["post_report", "comment_report"]
 
 
 def validate_name(value: str):
@@ -87,3 +88,17 @@ class NoticeReportOut(Schema):
 class CheckNoticeIn(Schema):
     id: str
     type: str
+
+    @validator("id")
+    def validate_report_id(cls, value):
+        if value == "all":
+            return None
+        elif value.isdigit() and value != "0":
+            return int(value)
+        raise ValueError("invalid report id")
+
+    @validator("type")
+    def validate_report_type(cls, value):
+        if value in REPORT_TYPES:
+            return value
+        raise ValueError("invalid report type")

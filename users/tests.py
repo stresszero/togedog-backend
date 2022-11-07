@@ -159,7 +159,7 @@ class EmailUserSignupTest(UserTest):
 class GetUserListTest(UserTest):
     def test_success_get_user_list(self):
         response = self.client.get(
-            reverse("api-1.0.0:get_user_list"),
+            reverse("api-1.0.0:get_user_list") + "?date=2022-01-01~2022-12-31",
             HTTP_AUTHORIZATION=f"Bearer {self.admin_jwt}",
         )
         results = {
@@ -195,6 +195,14 @@ class GetUserListTest(UserTest):
         }
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), results)
+
+    def test_fail_422_get_user_list_by_wrong_date_range(self):
+        response = self.client.get(
+            reverse("api-1.0.0:get_user_list") + "?date=2022-01-01_2022-12-31",
+            HTTP_AUTHORIZATION=f"Bearer {self.admin_jwt}",
+        )
+        self.assertEqual(response.status_code, 422)
+        self.assertContains(response, "invalid date format", status_code=422)
 
     def test_fail_405_get_user_list(self):
         response = self.client.post(reverse("api-1.0.0:get_user_list"))

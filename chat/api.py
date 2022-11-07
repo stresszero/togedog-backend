@@ -1,13 +1,12 @@
-from ninja import Router
-
 from chat.models import ChatReport
 from chat.schemas import ChatReportIn
 from cores.schemas import MessageOut
+from cores.utils import URLBugFixedRouter
 from users.auth import AuthBearer, has_authority
 
 from .mongodb import get_message
 
-router = Router(tags=["채팅 관련 API"], auth=AuthBearer())
+router = URLBugFixedRouter(tags=["채팅 관련 API"], auth=AuthBearer())
 
 
 @router.post(

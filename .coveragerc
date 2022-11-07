@@ -1,6 +1,5 @@
 [run]
 include = 
-        *./api.py*
         */users/*
         */posts/*
         */cores/*

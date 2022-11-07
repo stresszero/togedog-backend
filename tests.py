@@ -1,13 +1,13 @@
 import json
 
-from django.urls import reverse
 from django.test import Client
+from django.urls import reverse
 
-from users.models import UserTestCount
-from users.tests import UserTest
+from comments.models import CommentReport
 from posts.models import PostReport
 from posts.tests import PostTest
-from comments.models import CommentReport
+from users.models import UserTestCount
+from users.tests import UserTest
 
 
 class NoticeTest(PostTest):

@@ -1,33 +1,17 @@
 from pathlib import Path
 
-from .admin_settings import (
-    ALGORITHM,
-    ALLOWED_HOSTS,
-    AWS_ACCESS_KEY_ID,
-    AWS_S3_ENDPOINT_URL,
-    AWS_S3_REGION_NAME,
-    AWS_SECRET_ACCESS_KEY,
-    CORS_ALLOWED_ORIGINS,
-    DATABASES,
-    DEFAULT_POST_IMAGE_URL,
-    DEFAULT_USER_THUMBNAIL_URL,
-    GOOGLE_CLIENT_ID,
-    GOOGLE_CLIENT_SECRET,
-    GOOGLE_PROFILE_URI,
-    GOOGLE_REDIRECT_URI,
-    GOOGLE_RESPONSE_TYPE,
-    GOOGLE_SCOPE,
-    KAKAO_DEFAULT_EMAIL,
-    KAKAO_PROFILE_URI,
-    KAKAO_REDIRECT_URI,
-    KAKAO_REST_API_KEY,
-    MONGODB_ADDRESS,
-    PASSWORD_HASHERS,
-    PASSWORD_SALT,
-    POST_IMAGES_URL,
-    PROFILE_IMAGES_URL,
-    SECRET_KEY,
-)
+from .admin_settings import (ALGORITHM, ALLOWED_HOSTS, AWS_ACCESS_KEY_ID,
+                             AWS_S3_ENDPOINT_URL, AWS_S3_REGION_NAME,
+                             AWS_SECRET_ACCESS_KEY, CORS_ALLOWED_ORIGINS,
+                             DATABASES, DEFAULT_POST_IMAGE_URL,
+                             DEFAULT_USER_THUMBNAIL_URL, GOOGLE_CLIENT_ID,
+                             GOOGLE_CLIENT_SECRET, GOOGLE_PROFILE_URI,
+                             GOOGLE_REDIRECT_URI, GOOGLE_RESPONSE_TYPE,
+                             GOOGLE_SCOPE, KAKAO_DEFAULT_EMAIL,
+                             KAKAO_PROFILE_URI, KAKAO_REDIRECT_URI,
+                             KAKAO_REST_API_KEY, MONGODB_ADDRESS,
+                             PASSWORD_HASHERS, PASSWORD_SALT, POST_IMAGES_URL,
+                             PROFILE_IMAGES_URL, SECRET_KEY)
 from .bad_words import BAD_WORDS_LIST
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.

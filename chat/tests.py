@@ -1,11 +1,11 @@
 import json
-
 from unittest.mock import patch
 
 from django.urls import reverse
 
-from .models import ChatReport
 from users.tests import UserTest
+
+from .models import ChatReport
 
 
 class ChatTest(UserTest):

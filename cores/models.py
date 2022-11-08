@@ -12,6 +12,7 @@ class TimeStampedModel(models.Model):
         abstract = True
 
 
+# https://vixxcode.tistory.com/249
 class EnumField(CharField):
     def __init__(self, enum, *args, **kwargs):
         """

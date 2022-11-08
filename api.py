@@ -14,6 +14,7 @@ from users.api import router as users_router
 from users.auth import AuthBearer, auth_cookie, is_admin
 from users.models import UserTestCount
 
+
 api = NinjaAPI(
     title="함께하개 API 문서",
     version="1.0.0",

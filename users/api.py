@@ -20,6 +20,7 @@ from users.schemas import (EmailSignupCheckIn, EmailUserSigninIn,
                            EmailUserSignupIn, ModifyUserIn, TestKakaoToken,
                            UserDetailOut, UserListOut)
 
+
 router = URLBugFixedRouter(tags=["사용자 관련 API"])
 
 

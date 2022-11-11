@@ -27,11 +27,22 @@ class PostTest(UserTest):
             like_user=self.test_user_1,
             post=self.test_post,
         )
+        self.test_post_report = PostReport.objects.create(
+            reporter_user=self.test_admin,
+            reported_user=self.test_user_1,
+            post=self.test_post,
+            content="test report",
+        )
         self.test_deleted_post = Post.objects.create(
             user=self.test_user_1,
             subject="Test2",
             content="Test2",
             is_deleted=True,
+        )
+        self.test_deleted_post_reason = PostDelete.objects.create(
+            user=self.test_user_1,
+            post=self.test_deleted_post,
+            delete_reason="test delete reason",
         )
 
     def tearDown(self):
@@ -160,7 +171,7 @@ class GetDeletedPostByAdmin(PostTest):
             "user_address": self.test_deleted_post.user.address,
             "user_thumbnail": self.test_deleted_post.user.thumbnail_url,
             "user_created_at": f"{self.test_deleted_post.user.created_at.isoformat()[:-9]}Z",
-            "delete_reason": "등록된 삭제사유 없음",
+            "delete_reason": self.test_deleted_post.get_delete_reason,
         }
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), results)
@@ -462,7 +473,7 @@ class ReportPostTest(PostTest):
             HTTP_AUTHORIZATION=f"Bearer {self.admin_jwt}",
             data={"content": "테스트 신고"},
         )
-        test_post_report = PostReport.objects.all().first()
+        test_post_report = PostReport.objects.all().last()
         self.assertEqual(test_post_report.post_id, self.test_post.id)
         self.assertEqual(test_post_report.reporter_user_id, self.test_admin.id)
         self.assertEqual(test_post_report.reported_user_id, self.test_post.user_id)
@@ -686,7 +697,8 @@ class GetPostsTest(PostTest):
                 HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
             )
             self.assertEqual(response.status_code, 500)
-        except Exception:
+        except Exception as e:
+            print(e)
             pass
 
 
@@ -792,4 +804,27 @@ class CreatePostTest(PostTest):
         self.assertEqual(too_large_file_response.status_code, 400)
         self.assertContains(
             too_large_file_response, "file size is too large", status_code=400
+        )
+
+
+class PostModelPropertyTest(PostTest):
+    def test_get_delete_reason(self):
+        self.assertEqual(
+            self.test_deleted_post.get_delete_reason,
+            self.test_deleted_post.deletes.first().delete_reason,
+        )
+
+        self.test_deleted_post_reason.delete()
+        self.assertEqual(self.test_deleted_post.get_delete_reason, "등록된 삭제사유 없음")
+
+    def test_get_reports_count(self):
+        self.assertEqual(
+            self.test_post.get_reports_count, self.test_post.reports.count()
+        )
+
+    def test_get_comments_not_deleted(self):
+        self.assertQuerysetEqual(
+            self.test_post.get_comments_not_deleted,
+            self.test_post.comments.filter(is_deleted=False).order_by("created_at"),
+            transform=lambda x: x,
         )

@@ -47,8 +47,8 @@ def get_posts_by_admin(request, query: PostListFilters = Query(...)):
     - page: 1부터 시작하는 페이지네이션 번호
     """
     is_admin(request)
-    post_filters = {key: value for key, value in query.dict().items() if value}
-    # post_filters = query.dict(exclude_none=True)
+    post_filters = query.dict(exclude_none=True)
+
     return (
         Post.objects.annotate(reported_count=Count("reports", distinct=True))
         .select_related("user")

@@ -43,7 +43,7 @@ def get_user_list(request, query: UserListFilters = Query(...)):
         - count: 결과로 나온 사용자 정보의 전체 개수
     """
     is_admin(request)
-    user_filters = {key: value for key, value in query.dict().items() if value}
+    user_filters = query.dict(exclude_none=True)
 
     return (
         User.objects.annotate(
@@ -236,7 +236,7 @@ def get_banned_user_list(request, query: UserListFilters = Query(...)):
     차단 계정 목록 조회
     """
     is_admin(request)
-    user_filters = {key: value for key, value in query.dict().items() if value}
+    user_filters = query.dict(exclude_none=True)
 
     return (
         User.objects.annotate(

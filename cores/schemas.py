@@ -12,6 +12,14 @@ from users.models import NAME_AND_NICKNAME_MAX_LENGTH
 REGEX_PASSWORD = "^(?=.*[A-Za-z])(?=.*\d)(?=.*[$@$!%*#?&])[A-Za-z\d$@$!%*#?&]{8,16}$"
 REGEX_DATE_RANGE = "^(-?(?:[1-9][0-9]*)?[0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])~(-?(?:[1-9][0-9]*)?[0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])"
 REPORT_TYPES = ["post_report", "comment_report"]
+SORT_TYPES = [
+    "created_at",
+    "-created_at",
+    "updated_at",
+    "-updated_at",
+    "likes",
+    "-likes",
+]
 
 
 def validate_name(value: str):
@@ -28,6 +36,12 @@ def validate_filter_date(value: str):
     if re.match(REGEX_DATE_RANGE, value):
         return [value.split("~")[0], value.split("~")[1]]
     raise ValueError("invalid date format")
+
+
+def validate_sort_types(value: str):
+    if value in SORT_TYPES:
+        return value
+    raise ValueError("invalid sort type")
 
 
 class ListFilters(Schema):

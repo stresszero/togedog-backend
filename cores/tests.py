@@ -6,6 +6,7 @@ from django.test import TestCase
 from moto import mock_s3
 
 from .models import EnumField
+from .utils import censor_text
 
 
 def func_to_test(bucket_name, key, content):
@@ -37,6 +38,17 @@ class S3ServiceTest(unittest.TestCase):
         test_object = self.s3_resource.Object(self.bucket_name, key)
         actual = test_object.get()["Body"].read()
         self.assertEqual(actual, content)
+
+    def test_delete(self):
+        content = b"abc"
+        key = "/moto-test"
+        func_to_test(self.bucket_name, key, content)
+
+        test_object = self.s3_resource.Object(self.bucket_name, key)
+        test_object.delete()
+
+        with self.assertRaises(Exception):
+            test_object.get()["Body"].read()
 
 
 class EnumFieldTest(TestCase):
@@ -81,3 +93,12 @@ class TestEnum(Enum):
 class AnotherTestEnum(Enum):
     YOU = "YOU"
     AND = "AND"
+
+
+class CensorTextTest(unittest.TestCase):
+    def test_censor_text(self):
+        text = "This is an offensive word, bullshit."
+        self.assertEqual(censor_text(text), "This is an offensive word, ********.")
+
+        text = "This is a test."
+        self.assertEqual(censor_text(text), "This is a test.")

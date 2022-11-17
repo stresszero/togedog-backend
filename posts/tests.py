@@ -691,15 +691,15 @@ class GetPostsTest(PostTest):
         self.assertEqual(response.status_code, 401)
         self.assertEqual(response.json(), {"detail": "Unauthorized"})
 
-    def test_fail_500_get_posts(self):
-        try:
-            response = self.client.get(
-                reverse("api-1.0.0:get_posts") + "?sort=asdf",
-                HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
-            )
-            self.assertEqual(response.status_code, 500)
-        except Exception as e:
-            print(e)
+    # def test_fail_500_get_posts(self):
+    #     try:
+    #         response = self.client.get(
+    #             reverse("api-1.0.0:get_posts") + "?sort=asdf",
+    #             HTTP_AUTHORIZATION=f"Bearer {self.user_jwt}",
+    #         )
+    #         self.assertEqual(response.status_code, 500)
+    #     except Exception as e:
+    #         print(e)
 
 
 class CreatePostTest(PostTest):

@@ -649,8 +649,9 @@ class GetPostsTest(PostTest):
             Post.objects.filter(is_deleted=False)
             .select_related("user")
             .prefetch_related("likes")
-            .order_by("-created_at")[0:9]
+            .order_by("-created_at")[:9]
         )
+
         results = [
             {
                 "id": post.id,
@@ -699,7 +700,6 @@ class GetPostsTest(PostTest):
             self.assertEqual(response.status_code, 500)
         except Exception as e:
             print(e)
-            pass
 
 
 class CreatePostTest(PostTest):
